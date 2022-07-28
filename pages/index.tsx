@@ -11,65 +11,98 @@ const Home: NextPage = () => {
       </Head>
 
       <main className="flex w-full flex-1 flex-col items-center justify-center px-20 text-center">
-        <p className="text-xl font-light">Welcome to the{' '}</p>
-        <h1 className="mt-6 text-6xl font-bold">
-          
-          <a className="text-blue-600" href="https://nextjs.org">
+        <p className="mt-4 text-xl font-light">Welcome to the{' '}</p>
+        <h1 className="mt-4 text-6xl font-bold">
+          <a className="text-blue-600" href="#">
             World of DSA!
           </a>
+          
         </h1>
-
-        <p className="mt-6 text-2xl">
-          Get started by editing{' '}
-          <code className="rounded-md bg-gray-100 p-3 font-mono text-lg">
-            pages/index.tsx
-          </code>
-        </p>
 
         <div className="mt-6 flex max-w-4xl flex-wrap items-center justify-around sm:w-full">
           <a
-            href="https://nextjs.org/docs"
+            href="#"
             className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
           >
-            <h3 className="text-2xl font-bold">Documentation &rarr;</h3>
+            <h3 className="text-2xl font-bold">Arrays &rarr;</h3>
             <p className="mt-4 text-xl">
-              Find in-depth information about Next.js features and its API.
+              Learn about various problems of 1-D Arrays. For 2-D arrays, please refer Matrices.
             </p>
           </a>
 
           <a
-            href="https://nextjs.org/learn"
+            href="#"
             className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
           >
-            <h3 className="text-2xl font-bold">Learn &rarr;</h3>
+            <h3 className="text-2xl font-bold">Linked Lists &rarr;</h3>
             <p className="mt-4 text-xl">
-              Learn about Next.js in an interactive course with quizzes!
+              Learn about various problems involving Linked List.
             </p>
           </a>
 
           <a
-            href="https://github.com/vercel/next.js/tree/canary/examples"
+            href="#"
             className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
           >
-            <h3 className="text-2xl font-bold">Examples &rarr;</h3>
+            <h3 className="text-2xl font-bold">Stacks &rarr;</h3>
             <p className="mt-4 text-xl">
-              Discover and deploy boilerplate example Next.js projects.
+            Learn about various problems involving Stacks.
             </p>
           </a>
 
           <a
-            href="https://vercel.com/import?filter=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
+            href="#"
             className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
           >
-            <h3 className="text-2xl font-bold">Deploy &rarr;</h3>
+            <h3 className="text-2xl font-bold">Queues &rarr;</h3>
             <p className="mt-4 text-xl">
-              Instantly deploy your Next.js site to a public URL with Vercel.
+            Learn about various problems involving Queues.
+            </p>
+          </a>
+
+          <a
+            href="#"
+            className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
+          >
+            <h3 className="text-2xl font-bold">Trees &rarr;</h3>
+            <p className="mt-4 text-xl">
+            Learn more about Trees and various problems involving Trees.
+            </p>
+          </a>
+
+          <a
+            href="#"
+            className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
+          >
+            <h3 className="text-2xl font-bold">Graphs &rarr;</h3>
+            <p className="mt-4 text-xl">
+            Learn more about Graphs and various problems involving Graphs.
+            </p>
+          </a>
+
+          <a
+            href="#"
+            className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
+          >
+            <h3 className="text-2xl font-bold">Matrices &rarr;</h3>
+            <p className="mt-4 text-xl">
+            Learn more about Matrices and various problems involving Matrices.
+            </p>
+          </a>
+          
+          <a
+            href="#"
+            className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
+          >
+            <h3 className="text-2xl font-bold">Many more &rarr;</h3>
+            <p className="mt-4 text-xl">
+            Learn more about other Data Structures.
             </p>
           </a>
         </div>
       </main>
 
-      <footer className="flex h-24 w-full items-center justify-center border-t">
+      <footer className="mt-6 flex h-24 w-full items-center justify-center border-t">
         <a
           className="flex items-center justify-center gap-2"
           href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
