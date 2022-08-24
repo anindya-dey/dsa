@@ -1,6 +1,7 @@
 import type { NextPage } from 'next'
 import Head from 'next/head'
 import Image from 'next/image'
+import Link from 'next/link';
 
 const Home: NextPage = () => {
   return (
@@ -18,6 +19,10 @@ const Home: NextPage = () => {
           </a>
           
         </h1>
+
+        <Link href={'/dsa'}>
+          <div className='mt-8 px-6 py-4 border border-blue-600 rounded-lg bg-blue-600 text-white cursor-pointer hover:bg-white hover:text-blue-600 transition-all'>Let&apos;s go &rarr;</div>
+        </Link>
         
       </main>
 
