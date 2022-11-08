@@ -13,18 +13,14 @@ const Home: NextPage = () => {
           </a>
         </h1>
 
-        <Link href={'/dsa'}>
-          <div className='mt-8 px-6 py-4 border border-blue-600 rounded-lg bg-blue-600 text-white cursor-pointer hover:bg-white hover:text-blue-600 transition-all'>Let&apos;s go &rarr;</div>
-        </Link>
-        
-        <h2 className="mt-6 text-xl font-extralight text-gray-600">This website contains various problems involving Data Structures and Algorithms</h2>
-
         <div className="mt-8">
-          <p className="text-lg font-extralight text-gray-600">Every problem on this website contains detailed solution, from brute-force to optimal approach and analysis of the time and space complexities.</p>
+          <p className="text-lg font-extralight text-gray-600">
+            This website contains various problems involving Data Structures and Algorithms
+            Every problem on this website contains detailed solution, from brute-force to optimal approach and analysis of the time and space complexities.</p>
         </div>
 
-        <Link href="/dsa">
-          <a className="mt-8 text-blue-600 border px-8 py-4 rounded border-blue-500 hover:text-white hover:bg-blue-600 transform transition-all ease-in-out">Let&apos;s go &rarr;</a>
+        <Link href={'/dsa'}>
+          <div className='mt-8 px-6 py-4 border border-blue-600 rounded-lg bg-blue-600 text-white cursor-pointer hover:bg-white hover:text-blue-600 transition-all'>Let&apos;s go &rarr;</div>
         </Link>
       </main>
   )
