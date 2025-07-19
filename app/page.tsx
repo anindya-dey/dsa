@@ -1,4 +1,10 @@
+import type { Metadata } from 'next'
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: 'DSA by Anindya Dey',
+  description: 'Learn DSA step-by-step',
+}
 
 // flex min-h-screen flex-col justify-center max-w-4xl m-auto bg-red-400
 export default function Home() {
@@ -24,7 +30,7 @@ export default function Home() {
           </div>
         </Link>
       </div>
-      <div className="mt-24 text-zinc-700">Anindya Dey &copy; 2023</div>
+      <div className="mt-24 text-zinc-700">Anindya Dey &copy; 2025</div>
     </div>
   );
 }
