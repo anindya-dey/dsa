@@ -1,0 +1,95 @@
+---
+title: "Range Sum Query - Immutable"
+difficulty: "Easy"
+variant: "Prefix Sum"
+practiceLinks: []
+---
+
+## Problem
+
+Given an integer array `nums`, build a structure that can answer many
+queries of the form: what is the sum of `nums[left..right]`, inclusive?
+The array never changes between queries.
+
+**Constraints**
+
+- `1 <= n <= 10^4`
+- `-10^5 <= nums[i] <= 10^5`
+- Up to `10^4` queries.
+
+**Example**
+
+```text
+Input:  nums = [1, 3, 5]
+        sumRange(0, 2) -> 9
+        sumRange(1, 2) -> 8
+        sumRange(0, 1) -> 4
+```
+
+## Brute force
+
+Sum the range directly on every query.
+
+```cpp
+class NumArrayBrute {
+public:
+    explicit NumArrayBrute(std::vector<int> nums) : nums_(std::move(nums)) {}
+
+    int sumRange(int left, int right) const {
+        int sum = 0;
+        for (int i = left; i <= right; ++i) {
+            sum += nums_[i];
+        }
+        return sum;
+    }
+
+private:
+    std::vector<int> nums_;
+};
+```
+
+Each query is O(n), so 10^4 queries over 10^4 elements is 10^8 operations.
+The array never changes between queries, which is the tell: you're paying for
+the same work again and again.
+
+## Optimal: prefix sum with a leading zero
+
+Since the array is immutable, precompute once. `prefix[i]` stores the sum of
+the first i elements, with `prefix[0] = 0` so ranges starting at index 0
+need no special case. Then every query is a subtraction:
+
+    sum(left..right) = prefix[right + 1] - prefix[left]
+
+```cpp
+class NumArray {
+public:
+    explicit NumArray(const std::vector<int>& nums) {
+        prefix_.resize(nums.size() + 1, 0);
+        for (int i = 0; i < static_cast<int>(nums.size()); ++i) {
+            prefix_[i + 1] = prefix_[i] + nums[i];
+        }
+    }
+
+    int sumRange(int left, int right) const {
+        return prefix_[right + 1] - prefix_[left];
+    }
+
+private:
+    std::vector<long long> prefix_;
+};
+```
+
+The leading zero earns its keep at the edges: `sumRange(0, 3)` becomes
+`prefix[4] - prefix[0]`, and `sumRange(0, n-1)` becomes
+`prefix[n] - prefix[0]`. One convention, zero branches.
+
+## Complexity
+
+| Approach | Build | Per query | Space |
+| --- | --- | --- | --- |
+| Brute force | O(1) | O(n) | O(1) |
+| Prefix sum | O(n) | O(1) | O(n) |
+
+Ten thousand queries turn the O(n) build into a rounding error. This is the
+clean possible example of precompute-once, answer-many, and the prefix
+array it builds is the same tool the counting variants reuse.

@@ -1,0 +1,88 @@
+---
+title: "Longest Substring Without Repeating Characters"
+difficulty: "Medium"
+variant: "Dynamic Window"
+practiceLinks: []
+---
+
+## Problem
+
+Given a string `s`, find the length of the longest substring with no repeated
+characters. A substring is contiguous; you may not skip characters.
+
+**Constraints**
+
+- `0 <= s.length <= 5 * 10^4`
+- `s` consists of English letters, digits, symbols, and spaces.
+
+**Example**
+
+```text
+Input:  s = "abcabcbb"
+Output: 3
+```
+
+The answer is `"abc"`. Note `"abca"` is not allowed because `a` repeats.
+
+## Brute force
+
+Check every substring, and for each one verify that all characters are
+unique, for example by keeping a set as you extend it.
+
+```cpp
+int longestUniqueBruteForce(const std::string& s) {
+    int best = 0;
+    for (int i = 0; i < static_cast<int>(s.size()); ++i) {
+        std::unordered_set<char> seen;
+        for (int j = i; j < static_cast<int>(s.size()); ++j) {
+            if (seen.count(s[j])) {
+                break;
+            }
+            seen.insert(s[j]);
+            best = std::max(best, j - i + 1);
+        }
+    }
+    return best;
+}
+```
+
+Each starting index can scan up to the whole string, so this is O(n²). For
+n = 5·10^4 that's 2.5 billion operations: too slow.
+
+## Optimal: dynamic sliding window
+
+Keep a window that never contains a duplicate, defined by two pointers.
+`right` extends the window one character at a time. Whenever the new
+character is already inside, shrink from the left until it isn't. Because
+the window is always duplicate-free at the moment we record its length, the
+largest recorded length is the answer.
+
+```cpp
+int longestUnique(const std::string& s) {
+    std::unordered_set<char> inWindow;
+    int best = 0;
+    int left = 0;
+    for (int right = 0; right < static_cast<int>(s.size()); ++right) {
+        while (inWindow.count(s[right])) {
+            inWindow.erase(s[left]);
+            ++left;
+        }
+        inWindow.insert(s[right]);
+        best = std::max(best, right - left + 1);
+    }
+    return best;
+}
+```
+
+There are two loops, but each character enters the window once and leaves at
+most once, so the total work is O(n), not O(n²).
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Brute force | O(n²) | O(min(n, alphabet)) |
+| Dynamic sliding window | O(n) | O(min(n, alphabet)) |
+
+The set uses extra memory, but it's bounded by the number of distinct
+characters, which for ASCII is a small constant.

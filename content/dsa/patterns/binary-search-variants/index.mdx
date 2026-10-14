@@ -1,0 +1,92 @@
+---
+title: "Binary Search Variants"
+summary: "Halve the search space every step. The same loop answers exact matches, boundaries, rotated arrays, and even questions with no array in sight."
+---
+
+Think of how you find a word in a dictionary. You open it in the middle,
+decide which half the word must be in, and repeat. Each step throws away
+half of what's left, so a million entries take only twenty steps. That is
+binary search: cut the candidate space in half with one comparison.
+
+The textbook version finds an exact value in a sorted array. The real power
+is that the *same* loop structure answers a whole family of questions, as
+long as one property holds: you can look at the middle and know which half
+the answer is in.
+
+## How to spot it
+
+Reach for binary search when a problem gives you any of these signals:
+
+- The data is **sorted**, or **mostly sorted** (one rotation, one peak).
+- You're looking for a **boundary**: first/last occurrence, first element
+  greater than x, leftmost insertion point.
+- You're asked to **minimize the maximum** or **maximize the minimum**.
+- A huge answer space with a monotonic yes/no question: "is a value of x
+  enough?" If yes for x, then yes for everything bigger. Then you're not
+  searching the array, you're searching the *answers*.
+
+The last signal is the most valuable one to internalize, because no sorted
+array appears in the problem at all.
+
+## Exact match and boundaries
+
+The classic loop finds any position holding the target. Its two boundary
+cousins are more useful in practice: find the first index where a condition
+becomes true. Write it once and you get lower bound, upper bound, and
+insertion points for free.
+
+```cpp
+// First index in [0, n) at which predicate(index) is true.
+// Assumes predicate is false, then true, as index grows.
+int lowerBound(int n, auto&& predicate) {
+    int lo = 0;
+    int hi = n;                      // answer may be "none": hi is n
+    while (lo < hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (predicate(mid)) {
+            hi = mid;                // true: the answer is here or earlier
+        } else {
+            lo = mid + 1;            // false: the answer is later
+        }
+    }
+    return lo;
+}
+```
+
+This shape never misses a candidate: `lo` and `hi` always bracket the
+boundary, and the loop ends with `lo == hi` pointing exactly at it. Most
+binary search bugs come from the other shapes; standardizing on this one
+removes the off-by-one guessing.
+
+## Search on a rotated array
+
+A sorted array rotated at an unknown point still has structure: at any
+midpoint, at least one half is fully sorted, and one comparison tells you
+which. Compare the midpoint against an endpoint to identify the sorted half,
+then check whether the target lies within it. The halving survives the
+rotation.
+
+## Binary search on the answer
+
+The deepest variant abandons arrays entirely. Suppose you must find the
+smallest speed that finishes a task in time. Checking a *given* speed is
+easy, and if a speed works, every faster speed also works. The yes/no
+answers are monotonic, so the boundary between "too slow" and "fast enough"
+is exactly the boundary this loop finds. You're running a linear check
+inside a logarithmic search, so the cost is O(check(n) · log n).
+
+## When it doesn't fit
+
+Binary search needs that monotonicity. If the data is unsorted in a way you
+cannot sort (you need original indices) or the predicate isn't a clean
+threshold ("is this value *closest* to x?"), halving gives you no
+information and the pattern doesn't apply. And when the input is tiny
+(under a few dozen elements), a linear scan is often simpler and just as
+fast in practice.
+
+## The takeaway
+
+Binary search is a question about information, not arrays: can one
+comparison eliminate half the possibilities? Learn the one boundary-finding
+loop, and the variants (exact match, rotated arrays, answer space) all
+become the same problem with a different predicate.

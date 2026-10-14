@@ -1,0 +1,136 @@
+---
+title: "Minimum Window Substring"
+difficulty: "Hard"
+variant: "Dynamic Window"
+practiceLinks: []
+---
+
+## Problem
+
+Given strings `s` and `t`, return the smallest substring of `s` that
+contains every character of `t`, including duplicates. If there is no such
+substring, return the empty string.
+
+**Constraints**
+
+- `1 <= t.length <= s.length <= 10^5`
+- `s` and `t` consist of uppercase and lowercase English letters.
+
+**Example**
+
+```text
+Input:  s = "ADOBECODEBANC", t = "ABC"
+Output: "BANC"
+```
+
+`"BANC"` is the shortest window containing A, B, and C.
+
+## Brute force
+
+For every substring, count its characters and check whether it covers `t`.
+To avoid re-counting, extend each start index and stop as soon as the window
+covers `t` (going further can only make it longer).
+
+```cpp
+std::string minWindowBruteForce(const std::string& s, const std::string& t) {
+    std::unordered_map<char, int> need;
+    for (char c : t) {
+        ++need[c];
+    }
+
+    std::string best;
+    for (int i = 0; i < static_cast<int>(s.size()); ++i) {
+        std::unordered_map<char, int> have;
+        int covered = 0;
+        for (int j = i; j < static_cast<int>(s.size()); ++j) {
+            auto it = need.find(s[j]);
+            if (it == need.end()) {
+                continue;
+            }
+            if (++have[s[j]] == it->second) {
+                ++covered;
+            }
+            if (covered == static_cast<int>(need.size())) {
+                int len = j - i + 1;
+                if (best.empty() || len < static_cast<int>(best.size())) {
+                    best = s.substr(i, len);
+                }
+                break;
+            }
+        }
+    }
+    return best;
+}
+```
+
+This is O(n²) in the worst case (for example `s` all one letter, `t` a
+different letter: nothing ever covers, so every start scans the whole
+string).
+
+## Optimal: sliding window with a coverage counter
+
+The same two-pointer idea works, with one bookkeeping addition. Track how
+many characters `t` still needs. Expand `right` and update the counter as
+each required character enters; when the window covers `t`, shrink from the
+left, recording the smallest window so far, until coverage breaks.
+
+The counter `missing` is what makes this O(1) per step: instead of comparing
+two full counts after every move, you only adjust one number.
+
+```cpp
+std::string minWindow(const std::string& s, const std::string& t) {
+    std::unordered_map<char, int> need;
+    for (char c : t) {
+        ++need[c];
+    }
+
+    int missing = static_cast<int>(t.size());
+    int bestStart = 0;
+    int bestLen = static_cast<int>(s.size()) + 1;
+    int left = 0;
+
+    for (int right = 0; right < static_cast<int>(s.size()); ++right) {
+        auto it = need.find(s[right]);
+        if (it != need.end() && it->second > 0) {
+            --missing;              // this char was still needed
+        }
+        if (it != need.end()) {
+            --it->second;            // may go negative: surplus inside window
+        }
+
+        while (missing == 0) {        // window covers t: shrink from the left
+            int len = right - left + 1;
+            if (len < bestLen) {
+                bestLen = len;
+                bestStart = left;
+            }
+            auto lit = need.find(s[left]);
+            if (lit != need.end()) {
+                ++lit->second;
+                if (lit->second > 0) {
+                    ++missing;       // we just removed a needed char
+                }
+            }
+            ++left;
+        }
+    }
+
+    return bestLen > static_cast<int>(s.size()) ? "" : s.substr(bestStart, bestLen);
+}
+```
+
+A negative count means the window holds a surplus of that character, so
+removing one doesn't break coverage. That's why shrinking can safely skip
+surplus characters and stop exactly where the window becomes minimal.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Brute force | O(n²) | O(alphabet) |
+| Sliding window | O(n) | O(alphabet) |
+
+Each pointer moves forward only, and every step does constant work, so the
+two loops together take O(n) time. This problem is the classic demonstration
+that "two nested loops" doesn't always mean "quadratic": the work is bounded
+by how far the pointers travel, not by the product of their ranges.

@@ -1,0 +1,89 @@
+---
+title: "Prefix Sums & Difference Arrays"
+summary: "Precompute the running total once, then answer any range question by subtracting two numbers, turning O(n) range queries into O(1)."
+---
+
+Suppose a cashier wants to know how much money came in between 2pm and 5pm
+every day. Re-counting the register's transaction log every time is tedious.
+The fix is to keep a running total and write it down at each hour. Now any
+window's total is two lookups: the running total at 5pm minus the one at
+2pm. That running total is a prefix sum.
+
+The idea applies whenever the same question is asked about many ranges: pay
+O(n) once to precompute, then answer each range in O(1).
+
+## How to spot it
+
+Reach for prefix sums when a problem gives you these signals:
+
+- Many **range queries**: "sum of nums[a..b]", "how many points fall in
+  [a, b]", asked repeatedly or for many pairs.
+- Counting **subarrays with a property** that a running value can express:
+  sum exactly k, sum divisible by k, equal 0s and 1s.
+- Many **range updates** followed by one read: add x to every element from
+  i to j, repeated, then report the array. That's the difference-array
+  mirror image, described below.
+
+The pattern needs one property: the measure over a range must be expressible
+by combining (usually subtracting) the values at its ends. Sums, counts, and
+XORs all work. Max, min, and median don't: knowing the max up to a and the
+max up to b doesn't give you the max between them.
+
+## The mechanics
+
+Store the running total up to each index, with a leading zero so the first
+elements work cleanly:
+
+```cpp
+// prefix[i] = nums[0] + ... + nums[i-1]
+std::vector<long long> buildPrefix(const std::vector<int>& nums) {
+    std::vector<long long> prefix(nums.size() + 1, 0);
+    for (int i = 0; i < static_cast<int>(nums.size()); ++i) {
+        prefix[i + 1] = prefix[i] + nums[i];
+    }
+    return prefix;
+}
+
+// Sum of nums[left..right], inclusive, in O(1).
+long long rangeSum(const std::vector<long long>& prefix, int left, int right) {
+    return prefix[right + 1] - prefix[left];
+}
+```
+
+The leading zero at index 0 is what makes the subtraction correct for ranges
+starting at 0: `rangeSum(0, 3)` becomes `prefix[4] - prefix[0]`, with no
+special case.
+
+## The mirror image: difference arrays
+
+Prefix sums answer many range *questions*. Difference arrays handle many
+range *updates*. To add x to every element of [i, j], don't touch the
+elements: record `+x` at position i and `-x` at position j+1, and when
+you're done with all updates, take the prefix sum of the update log. Each
+element's final value is its original plus the running total of updates that
+cover it. n updates on ranges of any size cost O(1) each, with one final
+O(n) pass.
+
+## The counting variant
+
+For subarray-counting problems, the trick is to run the prefix sum and ask,
+for each position, how many earlier positions had the *same prefix value*.
+If `prefix[j] - prefix[i] = k`, then the subarray from i to j sums to k.
+Rearranged, that's `prefix[i] = prefix[j] - k`, so each earlier position with
+that value is one qualifying subarray. A hash map of counts makes the lookup
+O(1). This turns "count subarrays with sum k" into a single pass, and it's
+the template for a whole family of counting problems.
+
+## When it doesn't fit
+
+If queries and updates interleave (update a range, ask a range, update,
+ask...), plain prefix sums go stale on every write, and you need a structure
+built for both operations, such as a Fenwick tree or segment tree, or you
+accept O(n) per rebuild. And if the measure doesn't decompose over its ends,
+none of this applies.
+
+## The takeaway
+
+Prefix sums convert a question about a *range* into a question about two
+*points*. Watch for any repeated range question: if you can pay O(n) once
+to make each answer O(1), do it.

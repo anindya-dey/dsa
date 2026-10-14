@@ -1,0 +1,104 @@
+---
+title: "Koko Eating Bananas"
+difficulty: "Medium"
+variant: "Binary Search on Answer"
+practiceLinks: []
+---
+
+## Problem
+
+Koko has piles of bananas; pile `i` holds `piles[i]` bananas. She has `h`
+hours, and her eating speed is `k` bananas per hour (an integer). Each hour
+she picks one pile and eats up to `k` bananas from it; if the pile has fewer
+than `k`, she finishes it and doesn't eat more that hour. Find the minimum
+`k` that lets her finish all the piles within `h` hours.
+
+**Constraints**
+
+- `1 <= piles.length <= 10^4`
+- `piles.length <= h <= 10^9`
+- `1 <= piles[i] <= 10^9`
+
+**Example**
+
+```text
+Input:  piles = [3,6,7,11], h = 8
+Output: 4
+```
+
+At speed 4 the piles take 1 + 2 + 2 + 3 = 8 hours, exactly the budget.
+
+## Brute force
+
+Try speeds 1, 2, 3, ... and return the first one that finishes in time.
+
+```cpp
+int minEatingSpeedBruteForce(const std::vector<int>& piles, int h) {
+    auto hoursNeeded = [&](int k) {
+        long long hours = 0;
+        for (int pile : piles) {
+            hours += (pile + k - 1) / k;    // ceiling division
+        }
+        return hours;
+    };
+
+    int k = 1;
+    while (hoursNeeded(k) > h) {
+        ++k;
+    }
+    return k;
+}
+```
+
+Piles can hold 10^9 bananas, so the answer can be around 10^9: far too many
+speeds to try one by one. But notice what the brute force implicitly knows:
+if speed k works, then every speed above k works too. The speeds split into a
+"too slow" prefix and a "fast enough" suffix. That shape is binary search.
+
+## Optimal: binary search on the speed
+
+Search the answer space directly. For a candidate speed `k`, computing the
+hours needed is a single pass over the piles, and "is this speed enough?" is
+a yes/no question that flips exactly once as k grows. So: binary search over
+k, with the linear hours check as the predicate.
+
+```cpp
+int minEatingSpeed(const std::vector<int>& piles, int h) {
+    auto hoursNeeded = [&](int k) {
+        long long hours = 0;
+        for (int pile : piles) {
+            hours += (pile + k - 1) / k;    // ceiling division
+        }
+        return hours;
+    };
+
+    int lo = 1;
+    int hi = *std::max_element(piles.begin(), piles.end());
+    while (lo < hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (hoursNeeded(mid) <= h) {
+            hi = mid;                // fast enough: the answer is here or lower
+        } else {
+            lo = mid + 1;            // too slow: must eat faster
+        }
+    }
+    return lo;
+}
+```
+
+The bounds are worth a thought. The answer is at least 1 (a smaller speed
+can't be tested) and at most the largest pile, since one banana per hour
+above that changes nothing: she can only eat from one pile per hour anyway.
+Everything between is the search space, and each check costs O(n).
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Try every speed | O(max(piles) · n) | O(1) |
+| Binary search on the speed | O(n · log(max(piles))) | O(1) |
+
+This is the canonical "binary search on the answer" problem: no sorted array
+anywhere in sight, just a monotonic check. When you see "minimum x such
+that...", ask whether you can verify a guess cheaply, and if so, search the
+guesses instead of the data.

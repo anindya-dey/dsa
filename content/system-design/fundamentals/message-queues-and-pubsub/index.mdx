@@ -1,0 +1,105 @@
+---
+title: "Message Queues & Pub/Sub"
+summary: "Put work in a durable pile and let someone else deal with it later, so producers and consumers never have to be running, fast, or sized like each other."
+---
+
+Imagine a restaurant with the kitchen visible from the counter. If the
+cashier must stand at the kitchen window and wait for each dish before taking
+the next order, the whole restaurant runs at the kitchen's speed. The fix
+invented by every real restaurant: the ticket rail. The cashier clips
+orders to the rail and moves on. The kitchen pulls tickets at its own pace.
+The rush at lunch doesn't have to match the kitchen's capacity, because the
+rail absorbs the difference.
+
+A message queue is that rail, and it buys three separate things at once.
+
+## What you actually buy
+
+**Decoupling in time (async work).** The producer doesn't wait. An
+e-commerce site can accept 1000 orders per second even if payment processing
+handles 200 per second, because orders wait in the queue rather than at the
+checkout. The user experience stops being chained to the slowest step.
+
+**Decoupling in space.** Producers don't need to know who consumes the
+message. Order events from the storefront can be consumed by shipping,
+analytics, fraud, and email, without the storefront knowing any of them
+exist. Consumers come and go, and the producer never changes.
+
+**Surviving crashes.** A durable queue holds messages on disk and
+redelivers them if a consumer fails before finishing. If your email service
+is down for an hour, the emails queue up rather than disappear. Compare with
+a direct HTTP call, where a crash means a lost message and an angry user.
+
+The difference from a database is worth noting: queues are optimized for
+**sequential processing of events as they arrive**, with each message
+typically consumed once and deleted, and no ad-hoc querying of the past.
+(When you need to replay and reprocess history, that's
+[event sourcing](/system-design/fundamentals/event-sourcing-and-cqrs).)
+
+## Queue vs. pub/sub: two shapes of the same idea
+
+People use the terms interchangeably, but there's a crisp difference in
+*who gets a copy*:
+
+- **Point-to-point queue**: each message goes to **one** consumer. Ten
+  workers can share one queue; the queue hands each message to one of them.
+  The work is divided. This is task distribution: "someone process this
+  order".
+- **Pub/sub (topics)**: each message is delivered to **every subscriber** of
+  the topic. The same "order-placed" event goes to shipping AND analytics
+  AND fraud, each with their own copy. This is broadcast: "everyone who
+  cares, here's what happened".
+
+The rule of thumb: use a queue when the message is **work to be done**, and
+a topic when the message is **a fact that happened**. "Send this email" is
+work (one sender suffices). "An order was placed" is a fact (everyone
+interested should hear it).
+
+Kafka blurs the line deliberately: it's a distributed log where consumers
+track their own position, so one consumer group behaves like a queue (each
+message processed once by the group), while multiple groups each get the
+full stream like pub/sub.
+
+## The delivery guarantees trilemma
+
+This is where design questions get sharp. When a consumer reads a message,
+processes it, and crashes before acknowledging, does the message come back?
+The options:
+
+- **At-most-once**: deliver and delete. Fastest, but a crash loses the
+  message.
+- **At-least-once**: delete only after the consumer acknowledges. A crash
+  means redelivery. Safe, but now the same message can arrive twice.
+- **Exactly-once**: what everyone wants, and what doesn't exist for free.
+  Systems get close by combining at-least-once delivery with
+  [idempotent processing](/system-design/fundamentals/idempotency-and-exactly-once):
+  process it as though it might be a duplicate, because it might be.
+
+At-least-once plus idempotent consumers is the standard production answer.
+Which brings up a subtle and important point: **a message queue by itself
+does not give you transactions with the database**. The classic bug is:
+consumer receives message, writes to the database, crashes before
+acknowledging. Redelivery: the database gets written twice. The clean fix
+is the [transactional outbox](/system-design/fundamentals/distributed-transactions),
+and every serious event-driven system grows one eventually.
+
+## Backpressure and what happens when the kitchen falls behind
+
+The ticket rail has a physical limit; so does a queue. When producers
+outrun consumers for long enough, the queue grows without bound, and you
+face the choice of the [backpressure](/system-design/fundamentals/backpressure-and-flow-control)
+problem: reject, buffer, or shed load. A queue doesn't make the problem
+disappear, it gives you a place to make the decision deliberately. Long
+queue depth is also a monitoring signal: a queue that keeps growing is a
+system telling you its consumers can't keep up.
+
+## Related concepts
+
+- [Idempotency & Exactly-Once Delivery](/system-design/fundamentals/idempotency-and-exactly-once)
+  is how you turn at-least-once into effectively-once.
+- [Backpressure & Flow Control](/system-design/fundamentals/backpressure-and-flow-control)
+  covers what happens when the queue itself becomes the bottleneck.
+- [Event Sourcing & CQRS](/system-design/fundamentals/event-sourcing-and-cqrs)
+  extends the "append-only" idea from transport to system of record.
+- [Scalability](/system-design/fundamentals/scalability) explains where
+  queues fit in the scale-out ladder (they're the "absorb the spike" rung).

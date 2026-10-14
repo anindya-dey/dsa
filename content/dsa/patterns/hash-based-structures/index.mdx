@@ -1,0 +1,74 @@
+---
+title: "Hash-Based Structures"
+summary: "Trade memory for answers: compute a small fingerprint of each item so lookups stop scanning and start jumping straight to the answer."
+---
+
+Picture a coat check. Instead of searching a rack shelf by shelf, the clerk
+takes your ticket and walks straight to your coat. Nothing about the coats
+is sorted; the trick is that the ticket *tells the clerk where to look*. A
+hash table is that coat check: a function maps each key to a shelf, and
+lookup costs one jump instead of a search.
+
+The pattern to internalize is not any one data structure; it is the trade:
+**spend memory to remember something, so you never have to look for it
+twice.** When a solution keeps re-searching, re-sorting, or re-walking to
+answer "have I seen this before?", a hash is almost always the fix.
+
+## How to spot it
+
+Reach for a hash when a problem asks:
+
+- **Have I seen this before?** Duplicate detection, pairs summing to a
+  target, valid anagrams, magazine/ransom-note counting.
+- **How many times?** Frequency maps, top-k by count, first non-repeating
+  character.
+- **Grouping by identity.** Group anagrams, identical file contents,
+  equivalent strings.
+- **O(1) memoization** of something expensive you're about to need again.
+
+One caveat about order: a plain hash table remembers *what* it has seen, but
+not *when*. If you need "most recently seen" or "first unique", you need a
+hash plus a second structure that keeps order (a list, a queue, or a
+counter).
+
+## How the coat check works
+
+A hash function maps each key to an integer in the range of the table.
+That's the fingerprint on the ticket. The table stores key/value pairs at
+the fingerprinted position; a lookup computes the same fingerprint and
+checks that shelf.
+
+The problem is collisions: two keys can map to the same shelf, because
+there are far more possible keys than shelves. Two families of fixes exist:
+
+- **Separate chaining**: each shelf holds a small list. Collisions just
+  join the list. Simple, and the table degrades gracefully as it fills, but
+  each lookup pays a little list walk.
+- **Open addressing**: if a shelf is taken, probe the next shelf (or every
+  k-th) until a free one appears. Denser and faster in memory, but as the
+  table fills, probe chains grow and inserts get slow.
+
+The usual load-balancing dial is the **load factor**, the ratio of entries
+to shelves. Keep it below roughly 0.75 and both schemes stay fast; above
+it, rebuild the table larger and rehash everything. That rebuild is
+amortized O(1) per insert: rare, but expensive when it happens, like
+occasionally paying to expand the coat room.
+
+## When a hash doesn't fit
+
+- You need **order**: smallest key, range queries, "first key after x".
+  Hashes scatter keys deliberately, so use a balanced tree (an ordered map)
+  instead.
+- You need **prefix/sorting-based answers**: the answer to "sum of range
+  [a, b]" can't be fingerprinted; use prefix sums.
+- You need **strict worst-case bounds**: a pathological key set can force
+  collisions and degrade a hash to O(n) per operation. Trees give you a
+  guaranteed O(log n) instead.
+- The keys are huge or expensive to hash: comparing a fingerprint may cost
+  as much as comparing the item itself.
+
+## The takeaway
+
+Hash-based structures convert the question "where is it?" into "compute
+where it must be". Every problem that re-searches is a candidate. Ask: what
+am I looking for twice? Hash the answer to that, and look it up.

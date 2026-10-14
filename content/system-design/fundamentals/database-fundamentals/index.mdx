@@ -1,0 +1,127 @@
+---
+title: "Database Fundamentals"
+summary: "Indexes, replication, and sharding: the three tools behind every 'where does the data live and how do we survive losing a machine' decision."
+---
+
+Every system design conversation eventually arrives at the same question:
+where does the data live? Almost everything else, caching, queues, load
+balancing, exists to protect the database from work. So it's worth being
+precise about what databases actually do, and about the three tools you'll
+reach for when one database is no longer enough: indexes, replication, and
+sharding.
+
+This page is about relational (SQL) databases by default, because they're
+the baseline. The NoSQL trade-offs follow naturally from the same three
+tools.
+
+## Indexes: the database's hash map
+
+An index is a lookup structure the database maintains beside your table so
+that queries don't scan every row. When you hear "this query is slow", the
+answer is almost always either "add an index" or "this query can't use one".
+
+```sql
+CREATE INDEX idx_orders_customer ON orders(customer_id);
+```
+
+The trade is the same as every hash: fast reads paid for with slower writes
+and extra storage. The database must update every index on each write, so a
+table with ten indexes takes noticeably longer to insert into. And indexes
+only help when the query's shape matches them: an index on `customer_id`
+helps `WHERE customer_id = 42` but does nothing for
+`WHERE total_amount > 100`. Indexes are per-shape, not general speed.
+
+The composite-index rule trips people up constantly: an index on
+`(customer_id, created_at)` serves queries filtering on customer alone, or
+customer *then* created_at, but not `created_at` alone. The order matters,
+like a phone book sorted by surname-then-first-name, which can't help you
+find everyone named "Alex".
+
+## Replication: copies of the same data
+
+**Replication** keeps multiple copies of the same data on different
+machines. It buys you two things at once:
+
+- **Availability**: if one machine dies, the data still exists elsewhere.
+- **Read scaling**: more copies means more machines answering reads.
+
+The standard setup is **primary/replica**. One primary accepts all writes
+and streams a change log to replicas, which apply the same changes in order.
+Reads go to any replica, which is how you spread read load.
+
+The price is **replication lag**: a replica is always slightly behind. A user
+who writes a comment and refreshes the page might not see it, because the
+refresh read from a replica that hasn't caught up. The usual mitigations are
+routing a user's *own* reads right after their writes to the primary
+("read-your-own-writes"), or accepting that the UI may lag a second. What
+you can't do is pretend lag doesn't exist; every replicated system has this
+conversation eventually.
+
+The deeper question is what happens if the primary dies. **Failover**
+promotes a replica to primary, but two replicas can both believe they're the
+new primary (split brain), and the resolution of that is
+[consensus](/system-design/fundamentals/consensus-and-leader-election).
+
+## Sharding: splitting the data itself
+
+Replication copies the same data; **sharding** splits the *rows* across
+machines. When a single dataset outgrows any one machine (or its write
+volume does), you partition: orders with IDs ending 0-3 go to shard A, 4-6
+to shard B, and so on. Each shard is a smaller, independent database.
+
+Sharding is the biggest hammer and the hardest to take back. Its
+consequences:
+
+- **Cross-shard queries get awkward.** "Find all orders over $100" now means
+  asking every shard and merging, or maintaining a separate analytics store.
+- **Joins across shards are effectively gone.** The database can't join
+  tables it doesn't have locally, so you either denormalize (store a copy
+  of the data you would have joined for) or do it in application code.
+- **The partition key is destiny.** Pick `customer_id` and all of one
+  customer's data lives together, but one giant customer can overwhelm a
+  single shard (a "hot shard"). Pick something else and a customer's data is
+  scattered. You can't have both.
+
+The common partitioning strategy is **hash sharding**
+(hash the key, take the remainder), and its refinement,
+[consistent hashing](/system-design/fundamentals/consistent-hashing),
+which makes adding a machine cheaper than re-shuffling everything.
+
+## SQL vs. NoSQL: what the trade actually is
+
+The databases marketed as "NoSQL" mostly trade *constraints* for *scale
+out*.
+
+A relational database gives you joins, transactions across tables, and a
+rigid schema. All of those are exactly what makes horizontal scaling hard:
+a join needs both tables co-located, and a transaction needs one machine
+to coordinate. Document stores (MongoDB), key-value stores (DynamoDB), and
+wide-column stores (Cassandra) drop or weaken those features, and in
+exchange, sharding and replicating becomes a first-class, built-in
+operation.
+
+So the choice is not "old vs. new". It's:
+
+- **Do you need multi-row transactions and joins?** Then you want
+  relational, and you should plan for scaling it vertically and with
+  replicas for as long as possible.
+- **Is your data naturally key-addressed** (look up by ID, no cross-record
+  queries)? Then a key-value or document store scales out far more
+  painlessly, and the constraint you gave up (joins, strict consistency)
+  was one you weren't using anyway.
+
+Most real systems end up with both: a relational database as the source of
+truth for money and relationships, and a NoSQL store (or a
+[cache](/system-design/fundamentals/caching)) for hot, key-shaped data.
+
+## Related concepts
+
+- [Caching](/system-design/fundamentals/caching) protects the database from
+  repeated reads, usually the first fix before any of the above.
+- [Consistent Hashing](/system-design/fundamentals/consistent-hashing) is
+  the strategy that makes sharding and re-sharding practical.
+- [CAP Theorem & Consistency Models](/system-design/fundamentals/cap-theorem-and-consistency-models)
+  explains the exact consistency guarantees replication makes you choose
+  between.
+- [OLAP vs. OLTP](/system-design/fundamentals/olap-vs-oltp) is where the
+  analytics copy of the data lives, and why it's separate.

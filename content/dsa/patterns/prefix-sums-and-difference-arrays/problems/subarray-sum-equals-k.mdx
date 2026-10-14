@@ -1,0 +1,101 @@
+---
+title: "Subarray Sum Equals K"
+difficulty: "Medium"
+variant: "Prefix Sum + Hash Map"
+practiceLinks: []
+---
+
+## Problem
+
+Given an array of integers `nums` and an integer `k`, count the number of
+contiguous subarrays whose elements sum to exactly `k`.
+
+**Constraints**
+
+- `1 <= n <= 3 * 10^4`
+- `-1000 <= nums[i] <= 1000`
+- `-10^7 <= k <= 10^7`
+
+**Example**
+
+```text
+Input:  nums = [1, 1, 1], k = 2
+Output: 2
+```
+
+The subarrays `[1,1]` (indices 0-1) and `[1,1]` (indices 1-2) both sum to 2.
+
+## Brute force
+
+Enumerate every start index and extend the subarray, keeping a running sum,
+and count each time it hits k.
+
+```cpp
+int subarraySumBruteForce(const std::vector<int>& nums, int k) {
+    int count = 0;
+    for (int start = 0; start < static_cast<int>(nums.size()); ++start) {
+        int sum = 0;
+        for (int end = start; end < static_cast<int>(nums.size()); ++end) {
+            sum += nums[end];
+            if (sum == k) {
+                ++count;
+            }
+        }
+    }
+    return count;
+}
+```
+
+That's O(n²), or about 10^9 operations at the constraint limit. Note what
+rules out the obvious shortcut: the values can be **negative**, so a
+two-pointer window can't reliably shrink or grow. Sliding window is off the
+table; you need prefix sums.
+
+## Optimal: prefix sums plus a hash map of counts
+
+Write `P[j]` for the sum of the first j elements. The subarray from i to j-1
+sums to k exactly when:
+
+    P[j] - P[i] = k, which rearranges to P[i] = P[j] - k
+
+So walk the array once, maintaining the running sum `P[j]`. At each step, the
+number of qualifying subarrays *ending* here equals the number of earlier
+positions whose prefix was exactly `P[j] - k`. Count those in a hash map,
+then add the current prefix to the map for future steps.
+
+```cpp
+int subarraySum(const std::vector<int>& nums, int k) {
+    std::unordered_map<long long, int> prefixCount;
+    prefixCount[0] = 1;               // empty prefix: one way to have sum 0
+    int count = 0;
+    long long sum = 0;
+
+    for (int value : nums) {
+        sum += value;
+        auto it = prefixCount.find(sum - k);
+        if (it != prefixCount.end()) {
+            count += it->second;      // subarrays ending here, summed to k
+        }
+        ++prefixCount[sum];
+    }
+    return count;
+}
+```
+
+The seed entry `prefixCount[0] = 1` is the subtle line, so give it a thought.
+It represents the empty prefix before any elements. Without it, a subarray
+that starts at index 0 and sums to k would find nothing to match: its
+complement `P[j] - k` is 0, and nothing would have recorded a zero prefix.
+With it, the whole array from the start counts correctly.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Brute force | O(n²) | O(1) |
+| Prefix sum + hash map | O(n) | O(n) |
+
+This is two patterns stacked: the prefix sum turns a range question into a
+question about two points, and the hash map answers "how many earlier points
+had this value" in O(1). When a problem involves both ranges and counting,
+look for exactly this combination.

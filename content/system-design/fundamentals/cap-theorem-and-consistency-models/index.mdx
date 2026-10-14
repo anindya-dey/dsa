@@ -1,0 +1,116 @@
+---
+title: "CAP Theorem & Consistency Models"
+summary: "When a network break forces a choice, do you serve possibly-stale data or refuse to answer? Everything else is a continuum of that trade."
+---
+
+Imagine the same customer record stored in a New York database and a Tokyo
+database. A customer updates their address in New York. One millisecond
+later, a request reads that record in Tokyo. What should Tokyo return?
+
+That question, with the network between the two copies possibly broken, is
+what CAP is about. And the honest answer is: it depends on what your
+application can tolerate, which is why this topic exists as a topic rather
+than a rule.
+
+## What CAP actually says
+
+CAP considers three properties of a distributed data store:
+
+- **Consistency**: every read sees the latest write, anywhere in the system.
+  (The formal version is called linearizability: the system behaves as if
+  there were only one copy.)
+- **Availability**: every request gets a response, even during failures.
+- **Partition tolerance**: the system keeps working even when the network
+  splits into islands that can't reach each other.
+
+The theorem says: **when a partition happens, you can only have one of C and
+A.** During the split, a Tokyo node either answers from its stale copy
+(available, but maybe inconsistent), or refuses until it can confirm the
+latest write (consistent, but unavailable).
+
+Partitions are not a theoretical edge case. Cables break, routers flap,
+machines pause. Any system that spans machines must handle them, so P is
+effectively mandatory, and the real choice is C or A *during a partition*.
+
+The common misreading of CAP is that you "pick a side" for the system's
+whole life. In practice, systems behave differently when healthy: when the
+network is fine, you can usually have strong consistency and full
+availability at once. The theorem only governs behavior during the split,
+which is why most real databases let you *tune* the choice per request.
+
+## The consistency continuum
+
+"Consistent or not" turns out to be a dial, not a switch. From strongest to
+weakest:
+
+**Linearizable (strong)**: reads see the latest write, period. To a
+customer, this feels like one database. The cost is coordination: every
+write may need to confirm with other nodes before acknowledging, and
+failures stall the whole request. Bank balances on the withdrawal path
+usually want this.
+
+**Read-your-own-writes**: a user's own writes are guaranteed visible to
+their own next reads. Other users may still see the old value briefly.
+Famous and beloved: a profile edit that doesn't show up when the user
+refreshes feels broken, even if no one else noticed.
+
+**Eventual consistency**: replicas converge to the same value, eventually,
+if writes stop. In between, different readers can see different values.
+The right question to ask: *how eventual?* Some systems converge in
+milliseconds; others in minutes. The guarantee is about convergence, not
+latency.
+
+**Conflict resolution**: at the far end, multiple copies accept writes
+independently during a partition, and someone has to merge the results.
+Dynamo-style systems resolve conflicts in application code or by "last
+writer wins", which can silently drop a write. This is the price of full
+availability during partitions.
+
+## How to choose
+
+The choice is per-feature, not per-system. A useful exercise for any piece
+of data:
+
+- **Can the user see stale data?** Product descriptions, view counts,
+  follower counts: almost always yes, and eventual consistency is fine.
+- **Must two concurrent operations be prevented?** Two people buying the
+  last ticket: yes, and you need strong coordination (serialized writes or
+  a transaction) somewhere in the path.
+- **Is the data derived?** Caches, timelines, recommendations are copies by
+  design; they should be eventually consistent and *rebuildable*, because
+  the source of truth lives elsewhere.
+
+Notice the asymmetry in cost. Strong consistency needs coordination on every
+write, which adds latency and creates a system that's unavailable whenever
+the coordinator is. Eventual consistency pushes the cost elsewhere: into
+application logic that must tolerate seeing old data, and into merge
+decisions during conflicts. Nothing is free; you're choosing which bill to
+pay, not whether to pay.
+
+## The engineering subtleties that matter in interviews
+
+- **Replication lag is the everyday face of eventual consistency.** You
+  don't need a network partition to see stale data; a primary and its
+  replica diverge slightly all the time.
+- **The CAP choice is per operation.** DynamoDB, Cassandra, and similar
+  systems let you request strong consistency for specific reads and accept
+  eventual for others. Say "per query", not "per database".
+- **Consensus (Raft, Paxos) is the machinery behind strong consistency.**
+  If a cluster must agree on one value despite failures, that's
+  [consensus](/system-design/fundamentals/consensus-and-leader-election),
+  and it's how databases enforce linearizability.
+- **CA doesn't exist in distributed systems.** Some charts list a "CA"
+  corner; a partition can always happen, so a distributed system that gives
+  up P is just a system that fails during partitions.
+
+## Related concepts
+
+- [Consensus & Leader Election](/system-design/fundamentals/consensus-and-leader-election)
+  is the machinery that makes strong consistency possible.
+- [Database Fundamentals](/system-design/fundamentals/database-fundamentals)
+  covers replication, the mechanism that creates the stale-copy problem in
+  the first place.
+- [Distributed Transactions](/system-design/fundamentals/distributed-transactions)
+  extends the same trade across multiple records or services at once.
+- [Multi-Region & Active-Active](/system-design/fundamentals/multi-region-and-active-active)
+  is where these choices get the most painful, and the most expensive.

@@ -1,0 +1,101 @@
+---
+title: "First and Last Position of Element in Sorted Array"
+difficulty: "Medium"
+variant: "Boundaries"
+practiceLinks: []
+---
+
+## Problem
+
+Given a sorted array `nums` (ascending, possibly with duplicates) and a
+`target`, return the starting and ending index of `target`, or `[-1, -1]`
+if it doesn't appear.
+
+**Constraints**
+
+- `0 <= n <= 10^5`
+- `-10^9 <= nums[i] <= 10^9`
+- The array is sorted; the algorithm must run in O(log n).
+
+**Example**
+
+```text
+Input:  nums = [5,7,7,8,8,10], target = 8
+Output: [3,4]
+```
+
+## Brute force
+
+Scan from the left for the first occurrence and from the right for the last.
+
+```cpp
+std::vector<int> searchRangeBruteForce(const std::vector<int>& nums, int target) {
+    int first = -1;
+    int last = -1;
+    for (int i = 0; i < static_cast<int>(nums.size()); ++i) {
+        if (nums[i] == target) {
+            if (first == -1) {
+                first = i;
+            }
+            last = i;
+        }
+    }
+    return {first, last};
+}
+```
+
+Correct, but O(n), which the constraints explicitly rule out. The presence
+of duplicates is the hint: duplicates mean a plain binary search might land
+in the middle of a run, and you need its edges.
+
+## Optimal: two boundary searches
+
+The trick is to stop thinking "find the target" and start thinking "find
+the boundary where the target starts (and stops)". A run of equal values in
+a sorted array has two edges, and each edge is exactly the predicate
+boundary problem:
+
+- First occurrence = first index where `nums[i] >= target`.
+- Last occurrence = last index where `nums[i] <= target`, which is the
+  first index where `nums[i] > target`, minus one.
+
+```cpp
+int lowerBound(const std::vector<int>& nums, int target) {
+    int lo = 0;
+    int hi = static_cast<int>(nums.size());   // answer may be "past the end"
+    while (lo < hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (nums[mid] >= target) {
+            hi = mid;
+        } else {
+            lo = mid + 1;
+        }
+    }
+    return lo;
+}
+
+std::vector<int> searchRange(const std::vector<int>& nums, int target) {
+    int first = lowerBound(nums, target);
+    if (first == static_cast<int>(nums.size()) || nums[first] != target) {
+        return {-1, -1};
+    }
+    int last = lowerBound(nums, target + 1) - 1;
+    return {first, last};
+}
+```
+
+Look at how `last` is computed: the first index holding a value *greater*
+than target is one past the end of the run, so subtracting one gives the
+run's last index. Reusing the same search for both boundaries is deliberate:
+one loop, no off-by-one cases to debug twice.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Linear scan | O(n) | O(1) |
+| Two boundary searches | O(log n) | O(1) |
+
+This problem is worth mastering for its template value: `lowerBound` here is
+the same loop you will reuse for insert positions, "first true" predicates,
+and answer-space searches. Write it once, keep it.

@@ -1,0 +1,95 @@
+---
+title: "Longest Consecutive Sequence"
+difficulty: "Medium"
+variant: "Hash Set"
+practiceLinks: []
+---
+
+## Problem
+
+Given an unsorted array of integers, return the length of the longest run of
+consecutive integers. The run need not be adjacent in the array. The
+solution must run in O(n) time.
+
+**Constraints**
+
+- `0 <= n <= 10^5`
+- `-10^9 <= nums[i] <= 10^9`
+
+**Example**
+
+```text
+Input:  nums = [100, 4, 200, 1, 3, 2]
+Output: 4
+```
+
+The run `1, 2, 3, 4` has length 4. Note the array is unsorted: sorting would
+make this easy but costs O(n log n).
+
+## Brute force
+
+For every value, keep counting value+1, value+2, ... while they exist in the
+array.
+
+```cpp
+int longestConsecutiveBruteForce(const std::vector<int>& nums) {
+    std::unordered_set<int> values(nums.begin(), nums.end());
+    int best = 0;
+    for (int value : nums) {
+        int length = 1;
+        while (values.count(value + length)) {
+            ++length;
+        }
+        best = std::max(best, length);
+    }
+    return best;
+}
+```
+
+This looks like it has the right ingredients (a set for O(1) membership) but
+it's still O(n²) in the worst case. Take 1, 2, 3, ..., n: starting from 1
+walks the whole run, then starting from 2 walks it again, and again. Every
+element of a long run restarts the same walk.
+
+## Optimal: only start at the beginning of a run
+
+The waste is re-walking. The fix: walk each run exactly once, which means
+starting only from its *first* element. How do you recognize a run's first
+element without sorting? Its predecessor is missing. `x` starts a run when
+`x - 1` is not in the set. One O(1) check.
+
+```cpp
+int longestConsecutive(const std::vector<int>& nums) {
+    std::unordered_set<int> values(nums.begin(), nums.end());
+    int best = 0;
+    for (int value : values) {
+        if (values.count(value - 1)) {
+            continue;            // mid-run: this run is walked from elsewhere
+        }
+        int length = 1;
+        while (values.count(value + length)) {
+            ++length;
+        }
+        best = std::max(best, length);
+    }
+    return best;
+}
+```
+
+Now count the work differently, not per element but per run: each run is
+touched once by its starting element's walk, and each non-starting element
+is only ever *stepped over* once inside that walk. Summed over all runs, the
+inner while loops together visit each value a constant number of times, so
+the total is O(n).
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Brute force (walk from every element) | O(n²) | O(n) |
+| Walk from run starts only | O(n) | O(n) |
+
+The lesson generalizes: hashing gave O(1) lookups, but the brute force was
+still quadratic because it asked good questions in a wasteful order. The fix
+was a *guard condition*, a one-line check that makes each unit of work
+happen once instead of many times.

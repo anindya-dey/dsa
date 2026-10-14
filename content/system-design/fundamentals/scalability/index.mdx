@@ -1,0 +1,129 @@
+---
+title: "Scalability"
+summary: "What it actually means for a system to handle more load, and the two levers you can pull when it can't."
+---
+
+Imagine a small bakery. One counter, one oven, one clerk. On a normal
+Saturday morning it hums along fine. Then a food blog mentions the place,
+and suddenly there's a line down the street. The bakery has two options:
+install a bigger, faster oven (vertical scaling), or open more counters
+with identical ovens and split customers between them (horizontal scaling).
+That choice, and everything it drags along with it, is the entire subject of
+scalability.
+
+## What "scaling" actually means
+
+When engineers say a system "scales", they mean one specific thing: **when
+load increases, you can add resources and capacity grows with them.** If
+doubling the machines only improves things by 40%, or the system falls over
+past a fixed load, it doesn't scale.
+
+Load comes in different shapes, and knowing which one you have is half the
+diagnosis:
+
+- **Traffic volume**: requests per second. The bakery's line.
+- **Data volume**: how much you store. The bakery's freezer filling up.
+- **Request complexity**: some requests are far more expensive. A customer
+  asking for a custom cake versus one who buys a croissant.
+
+The killer mistake is treating all growth the same. A system can easily
+handle 10x traffic over the same data but collapse when the *dataset*
+grows 10x, because every query now touches more of it.
+
+## Vertical scaling: the bigger oven
+
+**Vertical scaling (scale up)** means moving to a more powerful machine:
+more cores, more memory, faster disks.
+
+It's the right first move, always. It's simple: no new code, no new failure
+modes, no operational overhead. A database on a bigger machine is still just
+one database.
+
+But it hits two hard walls:
+
+1. **Cost grows superlinearly.** A machine with 4x the specs of your current
+   one costs far more than 4x. You're buying the top of the curve.
+2. **There is a ceiling.** At any given moment there exists a biggest
+   machine money can buy, and past that point, you simply stop. It's also a
+   single point of failure: the bigger the box, the harder the fall when it
+   goes down.
+
+## Horizontal scaling: more counters
+
+**Horizontal scaling (scale out)** means adding more machines and
+distributing the work. If one machine handles 10,000 requests per second,
+ten should handle 100,000.
+
+In exchange for a (theoretically) unlimited ceiling, you inherit the entire
+problem set of distributed systems. It's a package deal:
+
+- Your requests now need a **[load balancer](/system-design/fundamentals/load-balancing)**
+  to decide which machine takes them.
+- Your data must be **[partitioned](/system-design/fundamentals/database-fundamentals)**
+  or replicated, because a shared database just becomes the new bottleneck.
+- Machines now fail *individually and routinely*, and the system must keep
+  working anyway.
+- Everything that was "just read a local variable" becomes "maybe a network
+  call that can fail".
+
+The database deserves special mention, because it's where horizontal scaling
+goes to die in practice. Stateless web servers scale out easily: any server
+can serve any request. But data has to live *somewhere*, and if every server
+still talks to one shared database, you've only moved the line from the
+counter to the freezer. Scaling data means **[sharding](/system-design/fundamentals/database-fundamentals)**,
+**[replication](/system-design/fundamentals/database-fundamentals)**, or
+**[caching](/system-design/fundamentals/caching)**, and each of those has
+its own page of trade-offs.
+
+## The third lever: don't do the work
+
+Before scaling anything, ask if the work is necessary. A **[cache](/system-design/fundamentals/caching)**
+removes 90% of database load by never asking the question again.
+A **[CDN](/system-design/fundamentals/cdn)** moves the answer physically
+closer to the user and off your servers entirely. An **[async queue](/system-design/fundamentals/message-queues-and-pubsub)**
+turns "do this now" into "do this soon", which lets you absorb spikes
+without owning peak-sized hardware. Very often the cheapest scalability win
+is deleting work, not adding machines.
+
+## The scaling ladder
+
+Nobody scales by jumping straight to planet-scale architecture. The ladder
+looks like this:
+
+1. **One server.** Everything on one box. Fast, boring, works.
+2. **Split the database.** Web server and database on separate machines.
+   Now each scales (and fails) independently.
+3. **Cache the hot paths.** Absorb most read load in memory or a CDN.
+4. **Scale out the stateless tier.** Add web servers behind a load
+   balancer. This part is easy; that's the trap.
+5. **Read replicas.** Copy the database so reads can spread out, accepting
+   some replication lag.
+6. **Shard the database.** Partition data across machines. The day the
+   "single big database" assumption dies; the biggest architectural decision
+   you'll make, and the hardest to reverse.
+
+Each rung is appropriate at a different size, and climbing too fast costs
+you complexity you can't pay for. Climbing too slow costs you outages.
+
+## What actually limits scaling
+
+Real systems rarely die from "not enough servers". They die from one
+specific bottleneck: a single un-shardable resource, a lock that serializes
+the world, a database that grows faster than its indexes, or a "temporary"
+component that turned out to be load-bearing. Scalability work is mostly
+**finding the bottleneck, removing it, and repeating**. The machine count is
+just the visible outcome.
+
+## Related concepts
+
+- [Load Balancing](/system-design/fundamentals/load-balancing) is the entry
+  point for any scale-out tier.
+- [Caching](/system-design/fundamentals/caching) and
+  [CDNs](/system-design/fundamentals/cdn) remove work instead of adding
+  capacity.
+- [Database Fundamentals](/system-design/fundamentals/database-fundamentals)
+  covers replication and sharding, the hard part of scaling out.
+- [Consistent Hashing](/system-design/fundamentals/consistent-hashing) is
+  how scaled-out data tiers distribute load evenly.
+- [Capacity Planning & Estimation](/system-design/fundamentals/capacity-planning-and-estimation)
+  is how you predict which rung you'll need next.

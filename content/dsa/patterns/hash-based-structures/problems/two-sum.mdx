@@ -1,0 +1,86 @@
+---
+title: "Two Sum"
+difficulty: "Easy"
+variant: "Hash Map"
+practiceLinks: []
+---
+
+## Problem
+
+Given an array of integers `nums` and an integer `target`, return the
+indices of the two numbers that add up to `target`. Exactly one solution
+exists, and you may not use the same element twice.
+
+**Constraints**
+
+- `2 <= n <= 10^4`
+- `-10^9 <= nums[i], target <= 10^9`
+
+**Example**
+
+```text
+Input:  nums = [2, 7, 11, 15], target = 9
+Output: [0, 1]
+```
+
+## Brute force
+
+For every element, scan the rest of the array for its complement.
+
+```cpp
+std::vector<int> twoSumBruteForce(const std::vector<int>& nums, int target) {
+    for (int i = 0; i < static_cast<int>(nums.size()); ++i) {
+        for (int j = i + 1; j < static_cast<int>(nums.size()); ++j) {
+            if (nums[i] + nums[j] == target) {
+                return {i, j};
+            }
+        }
+    }
+    return {};
+}
+```
+
+Every pair is checked: O(n²). For n = 10^4 that's up to 100 million
+comparisons, and it re-asks the same question over and over: "is my
+complement anywhere in here?"
+
+## Optimal: remember what you've seen
+
+The question to ask yourself: for each number x, what are you looking for?
+Answer: `target - x`. That is a *specific value*, so you don't need to scan;
+you need to check membership. And each check should be O(1), which is what a
+hash map gives you.
+
+Walk the array once. For each element, first ask the map whether its
+complement has already been seen. If yes, you have both indices. If no,
+record the current element and move on.
+
+```cpp
+std::vector<int> twoSum(const std::vector<int>& nums, int target) {
+    std::unordered_map<int, int> seen;    // value -> index
+    for (int i = 0; i < static_cast<int>(nums.size()); ++i) {
+        int complement = target - nums[i];
+        auto it = seen.find(complement);
+        if (it != seen.end()) {
+            return {it->second, i};
+        }
+        seen[nums[i]] = i;
+    }
+    return {};
+}
+```
+
+Two details are worth noticing. Checking *before* inserting means an element
+never matches itself, which is what "don't use the same element twice"
+requires. And one pass is genuinely enough: when the second member of the
+pair arrives, the first is already sitting in the map.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Brute force | O(n²) | O(1) |
+| Hash map | O(n) | O(n) |
+
+This is the canonical memory-for-time trade, and it's usually the first
+problem where the habit clicks: stop searching for what you can remember.

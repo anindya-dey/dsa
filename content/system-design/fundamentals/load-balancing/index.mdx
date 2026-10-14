@@ -1,0 +1,119 @@
+---
+title: "Load Balancing"
+summary: "One front door that spreads incoming traffic across your servers so no single machine becomes the bottleneck or the single point of failure."
+---
+
+Picture a bank with one teller and a line out the door. The obvious fix is
+to open more teller windows, but now you need something else: a greeter
+directing each customer to a free window. In a web system that greeter is
+the **load balancer**: a single front door that decides, for every request,
+which server should handle it.
+
+The job is simple to state and far-reaching: spread the work so no machine
+is overwhelmed, keep serving even when machines die, and do it all so
+transparently that the customer never notices any of it.
+
+## Why you need one
+
+Once you have more than one server, three problems appear at once:
+
+- **Who takes this request?** Without a chooser, the answer is nobody.
+- **What if a server dies?** Some customers must not be routed into a dead
+  machine.
+- **What if servers are unequal?** A machine with better hardware (or one
+  stuck running a slow batch job) should take a bigger share.
+
+The load balancer answers all three. It health-checks every server,
+removes unhealthy ones from rotation automatically, and routes each request
+by a policy you choose.
+
+## Where it sits
+
+Load balancers aren't one box; they're a layer you can put anywhere you have
+many of something:
+
+- **Between users and your web tier.** The classic case.
+- **Between your services.** Microservices balance internal calls the same
+  way, and a [service mesh](/system-design/fundamentals/api-gateway-and-service-mesh)
+  does this per-pod.
+- **Between your servers and the database.** Read replicas sit behind a
+  balancer that treats them as interchangeable.
+- **Across regions.** A global load balancer (usually DNS-based) can send
+  European users to European servers, or fail over an entire region.
+
+## The routing policies
+
+The heart of the topic is the decision rule. The common ones:
+
+**Round robin** hands out requests in order: server 1, 2, 3, 1, 2, 3...
+Simple, and fine when your machines are identical and your requests cost
+about the same. It has a hidden flaw: a request that takes 10 seconds sticks
+to one machine while cheap ones flow past, and the queues drift apart.
+
+**Weighted round robin** is the fix when machines are unequal: give the
+8-core box twice the turns of the 4-core box.
+
+**Least connections** sends each new request to whichever server currently
+has the fewest open connections. This self-corrects for the slow-request
+problem, because a server bogged down in long requests accumulates
+connections and stops receiving new ones. It's usually the right default
+when request cost varies.
+
+**Consistent hashing** routes by a fingerprint of the request itself, so
+the same key always lands on the same server. This is what you need when
+servers keep local state, like a session or a cache entry: the load
+balancer can't treat them as interchangeable if it keeps sending the same
+user to different machines. It has its own
+[page](/system-design/fundamentals/consistent-hashing), because the hard part
+is what happens when servers are added or removed.
+
+**Latency-aware** picks the server that answered fastest recently. Sounds
+ideal, and mostly is, but beware of feedback loops: if a server briefly
+slows, it gets less traffic, then appears "fast" because it's idle, then
+gets flooded again. Sharp edges like this are why you tune, not just pick.
+
+## Health checks: the quiet half of the job
+
+Routing traffic is only half of load balancing. The other half is knowing
+when to stop. A balancer polls every server on an interval (say, every 5
+seconds) with a cheap request, and a server that fails N checks in a row is
+pulled from rotation automatically.
+
+This is how the balancer earns the "no single point of failure" promise, and
+it's also where things go wrong in practice. A health check that only tests
+"is the process up" will happily keep routing to a server that's up but
+melting. A good health endpoint checks a sample of what matters: is the
+process alive, and can it actually reach its dependencies?
+
+## The load balancer itself must not become one
+
+The paradox of the front door: you built the balancer to remove single
+points of failure, and now it is one. Every serious setup answers this with
+**redundancy**: two balancers in an active/passive pair sharing a floating
+IP address. If the active one dies, the passive takes over the same IP in
+seconds. Users never know.
+
+## Layer 4 vs layer 7
+
+One distinction shows up in every serious discussion:
+
+- **A layer 4 balancer** sees TCP/UDP packets. It routes by IP and port,
+  without reading the request. Extremely fast and simple, but it can't be
+  smart: it can't route "/api/orders" differently from "/api/search".
+- **A layer 7 balancer** sees the actual HTTP request, so it can route by
+  path, host header, or headers like auth tokens. It's what you need for
+  almost every interesting policy, at the cost of more work per request.
+
+Most real systems use both: a fast layer 4 tier at the edge, layer 7
+balancers behind it for the smart routing, then the servers.
+
+## Related concepts
+
+- [Scalability](/system-design/fundamentals/scalability) covers where load
+  balancing fits in the scale-out ladder.
+- [Consistent Hashing](/system-design/fundamentals/consistent-hashing) is
+  the routing policy to use when servers hold state.
+- [Caching](/system-design/fundamentals/caching) often sits *behind* the
+  load balancer to absorb repeat traffic before it reaches servers.
+- [Availability & Reliability](/system-design/fundamentals/availability-and-reliability)
+  covers the failover story that health checks make possible.
