@@ -1,0 +1,123 @@
+---
+title: "API Design"
+summary: "An API is a promise you have to keep forever: what the shapes are, what the operations mean, and what happens when either changes."
+---
+
+An API is a contract, and contracts outlive the code that implements them.
+You will rewrite the handler a dozen times; you will never get to rewrite
+the promise. Every design decision worth making carefully is about that
+asymmetry: the shape of resources, the meaning of operations, the
+semantics of errors, and, above all, what happens when any of those
+change.
+
+## REST: resources, verbs, and statelessness
+
+REST's model is: the API is a set of **resources** (nouns, addressable by
+URL), and the operations are the standard verbs. `GET /users/42` retrieves;
+`POST /users` creates; `PUT` or `PATCH` updates; `DELETE` removes.
+
+The strength isn't purity, it's *predictability*: a client that has never
+seen an endpoint can guess its shape, tooling can be generic, and caching
+decisions fall out of the verb (GETs are cacheable and safe; POSTs are
+not). Designing well within it means keeping resources aligned with the
+domain (orders, invoices, approvals), not with your database tables, and
+resisting the pull toward verbs in URLs (`/users/42/activate` is a
+reasonable compromise; `/activateUser` is an RPC wearing a costume).
+
+**Statelessness** is the constraint that matters for scale: every request
+carries everything needed to process it (auth in a header, no session
+stored on the server). Any server can then handle any request, which is
+exactly what makes the stateless tier trivially
+[scalable](/system-design/fundamentals/scalability) and
+[load-balancable](/system-design/fundamentals/load-balancing). The cost
+is that auth is re-validated on every request, and that's a price you pay
+per request forever.
+
+## The design decisions that actually bite
+
+**Naming and casing.** Plural nouns for collections, consistent casing
+(snake_case or camelCase, but one of them), and consistency above all:
+inconsistency here is the kind of debt clients feel on every single call.
+
+**Pagination.** Unpaginated list endpoints are a production outage
+waiting for the day a table grows. Cursor-based (`?after=...&limit=...`)
+beats page numbers at scale: it's stable under concurrent inserts
+(page 3 shifting as row 2 arrives) and indexes well. Offset/limit is
+fine for admin tools where the data is quiet.
+
+**Filtering, sorting, and partial response.** The growth surface of any
+API: `?status=paid`, `?sort=created_at`, `?fields=id,name`. Design these
+early, even sparsely, because retrofitting a consistent query language
+onto an established API is miserable.
+
+**Versioning.** The hardest question, with three honest answers: put the
+version in the path (`/v2/`), in a header, or nowhere (and rely on
+never making a breaking change). The real work is knowing what
+*breaking* means: changing a field's type is breaking; adding an
+optional field is not; removing anything is. Additive evolution is the
+goal, and versioning is the escape hatch when you fail at it.
+
+## The three representations of the same trade
+
+**REST** (HTTP + JSON) is the default: cacheable, toolable, familiar.
+The cost is over-fetching and a round trip per related resource.
+
+**GraphQL** inverts the control: the client specifies the exact shape it
+wants, one request, no over-fetching. The costs are the flip side:
+caching is hard (every POST is a unique query), the server executes
+arbitrary queries against your schema (a query-depth limiter becomes
+mandatory), and error handling is a convention rather than a status code.
+Choose it when clients are numerous and heterogeneous (many teams, many
+devices); avoid it when you have one or two trusted clients.
+
+**gRPC** (HTTP/2 + protobuf) is the machine-to-machine option: strongly
+typed, compact on the wire, streaming built in. Perfect for internal
+service-to-service calls, which is exactly where
+[schemas and serialization](/system-design/fundamentals/serialization-and-schema-evolution)
+matter most. The costs: browsers can't speak it natively (you need a
+proxy), payloads are unreadable without tooling, and the contract is
+compile-time rigid.
+
+## Idempotency: the semantics that make APIs safe
+
+A request is **idempotent** if sending it twice has the same effect as
+sending it once. GET, PUT, and DELETE are idempotent by design (GET
+trivially; DELETE of the same resource twice converges to "it's gone").
+POST is not: two order posts are two orders.
+
+The punchline is that a distributed client *will* send things twice.
+Timeouts happen, retries happen, networks fail after delivering. So the
+production-grade answer for anything expensive or money-adjacent is an
+**idempotency key**: the client sends a unique token with the request,
+the server records the token with the response, and a retry with the
+same token returns the original answer instead of duplicating the effect.
+Stripe's payment APIs are the canonical implementation, and
+[idempotency has its own page](/system-design/fundamentals/idempotency-and-exactly-once)
+because it is much bigger than REST.
+
+## Errors: design the failure surface too
+
+An API's contract includes its failure modes, and they deserve the same
+design care:
+
+- Use the status code categories (4xx: the client erred, including the
+  contract-violation family; 5xx: the server erred), and pick precise
+  codes (409 for a conflict, 422 for validation failure, 429 for rate
+  limits), because clients branch on them.
+- A consistent error body (a stable structure with a machine-readable
+  code and a human-readable message) turns client error handling from
+  string matching into logic.
+- Document every documented failure mode, and don't add new failure
+  modes silently: a client that started handling a new 4xx code
+  incorrectly is a breaking change in disguise.
+
+## Related concepts
+
+- [Idempotency & Exactly-Once Delivery](/system-design/fundamentals/idempotency-and-exactly-once)
+  is the deep dive into the retry-safety semantics introduced here.
+- [Serialization & Schema Evolution](/system-design/fundamentals/serialization-and-schema-evolution)
+  covers how the contract is encoded and evolved on the wire.
+- [API Gateway & Service Mesh](/system-design/fundamentals/api-gateway-and-service-mesh)
+  is where these contracts get enforced and measured at scale.
+- [Rate Limiting](/system-design/fundamentals/rate-limiting) is the
+  traffic side of the same front door.

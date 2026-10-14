@@ -1,0 +1,99 @@
+---
+title: "Rotate Image"
+difficulty: "Medium"
+variant: "In-Place Transform"
+practiceLinks: []
+---
+
+## Problem
+
+Given an `n x n` matrix representing an image, rotate it by 90 degrees
+clockwise, in place. You must modify the input matrix with O(1) extra
+memory.
+
+**Constraints**
+
+- `1 <= n <= 20`
+- `-1000 <= matrix[i][j] <= 1000`
+
+**Example**
+
+```text
+Input:  matrix = [[1,2,3],
+                  [4,5,6],
+                  [7,8,9]]
+Output: [[7,4,1],
+         [8,5,2],
+         [9,6,3]]
+```
+
+## Brute force
+
+Allocate a second matrix and write each element where it belongs: the
+element at `(i, j)` lands at `(j, n - 1 - i)`.
+
+```cpp
+void rotateBrute(std::vector<std::vector<int>>& matrix) {
+    int n = static_cast<int>(matrix.size());
+    std::vector<std::vector<int>> rotated(n, std::vector<int>(n));
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            rotated[j][n - 1 - i] = matrix[i][j];
+        }
+    }
+    matrix = rotated;
+}
+```
+
+One pass, correct, and O(n²) time: already optimal. What it violates is
+the "in place" constraint, the O(1) memory requirement. That constraint is
+the entire problem: rotating without a second matrix means overwriting
+cells whose original values you still need.
+
+## Optimal: transpose, then reverse rows
+
+The classic solution avoids all cycle bookkeeping by splitting the
+rotation into two simple steps, each independently easy to verify:
+
+1. **Transpose** the matrix: swap `m[i][j]` with `m[j][i]` for every pair
+   above the diagonal. Rows become columns and columns become rows.
+2. **Reverse each row**.
+
+```cpp
+void rotate(std::vector<std::vector<int>>& matrix) {
+    int n = static_cast<int>(matrix.size());
+    for (int i = 0; i < n; ++i) {
+        for (int j = i + 1; j < n; ++j) {
+            std::swap(matrix[i][j], matrix[j][i]);    // transpose
+        }
+    }
+    for (auto& row : matrix) {
+        std::reverse(row.begin(), row.end());         // reverse rows
+    }
+}
+```
+
+Why those two steps compose into a rotation: the element at `(i, j)` is
+first moved by the transpose to `(j, i)`, and then by the row reversal to
+`(j, n - 1 - i)`. That is exactly the brute force's destination formula,
+arrived at in two verifiable moves instead of one unmemorizable one. The
+transpose changes *which axis is which*; the reversal fixes *the order
+within the new axis*. Two steps, two responsibilities, no
+four-way-swap bookkeeping to get wrong.
+
+The `j = i + 1` bound in the transpose loop matters: iterating `j` from 0
+transposes twice and restores the original matrix, the most common
+implementation bug in this problem.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| New matrix | O(n²) | O(n²) |
+| Transpose + reverse | O(n²) | O(1) |
+
+Same time, but the in-place version satisfies the real constraint. For
+counterclockwise, the mirror composition is transpose-then-reverse-columns,
+or reverse-rows-then-transpose; both are worth deriving on the spot rather
+than memorizing, since the derivation (transpose swaps axes, reversal fixes
+order) is the actual lesson.

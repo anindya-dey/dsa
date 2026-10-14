@@ -1,0 +1,108 @@
+---
+title: "Number of Islands"
+difficulty: "Medium"
+variant: "Grid Flood Fill"
+practiceLinks: []
+---
+
+## Problem
+
+Given an `m x n` grid of `'1'`s (land) and `'0'`s (water), count the number
+of islands. An island is a group of `'1'`s connected horizontally or
+vertically (not diagonally). The grid is surrounded by water on all edges.
+
+**Constraints**
+
+- `1 <= m, n <= 300`
+- `grid[i][j]` is '0' or '1'
+
+**Example**
+
+```text
+Input:  grid = [["1","1","0","0","0"],
+                ["1","1","0","0","0"],
+                ["0","0","1","0","0"],
+                ["0","0","0","1","1"]]
+Output: 3
+```
+
+## Brute force
+
+For each land cell, try to establish whether it belongs to a new island by
+checking membership in every island found so far, via a full flood of that
+island.
+
+```cpp
+int countIslandsBrute(std::vector<std::vector<char>>& grid) {
+    // For every unvisited land cell, flood its whole component and check
+    // whether any earlier flood already claimed a cell of it: quadratic in
+    // component sizes, with repeated floods of the same regions.
+    // ...
+}
+```
+
+O((m·n)²) in the worst case: every cell of a large island re-floods the
+island to answer "have I seen you before?" The waste is total: every cell
+asks a question whose answer never changes after the first time.
+
+## Optimal: flood each component exactly once
+
+The grid is an undirected graph: cells are vertices, adjacent land cells
+share edges. Counting islands is counting connected components, and the
+standard component algorithm is: walk all cells; when you find an
+unvisited land cell, you've found a new component, so increment the
+counter and flood (mark every reachable cell) so it's never counted again.
+
+```cpp
+void floodFill(std::vector<std::vector<char>>& grid, int i, int j) {
+    int m = static_cast<int>(grid.size());
+    int n = static_cast<int>(grid[0].size());
+    if (i < 0 || i >= m || j < 0 || j >= n || grid[i][j] != '1') {
+        return;
+    }
+    grid[i][j] = '0';                  // mark BEFORE recursing: kills cycles
+    floodFill(grid, i + 1, j);
+    floodFill(grid, i - 1, j);
+    floodFill(grid, i, j + 1);
+    floodFill(grid, i, j - 1);
+}
+
+int numIslands(std::vector<std::vector<char>> grid) {   // by value: keep input
+    int islands = 0;
+    for (int i = 0; i < static_cast<int>(grid.size()); ++i) {
+        for (int j = 0; j < static_cast<int>(grid[0].size()); ++j) {
+            if (grid[i][j] == '1') {
+                ++islands;             // new component discovered
+                floodFill(grid, i, j);
+            }
+        }
+    }
+    return islands;
+}
+```
+
+The mark-before-recurse line (`grid[i][j] = '0'` before the recursive
+calls) is the load-bearing detail. Mark after recursing, and a cell's
+neighbor re-enters the cell it came from (in a land-only grid nothing
+blocks it), and the flood ping-pongs forever. The grid, written into as
+its own visited set, also removes any extra memory: the "visited"
+structure is the grid itself.
+
+Recursion depth is the one production concern: a 300x300 all-land grid
+floods 90,000 cells deep, which can exhaust the call stack. The iterative
+version (a stack or a queue of pending cells, same marks) is the safe
+default when grid sizes aren't guaranteed small.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Re-flood per cell | O((m·n)²) | O(m·n) |
+| Flood each component once | O(m·n) | O(m·n) worst-case flood, O(1) marks |
+
+Every cell is visited twice at most (once by the outer scan, once by a
+flood), so linear in the grid size. This is the entry point to the whole
+[graph traversal](/dsa/patterns/graph-traversals) family: a grid is just a
+graph that happens to be drawn in a rectangle, and flood fill is just
+[DFS](/dsa/patterns/graph-traversals) that happens to be shaped like
+paint.

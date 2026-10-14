@@ -1,0 +1,101 @@
+---
+title: "Number of Recent Calls"
+difficulty: "Easy"
+variant: "Queue"
+practiceLinks: []
+---
+
+## Problem
+
+Implement a class that counts how many requests happened in the last 3000
+milliseconds. `RecentCounter.ping(t)` adds a request at timestamp `t` and
+returns the number of requests in the inclusive range `[t - 3000, t]`.
+Calls are made in strictly increasing order of `t`.
+
+**Constraints**
+
+- `1 <= t <= 10^9`
+- Each test case calls `ping` with strictly increasing `t`.
+- At most 10^4 calls.
+
+**Example**
+
+```text
+ping(1)     -> 1
+ping(100)   -> 2
+ping(3001)  -> 3
+ping(3002)  -> 3   // [2, 3002]: the ping at 1 has aged out
+```
+
+## Brute force
+
+Keep every timestamp ever seen, and on each ping, count how many fall in
+the window.
+
+```cpp
+class RecentCounterBrute {
+public:
+    int ping(int t) {
+        timestamps_.push_back(t);
+        int count = 0;
+        for (int seen : timestamps_) {
+            if (seen >= t - 3000) {
+                ++count;
+            }
+        }
+        return count;
+    }
+
+private:
+    std::vector<int> timestamps_;
+};
+```
+
+Each ping rescans all history: O(n²) total over n pings, and the memory
+grows without bound. Both problems have the same root: the structure
+remembers requests that can no longer matter.
+
+## Optimal: a queue that ages out
+
+The insight is that usefulness has an order: because timestamps arrive
+increasing, the oldest timestamp is always the first to leave the window.
+Elements expire **in arrival order**, which is precisely a queue's
+discipline.
+
+```cpp
+class RecentCounter {
+public:
+    int ping(int t) {
+        window_.push(t);
+        while (window_.front() < t - 3000) {
+            window_.pop();                 // aged out: oldest first
+        }
+        return static_cast<int>(window_.size());
+    }
+
+private:
+    std::queue<int> window_;
+};
+```
+
+Each timestamp enters the queue once and leaves at most once, so the
+total work across all pings is linear. And the memory holds exactly the
+live window, never more.
+
+Two details generalize. First, the `while` (not `if`): after a quiet
+period, many timestamps can age out at once. Second, the pop-front
+condition uses `<` against `t - 3000`, which encodes the *inclusive*
+window: a request at exactly `t - 3000` counts.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Count from all history | O(n) per ping | O(n) growing |
+| Aging queue | O(1) amortized per ping | O(window) |
+
+This is the tidiest instance of a pattern that reappears everywhere:
+**a sliding window over a stream**. It's the same idea as
+[sliding windows](/dsa/patterns/sliding-window) over arrays, except the
+"window" is defined by time rather than count, and the arrival order
+(increasing) is what licenses the queue instead of a full scan.

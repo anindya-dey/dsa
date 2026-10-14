@@ -1,0 +1,92 @@
+---
+title: "Daily Temperatures"
+difficulty: "Medium"
+variant: "Monotonic Stack"
+practiceLinks: []
+---
+
+## Problem
+
+Given an array `temperatures` of daily highs, for each day return how many
+days later a strictly warmer temperature first occurs. If no warmer day ever
+comes, return 0 for that day.
+
+**Constraints**
+
+- `1 <= n <= 10^5`
+- `30 <= temperatures[i] <= 100`
+
+**Example**
+
+```text
+Input:  temperatures = [73, 74, 75, 71, 69, 72, 76, 73]
+Output: [1, 1, 4, 2, 1, 1, 0, 0]
+```
+
+## Brute force
+
+For each day, scan forward until a warmer day appears.
+
+```cpp
+std::vector<int> dailyTemperaturesBrute(
+        const std::vector<int>& temperatures) {
+    int n = static_cast<int>(temperatures.size());
+    std::vector<int> answer(n, 0);
+    for (int i = 0; i < n; ++i) {
+        for (int j = i + 1; j < n; ++j) {
+            if (temperatures[j] > temperatures[i]) {
+                answer[i] = j - i;
+                break;
+            }
+        }
+    }
+    return answer;
+}
+```
+
+O(n²): 10^10 comparisons at the constraint limit. The tell is in the
+shape of the waste: on a warming streak, every day rescans past all the
+same cooler days that every previous day scanned past.
+
+## Optimal: monotonic stack of waiting days
+
+Hold a stack of days that are still waiting for a warmer day. When a new
+temperature arrives, every waiting day that it beats is done: the new day
+is their answer, and they leave the stack. The waiting days that remain
+are exactly those warmer than the newcomer, so the stack stays sorted from
+warm at the bottom to cool on top.
+
+```cpp
+std::vector<int> dailyTemperatures(
+        const std::vector<int>& temperatures) {
+    int n = static_cast<int>(temperatures.size());
+    std::vector<int> answer(n, 0);
+    std::vector<int> stack;                        // indices, values decreasing
+
+    for (int i = 0; i < n; ++i) {
+        while (!stack.empty() &&
+               temperatures[stack.back()] < temperatures[i]) {
+            int waitingDay = stack.back();
+            answer[waitingDay] = i - waitingDay;
+            stack.pop_back();
+        }
+        stack.push_back(i);
+    }
+    return answer;
+}
+```
+
+Each day is pushed once and popped at most once, so the two loops together
+do O(n) work. Whatever is left in the stack at the end (the days nothing
+ever warmed past) keeps the 0 default.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Scan forward per day | O(n²) | O(1) |
+| Monotonic stack | O(n) | O(n) |
+
+This is the cleanest "next greater element" problem in the wild: the
+comparison is a plain "warmer than", the answer is a distance, and the
+stack's meaning (waiting, unresolved days) is visible in the code.

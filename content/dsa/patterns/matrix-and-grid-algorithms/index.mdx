@@ -1,0 +1,139 @@
+---
+title: "Matrix & Grid Algorithms"
+summary: "Two indices become a coordinate pair, and iteration order becomes an invariant: the patterns that make 2D arrays walkable, rotatable, and searchable."
+---
+
+A matrix is an array with one extra degree of freedom, and nearly every
+matrix algorithm is an array algorithm with that one twist applied. Two
+pointers become a moving coordinate pair. A window becomes a rectangle. A
+prefix sum becomes a 2D rectangle sum. The ideas don't change; the indices
+become pairs, and the interesting part is the *order* you visit cells in,
+because matrix problems are largely questions about traversal discipline.
+
+That discipline is what this pattern collects: the standard traversals, the
+in-place transformations, and the one search trick that works on partially
+sorted grids.
+
+## How to spot it
+
+- Input is explicitly a 2D array (image, board, grid, matrix).
+- "Visit every cell in spiral order", "rotate by 90 degrees", "set entire
+  row and column to zero": order-of-operations questions.
+- "Count connected regions" (islands, blobs): grid
+  [BFS/DFS](/dsa/patterns/graph-traversals) with flood fill.
+- "Search in a matrix sorted row-wise and column-wise": the staircase walk.
+
+## Traversals: pick the order that matches the question
+
+The four standard orders, each with the job it does:
+
+- **Row-major** (every column of row 0, then row 1...): the default, and
+  what "process each cell once" almost always means.
+- **Spiral**: peel the outer ring, recurse inward. The loop boundaries
+  (four pointers: top, bottom, left, right, each closing inward) are the
+  entire implementation.
+- **Diagonal**: process cells by `i + j` (anti-diagonals) or `i - j`
+  (shifted diagonals). Turns out to be the right order for many DP
+  problems, like string edit distance, where a cell depends on the three
+  neighbors that all sit on earlier diagonals.
+- **Layer-based** (rings): rotate an image by cycling four cells at a time,
+  ring by ring.
+
+Which traversal a problem wants is usually not ambiguous: the question
+names it ("in spiral order") or the dependency structure implies it (edit
+distance needs diagonals).
+
+## In-place transforms: the discipline part
+
+Rotating a matrix 90 degrees clockwise *in place*, with O(1) extra memory, is
+the archetypal discipline problem. The elegant version is two steps:
+
+1. Transpose: `m[i][j]` swaps with `m[j][i]`.
+2. Reverse each row: `reverse(m[i].begin(), m[i].end())`.
+
+```cpp
+void rotateClockwise(std::vector<std::vector<int>>& m) {
+    int n = static_cast<int>(m.size());
+    for (int i = 0; i < n; ++i) {
+        for (int j = i + 1; j < n; ++j) {
+            std::swap(m[i][j], m[j][i]);           // transpose
+        }
+    }
+    for (auto& row : m) {
+        std::reverse(row.begin(), row.end());     // reverse rows
+    }
+}
+```
+
+The reason this works: transpose swaps the roles of rows and columns
+(`[i][j]` becomes `[j][i]`), and a 90-degree rotation is exactly a
+column-to-row conversion *plus* a reordering within each new row. Two
+simple steps, each easy to verify independently. Compare with the
+one-step version (cycle four cells around each ring), which saves nothing
+asymptotically and is dramatically easier to get wrong.
+
+The other classic: **zeroing rows and columns** when a cell is zero, in
+place. The trap is using the cells you just zeroed as evidence. The
+disciplined version marks first (which rows and columns *were* zero),
+then sweeps.
+
+## Flood fill: grids are graphs
+
+A grid of land and water is an undirected graph: each cell is a node,
+adjacent cells (usually 4-directional) share an edge. "Count the islands"
+is "count the connected components", which is exactly what
+[BFS and DFS](/dsa/patterns/graph-traversals) do. Flood fill (DFS from a
+seed cell, marking as you go) colors each component once, and counting
+components is counting fills.
+
+The one grid-specific decision is marking: mark *before* recursing, not
+after, or a neighbor's DFS re-enters the cell you came from and never stops
+(none of the cells are walls in a land-only grid). This off-by-one-ish
+detail is where most flood-fill bugs live.
+
+## The staircase search
+
+One trick that is pure matrix. Given a matrix where each row is sorted
+left-to-right and each column is sorted top-to-bottom (but rows are not
+necessarily sorted against each other), you can search in O(n + m):
+start at the top-right corner.
+
+```cpp
+bool searchMatrix(const std::vector<std::vector<int>>& m, int target) {
+    int row = 0;
+    int col = static_cast<int>(m[0].size()) - 1;   // top-right
+    while (row < static_cast<int>(m.size()) && col >= 0) {
+        if (m[row][col] == target) {
+            return true;
+        }
+        if (m[row][col] < target) {
+            ++row;                                 // too small: this row is done
+        } else {
+            --col;                                // too big: this column is done
+        }
+    }
+    return false;
+}
+```
+
+Why the corner works: at the top-right, moving left means smaller and
+moving down means larger, so every comparison eliminates a full row or a
+full column. Pick a corner where the two directions *disagree* (top-right
+or bottom-left), and each step is decisive. Pick one where they agree
+(top-left: both smaller) and you learn nothing. It's binary search's
+halving logic, one dimension at a time.
+
+## When it doesn't fit
+
+Nothing about the grid pattern is exotic, and its failure mode is mild:
+reaching for a traversal order the problem doesn't need. If the question
+is "find the max element", row-major and a running max is the whole
+answer. The traversal patterns above exist because specific questions
+*spiral order, connectivity, sortedness* demand them; use them on demand.
+
+## The takeaway
+
+Matrix algorithms are array algorithms plus an invariant about visit
+order. Learn the four standard orders, respect the mark-before-recurse
+rule in flood fill, and remember that a sorted grid gives you one decisive
+corner. Everything else is bookkeeping.

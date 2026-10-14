@@ -3,10 +3,10 @@ title: "Binary Search Variants"
 summary: "Halve the search space every step. The same loop answers exact matches, boundaries, rotated arrays, and even questions with no array in sight."
 ---
 
-Think of how you find a word in a dictionary. You open it in the middle,
-decide which half the word must be in, and repeat. Each step throws away
-half of what's left, so a million entries take only twenty steps. That is
-binary search: cut the candidate space in half with one comparison.
+How do you find a word in a dictionary? You open it in the middle, decide
+which half the word must be in, and repeat. Each step throws away half of
+what's left, so a million entries take only twenty steps. That's binary
+search: cut the candidate space in half with one comparison.
 
 The textbook version finds an exact value in a sorted array. The real power
 is that the *same* loop structure answers a whole family of questions, as

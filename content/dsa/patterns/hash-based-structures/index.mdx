@@ -3,16 +3,16 @@ title: "Hash-Based Structures"
 summary: "Trade memory for answers: compute a small fingerprint of each item so lookups stop scanning and start jumping straight to the answer."
 ---
 
-Picture a coat check. Instead of searching a rack shelf by shelf, the clerk
-takes your ticket and walks straight to your coat. Nothing about the coats
-is sorted; the trick is that the ticket *tells the clerk where to look*. A
-hash table is that coat check: a function maps each key to a shelf, and
-lookup costs one jump instead of a search.
+Every data structure buys something with something else. A sorted array buys
+fast lookup with the cost of keeping things sorted. A linked list buys cheap
+inserts with the cost of walking to find anything. A hash table makes the
+most aggressive trade in the whole toolbox: it spends *memory* to remember
+where things are, so that looking one up costs one jump regardless of how
+many items there are.
 
-The pattern to internalize is not any one data structure; it is the trade:
-**spend memory to remember something, so you never have to look for it
-twice.** When a solution keeps re-searching, re-sorting, or re-walking to
-answer "have I seen this before?", a hash is almost always the fix.
+The pattern to internalize is not any one data structure. It is the habit:
+when a solution keeps re-searching, re-sorting, or re-walking to answer "have
+I seen this before?", a hash is almost always the fix.
 
 ## How to spot it
 

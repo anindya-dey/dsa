@@ -1,0 +1,95 @@
+---
+title: "Linked List Manipulation"
+summary: "Surgery on pointers: splicing, reversing, and copying node chains, where the discipline is tracking exactly what each pointer means at every moment."
+---
+
+An array is a place. A linked list is a *journey*: each node knows only its
+own cargo and the address of the next one, and nothing else exists. That
+fragility is why linked list problems feel different from array problems.
+In an array, "the element after i" is `i + 1`, a fact you can recompute at
+any time. In a list, "the node after this one" is a pointer you were
+holding, and if you stop holding it, it is *gone*: there is no arithmetic to
+recover it.
+
+So linked list manipulation is really a discipline about variables: at
+every moment, you must be able to say what each pointer in your hand means,
+because a mislabeled pointer is a wrong answer or a lost node, not an
+off-by-one.
+
+## How to spot it
+
+- The input is explicitly a linked list ( ListNode chains), and the task
+  is structural: reverse, merge, reorder, partition, swap, or copy.
+- The task is "in place", which for lists means pointer surgery: no
+  auxiliary array of values.
+- A dummy head simplifies your code, and you're not sure when to use one.
+
+## The core moves
+
+Four moves cover almost every problem in this family. Each is worth
+practicing until it's muscle memory, because the hard problems are just
+these moves composed.
+
+**Reversal.** Walk forward, flipping each node's `next` backwards as you
+go. The entire trick is holding three pointers: `prev` (the already-flipped
+prefix), `current` (the node being flipped), and `next` (saved *before* the
+flip, because overwriting `current->next` would lose the rest of the list).
+
+```cpp
+ListNode* reverseList(ListNode* head) {
+    ListNode* prev = nullptr;
+    ListNode* current = head;
+    while (current != nullptr) {
+        ListNode* next = current->next;      // save: about to overwrite
+        current->next = prev;                // flip
+        prev = current;                     // advance all three
+        current = next;
+    }
+    return prev;                             // new head: old tail
+}
+```
+
+**Fast and slow.** Two pointers at different speeds. Meeting inside a loop
+detects cycles; stopping with `fast` at the end leaves `slow` at the
+midpoint (the [two pointers](/dsa/patterns/two-pointers) shape). A `k`-ahead
+leader finds the k-th node from the end in one pass.
+
+**Dummy head.** An unlinked placeholder node whose `next` you build onto.
+It exists to eliminate the "is this the real head?" special case: `dummy`
+is never null, so "append to the result" is always `tail->next = ...`.
+Nearly every merge/reorder solution shrinks by a third with a dummy.
+
+**Two-list weaving.** Alternating merge, interleaving, appending one list
+to another: all are the same move, alternating which list you take from
+while carrying a "last node wired" pointer.
+
+## The discipline: name your pointers
+
+The real technique isn't any move, it's the habit that makes the moves
+safe. At every line, every pointer variable in scope should have a *name
+you could say out loud*: "current node in list A", "tail of the merged
+result so far", "saved rest of the original list". The moment a pointer's
+meaning becomes "some node, I think", you have a bug.
+
+The classic illustration is the runner-up problems: reversing a
+sublist *inside* a longer list (`reverseBetween`), which composes reversal
+with "remember the node before the sublist so you can reattach it". The
+composition is trivial once each pointer is labeled; it's impossible
+otherwise.
+
+## When it doesn't fit
+
+If the list is short, or the task is "find a value" or "count nodes", you
+may not need surgery at all: a plain walk with a
+[hash](/dsa/patterns/hash-based-structures) (for cycle detection) or a
+simple counter is clearer. And if the task requires random access, sorted
+insertion in the middle, or reverse iteration, an array or deque does the
+job with less pain than the equivalent list gymnastics, and it's fair to
+say so.
+
+## The takeaway
+
+Every linked list problem is solved twice: once on paper, labeling each
+pointer with what it means at each step, and once in code, where the
+labels become variable names. If you can't do the first, the second will
+be wrong in ways you can't debug.

@@ -1,0 +1,112 @@
+---
+title: "Intervals & Sweep Line"
+summary: "Treat intervals as events that open and close, and process boundaries in order, so questions about overlaps become a walk down a sorted line."
+---
+
+An interval question feels like a question about pairs of intervals, but
+it almost never is. "Do these two overlap?" compares four numbers, and
+"how many rooms do I need?" *sounds* like it needs every pair compared.
+The trick that dissolves all of this is a change of representation: stop
+thinking of an interval as an object, and start thinking of it as **two
+events, an opening and a closing**, that occur at instants on a line. Sort
+the instants. Walk down the line. Every overlap question becomes a question
+about what is currently open.
+
+That is the sweep line: one sorted walk, maintaining a small amount of
+state, answering a question that pairwise comparison would cost O(n²) to
+ask.
+
+## How to spot it
+
+- Intervals as input: meetings, ranges, bookings, lifetimes.
+- Questions about **overlaps** (merge, intersect), **maximum concurrency**
+  (how many at once, rooms needed), or **coverage** (is every point
+  covered, what's uncovered).
+- Any problem where a brute force asks about "every pair of intervals" and
+  does the same comparison each time.
+
+The sort at the start is doing the real work: once boundaries are in
+order, every interval you could possibly need to compare with something has
+already been placed next to it.
+
+## The base mechanic: sort, then walk
+
+Sorting whole intervals by start works for merging and overlap-detection
+problems: walk the sorted list, and the only interval that can overlap the
+current one is the previous merged result, so each step is O(1).
+
+```cpp
+// Merge all overlapping intervals.
+std::vector<std::pair<int, int>> mergeIntervals(
+        std::vector<std::pair<int, int>> intervals) {
+    std::sort(intervals.begin(), intervals.end());
+    std::vector<std::pair<int, int>> merged;
+    for (auto& [start, end] : intervals) {
+        if (!merged.empty() && start <= merged.back().second) {
+            merged.back().second =
+                std::max(merged.back().second, end);   // extend the last
+        } else {
+            merged.push_back({start, end});           // new component
+        }
+    }
+    return merged;
+}
+```
+
+The single condition `start <= merged.back().second` is the entire
+algorithm, and it's worth being able to derive it rather than memorize it:
+sorted by start, the next interval either begins before the last one ended
+(overlap, so extend) or begins after it ended (gap, so start fresh).
+
+## The sweep: counting concurrency
+
+For "how many at once" questions, the pairs representation pays off. Turn
+each interval `[a, b]` into an "open" event at `a` and a "close" event at
+`b`, sort all events, and walk them with a running count.
+
+```cpp
+// Maximum number of simultaneously open intervals.
+int maxConcurrency(std::vector<std::pair<int, int>> intervals) {
+    std::vector<std::pair<int, int>> events;     // (time, delta)
+    for (auto [start, end] : intervals) {
+        events.push_back({start, +1});
+        events.push_back({end, -1});
+    }
+    std::sort(events.begin(), events.end());
+
+    int open = 0;
+    int best = 0;
+    for (auto [time, delta] : events) {
+        open += delta;
+        best = std::max(best, open);
+    }
+    return best;
+}
+```
+
+The running count is the entire state, and the maximum it ever reaches is
+the answer. One subtle decision hides in the sort: if an open and a close
+land on the *same instant*, which goes first? For room-counting (a meeting
+ending exactly when another begins can reuse the room), the close must
+come first: sort by `(time, delta)`, so `-1` before `+1`. For
+attendance-counting (two events sharing a birthday instant *are*
+simultaneous), open goes first. State the convention; it's the classic
+off-by-one of this pattern.
+
+## When it doesn't fit
+
+Sweep line answers *aggregate* questions about the line (max concurrency,
+total covered length). If you need to know *which* interval each point
+belongs to (a stabbing query), you want an interval tree or a sorted list
+plus binary search. And if intervals arrive in arbitrary order and must be
+queried online, the resort-per-query cost bites, and a tree earns its
+keep.
+
+## The takeaway
+
+Intervals are deceptive: they look like objects to compare pairwise, but
+they are really events on a line. Sort by position, keep a running count or
+last-interval, and the pair comparison disappears. The off-by-one rules
+(close-before-open vs. open-before-close) are the only real subtlety, and
+they are decisions about *semantics*, which is why they must be made
+explicitly.

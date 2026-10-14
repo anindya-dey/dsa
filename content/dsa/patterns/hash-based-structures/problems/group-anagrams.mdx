@@ -1,0 +1,116 @@
+---
+title: "Group Anagrams"
+difficulty: "Medium"
+variant: "Frequency Signature"
+practiceLinks: []
+---
+
+## Problem
+
+Given an array of strings, group the anagrams together. An anagram of a word
+is a rearrangement of its letters.
+
+**Constraints**
+
+- `1 <= strs.length <= 10^4`
+- `0 <= strs[i].length <= 100`
+- `strs[i]` consists of lowercase English letters.
+
+**Example**
+
+```text
+Input:  strs = ["eat","tea","tan","ate","nat","bat"]
+Output: [["bat"],["nat","tan"],["ate","eat","tea"]]
+```
+
+## Brute force
+
+Compare every pair of words with a helper that checks whether two words are
+anagrams (for example, sort both and compare), then union-find or nest the
+comparisons into groups.
+
+```cpp
+bool areAnagrams(std::string a, std::string b) {
+    std::sort(a.begin(), a.end());
+    std::sort(b.begin(), b.end());
+    return a == b;
+}
+
+std::vector<std::vector<std::string>> groupAnagramsBrute(
+        const std::vector<std::string>& strs) {
+    std::vector<int> assigned(strs.size(), -1);
+    std::vector<std::vector<std::string>> groups;
+    for (int i = 0; i < static_cast<int>(strs.size()); ++i) {
+        if (assigned[i] != -1) {
+            continue;
+        }
+        groups.push_back({strs[i]});
+        assigned[i] = groups.size() - 1;
+        for (int j = i + 1; j < static_cast<int>(strs.size()); ++j) {
+            if (assigned[j] == -1 && areAnagrams(strs[i], strs[j])) {
+                groups.back().push_back(strs[j]);
+                assigned[j] = groups.size() - 1;
+            }
+        }
+    }
+    return groups;
+}
+```
+
+Every pair is compared, and each comparison costs the sort of two words:
+roughly O(n² · k log k) overall. With 10^4 words that's on the order of a
+billion operations.
+
+## Optimal: hash a signature of each word
+
+Notice what the brute force keeps re-deriving: *which group does this word
+belong to?* Two words are anagrams exactly when they have the same letters
+with the same counts. That's a property you can fingerprint once per word.
+Compute the signature, use it as a hash map key, and each word jumps straight
+to its group.
+
+Two signature choices, both worth knowing:
+
+- **Sorted letters**: sort each word once (O(k log k)) and use the sorted
+  string as the key. `eat`, `tea`, and `ate` all become `aet`.
+- **Count vector**: count letters into a fixed-size array and key by the
+  counts (O(k) per word, no sorting).
+
+```cpp
+std::vector<std::vector<std::string>> groupAnagrams(
+        const std::vector<std::string>& strs) {
+    std::map<std::array<int, 26>, std::vector<std::string>> groups;
+    for (const std::string& word : strs) {
+        std::array<int, 26> counts{};
+        for (char c : word) {
+            ++counts[c - 'a'];
+        }
+        groups[counts].push_back(word);
+    }
+
+    std::vector<std::vector<std::string>> result;
+    result.reserve(groups.size());
+    for (auto& [key, words] : groups) {
+        result.push_back(std::move(words));
+    }
+    return result;
+}
+```
+
+The `std::array<int, 26>` key deserves a comment: it's a fixed 26-length
+tuple of counts, hashable and comparable, and it distinguishes exactly the
+words that are anagrams of each other. The map does the grouping; one pass,
+one insertion per word.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Pairwise comparison | O(n² · k log k) | O(n · k) |
+| Signature hash map | O(n · k) | O(n · k) |
+
+Where n is the number of words and k the word length. The lesson is the one
+from [Two Sum](/dsa/patterns/hash-based-structures/two-sum) at a larger
+scale: stop asking "does X match Y?" for every pair, and ask instead "what
+group must X belong to?" A fingerprint answers the second question in one
+step.

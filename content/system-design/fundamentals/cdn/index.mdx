@@ -1,0 +1,105 @@
+---
+title: "Content Delivery Networks"
+summary: "A network of caches placed physically close to users, so the answer travels the last mile from down the street instead of across an ocean."
+---
+
+The distance between your server and your user is measured in physics:
+light in fiber travels roughly 200 km per millisecond, round trip. A user
+in Mumbai pulling a 2 MB image from a server in Virginia is paying that
+distance on every byte, plus the round trip to ask for it. You cannot move
+Virginia. What you *can* do is put a copy of the image somewhere near
+Mumbai.
+
+That is the entire idea of a CDN: **caches deployed at the network edge,
+close to users, serving identical content to many of them.** The trade,
+the cost, and the failure modes are all
+[caching](/system-design/fundamentals/caching) problems with one addition:
+geography.
+
+## What a CDN actually does
+
+Three jobs, in increasing order of sophistication:
+
+**Serve static files from the edge.** Images, CSS, JavaScript, video
+files: files that are the same for everyone. The first Mumbai user
+downloads from Virginia; the edge near Mumbai stores the copy; every
+subsequent Mumbai user downloads from the edge. The origin server sees
+one request instead of thousands.
+
+**Route dynamically.** Modern CDNs don't just serve files; they intercept
+requests and decide where they should go. Some paths might be cacheable,
+some are proxied straight to the origin, some go to a regional origin
+you run. The CDN is a
+[load balancer](/system-design/fundamentals/load-balancing) that spans
+continents.
+
+**Absorb and shape traffic.** An edge network is tens of thousands of
+machines, so a traffic spike that would overwhelm your origin gets spread
+across geography. This makes CDNs a resilience tool, not just a
+performance one: a DDoS or a viral moment lands on the CDN's capacity,
+not your five servers.
+
+## The trade, stated honestly
+
+A CDN buys latency and origin offload. What it costs is the same thing
+every cache costs, amplified by copies:
+
+- **Invalidation is now geographic.** When a file changes, every edge
+  holding the old copy is stale, and you can't push to all of them at
+  once. The standard answer is to accept staleness (with a TTL), and to
+  *rename* instead of *update*: a new deploy ships `app.7f3b.js` rather
+  than overwriting `app.js`, so no edge ever needs to be told anything.
+- **Cacheability must be designed.** A CDN can only cache what is
+  identical across users. Personalized pages, per-user API responses,
+  cookies, and `Vary` headers all undermine the premise. A lot of "why
+  isn't the CDN working" debugging ends at a page that turned out to be
+  per-user.
+- **New failure modes.** The edge is now a component that can fail, be
+  misconfigured, or serve the wrong thing. A misconfigured cache rule can
+  cache an error page or a logged-in user's page and show it to everyone.
+
+## The knobs: TTL, and the hierarchy
+
+The core mechanism is the `Cache-Control` header, which is a set of
+instructions the origin gives the edge:
+
+- `max-age=3600`: cache this for an hour.
+- `s-maxage`: a separate, usually longer TTL for shared caches (the CDN)
+  than for the user's browser.
+- `stale-while-revalidate`: serve stale content while one request refreshes
+  it, hiding the refresh latency from everyone else.
+- `no-store`: never cache this.
+
+The knobs matter because they're the *policy surface*: TTL lengths are how
+you trade freshness for offload, and choosing them per content type (HTML
+short, assets forever, hashed filenames literally forever) is most of the
+practical work of operating a CDN.
+
+Behind the edges there is also a hierarchy: a cache miss at the local edge
+often checks a larger regional cache before going to the origin, so a
+piece of content popular across all of India is fetched from Virginia once
+per region, not once per city. Understanding this is understanding why
+"cache hit rate" is always reported *per layer*.
+
+## When not to use one
+
+- Content is per-user and uncacheable: the CDN becomes an expensive,
+  latency-adding proxy.
+- Traffic is small and local: a single server in the same country as your
+  users beats a CDN in added complexity.
+- You need strong freshness guarantees everywhere: every additional cache
+  layer makes "everyone sees the update now" harder, and eventually you
+  must design around it (versioned URLs) rather than against it.
+
+## Related concepts
+
+- [Caching](/system-design/fundamentals/caching) is the underlying
+  mechanism: eviction policies mostly don't apply (CDNs are usually
+  capacity-managed), but staleness absolutely does.
+- [Load Balancing](/system-design/fundamentals/load-balancing) covers the
+  request-routing role the CDN plays at a planetary scale.
+- [API Gateway & Service Mesh](/system-design/fundamentals/api-gateway-and-service-mesh)
+  is the *application* counterpart: a front door for APIs that can't be
+  cached at the edge.
+- [Scalability](/system-design/fundamentals/scalability) covers where CDN
+  fits in the overall scaling ladder (it's the "remove work entirely" rung).

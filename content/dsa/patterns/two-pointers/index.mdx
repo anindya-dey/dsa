@@ -3,15 +3,15 @@ title: "Two Pointers"
 summary: "Walk two indices through a structure instead of nesting loops, cutting many O(n²) scans down to O(n)."
 ---
 
-Picture two fingers walking along the same row of numbers, one starting at
-the left end and one at the right. Instead of checking every pair with a
-nested loop, you move a single finger each step and use what you see under
-both to decide which one moves next. That one idea is the whole pattern, and
-it turns a lot of O(n²) double scans into a single O(n) pass.
+Checking every pair in an array takes two loops: for each element, you scan
+everything after it. Two pointers is the fix for the cases where that inner
+scan is wasted work. Instead of starting over for every candidate, you keep a
+second index and move it based on what you've already learned from the first.
+Pair searches that allow this drop from O(n²) to a single O(n) pass.
 
-Two pointers is really a family of techniques rather than one trick. The
-shape you use depends on what you're looking for, and there are two you'll
-meet again and again.
+The pattern is a family of techniques rather than one trick. The shape you
+use depends on what you're looking for, and there are two you'll meet again
+and again.
 
 ## How to spot it
 
@@ -76,10 +76,11 @@ while (fast != nullptr && fast->next != nullptr) {
 }
 ```
 
-The picture is a tortoise and a hare on a circular track. The hare runs
-twice as fast, so if the track loops he eventually catches the tortoise from
-behind. On a straight track, the hare just reaches the end and you know
-there was no loop.
+Why must they meet if there's a loop? The gap between the two pointers
+changes by exactly one every step (fast gains one, slow gains one), and
+inside a loop the gap can't grow forever on a finite track. It shrinks by
+one per step until it hits zero, which is a meeting. On a straight track,
+`fast` just reaches the end first and you know there was no loop.
 
 ## When it doesn't fit
 

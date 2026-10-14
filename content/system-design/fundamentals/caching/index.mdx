@@ -3,11 +3,12 @@ title: "Caching"
 summary: "Store a copy of expensive-to-compute or expensive-to-fetch data somewhere faster, so most requests never touch the slow path."
 ---
 
-Imagine a product page that takes 400ms to build because it reads from a
-database three time zones away. If a thousand people load that page in a
-minute, you pay that 400ms a thousand times for the exact same result. A
-cache fixes this by keeping a copy of the result somewhere faster, so most
-of those requests get an answer in a millisecond or two.
+Caching answers one question: why pay for something twice? A product page
+that takes 400ms to build, because it reads from a database three time
+zones away, costs that 400ms every single time it's served, even when a
+thousand people request the identical result in the same minute. A cache
+keeps a copy of that result somewhere faster, so most of those requests get
+an answer in a millisecond or two.
 
 That's the whole idea: trade a little freshness for a lot of speed. The copy
 might be a few seconds out of date, but it's close and it's fast.

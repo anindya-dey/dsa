@@ -1,0 +1,101 @@
+---
+title: "Find Pivot Index"
+difficulty: "Easy"
+variant: "Prefix Sum"
+practiceLinks: []
+---
+
+## Problem
+
+The **pivot index** of an array is the index where the sum of all elements
+strictly to the left equals the sum of all elements strictly to the right.
+Given `nums`, return the leftmost pivot index, or -1 if none exists. The
+element at the pivot itself counts toward neither side.
+
+**Constraints**
+
+- `1 <= n <= 10^4`
+- `-1000 <= nums[i] <= 1000`
+
+**Example**
+
+```text
+Input:  nums = [1, 7, 3, 6, 5, 6]
+Output: 3
+```
+
+At index 3, the left sum is `1 + 7 + 3 = 11` and the right sum is
+`5 + 6 = 11`.
+
+## Brute force
+
+For each candidate index, sum everything left of it and everything right of
+it.
+
+```cpp
+int pivotIndexBruteForce(const std::vector<int>& nums) {
+    for (int i = 0; i < static_cast<int>(nums.size()); ++i) {
+        int left = 0;
+        for (int j = 0; j < i; ++j) {
+            left += nums[j];
+        }
+        int right = 0;
+        for (int j = i + 1; j < static_cast<int>(nums.size()); ++j) {
+            right += nums[j];
+        }
+        if (left == right) {
+            return i;
+        }
+    }
+    return -1;
+}
+```
+
+Each index costs O(n) to check, so this is O(n²): about 10^8 additions at
+the constraint limit. Worse, it re-sums the same elements for every
+candidate. The left sum at index 5 contains the left sum at index 4,
+plus one element.
+
+## Optimal: one running prefix, one derived suffix
+
+Total sum is one O(n) pass. After that, walk left to right maintaining just
+the running *left* sum. The right sum at each index isn't computed at all;
+it's derived:
+
+    rightSum(i) = total - nums[i] - leftSum(i)
+
+A pivot is any index where `leftSum == total - nums[i] - leftSum`.
+
+```cpp
+int pivotIndex(const std::vector<int>& nums) {
+    long long total = 0;
+    for (int value : nums) {
+        total += value;
+    }
+
+    long long leftSum = 0;
+    for (int i = 0; i < static_cast<int>(nums.size()); ++i) {
+        if (leftSum * 2 + nums[i] == total) {
+            return i;
+        }
+        leftSum += nums[i];
+    }
+    return -1;
+}
+```
+
+The condition is just the equation above rearranged: `leftSum == total -
+nums[i] - leftSum` becomes `leftSum * 2 + nums[i] == total`. One extra pass,
+one comparison per index.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Sum both sides per index | O(n²) | O(1) |
+| Running prefix + derived suffix | O(n) | O(1) |
+
+Notice this uses no prefix *array* at all. The values needed at each step
+depend only on the previous step, so a single running total replaces the
+whole table. When a precomputed table would only ever be read at the index
+you're already standing on, keep a scalar instead.

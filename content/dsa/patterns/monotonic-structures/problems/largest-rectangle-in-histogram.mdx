@@ -1,0 +1,111 @@
+---
+title: "Largest Rectangle in Histogram"
+difficulty: "Hard"
+variant: "Monotonic Stack"
+practiceLinks: []
+---
+
+## Problem
+
+Given an array `heights` of non-negative integers where each element is the
+height of a bar of width 1 on a baseline, find the area of the largest
+rectangle that fits inside the histogram.
+
+**Constraints**
+
+- `1 <= n <= 10^5`
+- `0 <= heights[i] <= 10^4`
+
+**Example**
+
+```text
+Input:  heights = [2, 1, 5, 6, 2, 3]
+Output: 10
+```
+
+The best rectangle uses the bars of height 5 and 6, spanning width 2 with
+height 5: area 10.
+
+## Brute force
+
+Every rectangle is anchored on some bar at its *minimum* height: pick a bar
+as the limiting height, then expand left and right as far as that height
+allows.
+
+```cpp
+int largestRectangleBrute(const std::vector<int>& heights) {
+    int best = 0;
+    for (int i = 0; i < static_cast<int>(heights.size()); ++i) {
+        int minHeight = heights[i];
+        for (int j = i; j < static_cast<int>(heights.size()); ++j) {
+            minHeight = std::min(minHeight, heights[j]);
+            best = std::max(best, minHeight * (j - i + 1));
+        }
+    }
+    return best;
+}
+```
+
+O(n²) with a full min recomputation per pair. The waste is structural: the
+expansion left of a bar scans the exact territory the expansion of the
+shorter bars nearby will scan again.
+
+## Optimal: boundaries via monotonic stack
+
+The key reformulation: for each bar, the best rectangle with that bar's
+height extends exactly from the **first shorter bar on the left** to the
+**first shorter bar on the right**. The bar itself is the limiting height in
+that whole range, so the area is `height[i] × (right[i] - left[i] - 1)`.
+
+Both boundaries fall out of one monotonic stack pass. Walk the bars, keeping
+a stack of indices with increasing heights. When a shorter bar arrives, it
+is the "first shorter on the right" for every bar it pops, and the new bar
+that exposed them sits under them as a proxy for their "first shorter on the
+left".
+
+```cpp
+int largestRectangleArea(const std::vector<int>& heights) {
+    int best = 0;
+    std::vector<int> stack;                        // indices, values increasing
+
+    for (int i = 0; i <= static_cast<int>(heights.size()); ++i) {
+        int current = (i == static_cast<int>(heights.size()))
+            ? 0                                       // sentinel: flushes stack
+            : heights[i];
+
+        while (!stack.empty() && heights[stack.back()] >= current) {
+            int height = heights[stack.back()];
+            stack.pop_back();
+            int left = stack.empty() ? -1 : stack.back();
+            int width = i - left - 1;               // i is first shorter right
+            best = std::max(best, height * width); // left+1 is first shorter left
+        }
+        stack.push_back(i);
+    }
+    return best;
+}
+```
+
+The sentinel deserves an explanation, because it's the part everyone gets
+wrong. The loop runs one step *past* the array with height 0, and 0 is
+shorter than every real bar, so it pops and scores everything still in the
+stack. Without it, bars that never met a shorter right neighbor would go
+unscored.
+
+Why `left = stack.back()` *after* the pop? The bar just popped had everything
+between `left+1` and itself at least as tall as itself (it was on an
+increasing stack), so the first index that is *strictly shorter* on its left
+is exactly `left`. One pop yields both boundaries.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Expand around each bar | O(n²) | O(1) |
+| Monotonic stack | O(n) | O(n) |
+
+This is the hardest standard monotonic-stack problem, and the reason is
+that the reformulation (best rectangle per bar, bounded by first shorter
+neighbors) is not visible in the problem statement. It has to be derived.
+Once derived, the stack mechanics are the same as
+[Daily Temperatures](/dsa/patterns/monotonic-structures/daily-temperatures).

@@ -1,0 +1,124 @@
+---
+title: "Non-overlapping Intervals"
+difficulty: "Medium"
+variant: "Greedy on Sorted Intervals"
+practiceLinks: []
+---
+
+## Problem
+
+Given an array of intervals `[start, end]`, return the minimum number of
+intervals you must remove so that the remaining intervals are pairwise
+non-overlapping. Intervals that touch at a boundary (one ends exactly where
+another begins) do not overlap.
+
+**Constraints**
+
+- `1 <= n <= 10^5`
+- `-5 * 10^4 <= start < end <= 5 * 10^4`
+
+**Example**
+
+```text
+Input:  intervals = [[1,2],[2,3],[3,4],[1,3]]
+Output: 1
+```
+
+Removing `[1,3]` leaves `[1,2],[2,3],[3,4]`, which all touch but never
+overlap.
+
+## Brute force
+
+Try every subset of removals, checking which subsets leave a
+non-overlapping set, and take the smallest.
+
+```cpp
+bool overlaps(const std::vector<int>& a, const std::vector<int>& b) {
+    return a[0] < b[1] && b[0] < a[1];            // strict: touching is fine
+}
+
+int minRemovalsBrute(const std::vector<std::vector<int>>& intervals) {
+    int n = static_cast<int>(intervals.size());
+    int best = n;
+    for (int mask = 0; mask < (1 << n); ++mask) {   // every subset kept
+        std::vector<std::vector<int>> kept;
+        for (int i = 0; i < n; ++i) {
+            if (mask & (1 << i)) {
+                kept.push_back(intervals[i]);
+            }
+        }
+        bool valid = true;
+        for (int i = 0; i < static_cast<int>(kept.size()) && valid; ++i) {
+            for (int j = i + 1; j < static_cast<int>(kept.size()); ++j) {
+                if (overlaps(kept[i], kept[j])) {
+                    valid = false;
+                    break;
+                }
+            }
+        }
+        if (valid) {
+            best = std::min(best, n - static_cast<int>(kept.size()));
+        }
+    }
+    return best;
+}
+```
+
+2^n subsets times a pairwise check: hopeless past twenty intervals. The
+exponential says something real: as posed, the problem explores "which
+intervals to keep", but the structure of overlaps makes almost all of that
+exploration redundant.
+
+## Optimal: sort by end, keep whatever fits
+
+Reframe from "which to remove" to "how many can I keep". Sort by end time,
+then walk left to right keeping every interval that starts at or after the
+end of the last one kept.
+
+```cpp
+int eraseOverlapIntervals(std::vector<std::vector<int>> intervals) {
+    std::sort(intervals.begin(), intervals.end(),
+              [](const auto& a, const auto& b) {
+                  return a[1] < b[1];             // earliest end first
+              });
+
+    int kept = 0;
+    int lastEnd = std::numeric_limits<int>::min();
+    for (const auto& interval : intervals) {
+        if (lastEnd <= interval[0]) {             // no overlap: keep it
+            ++kept;
+            lastEnd = interval[1];
+        }
+        // else: overlaps the kept chain, discard
+    }
+    return static_cast<int>(intervals.size()) - kept;
+}
+```
+
+Why is earliest-end-first provably optimal? An exchange argument: consider
+any optimal solution, and the greedy's first kept interval, which ends no
+later than whatever the optimal solution chose first. Anything the optimal
+solution kept after its first choice that conflicts with the greedy's
+shorter choice would also have conflicted with something at least as long.
+So swapping the optimal's choice for the greedy's never breaks anything,
+and by induction the greedy keeps at least as many intervals. The
+intuition to retain: among overlapping candidates, the one that *ends
+earliest* interferes least with everything that comes later.
+
+Note the sort key is **end**, not start. Sorting by start and greedily
+discarding still works, but you must then track the *minimum end* among the
+conflicting prefix, which is the same algorithm wearing a disguise.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| All subsets | O(2^n · n²) | O(n) |
+| Sort by end + greedy walk | O(n log n) | O(n) |
+
+This problem is the intervals sibling of
+[greedy algorithms](/dsa/patterns/greedy-algorithms): it *is* a greedy
+algorithm, standing on an
+[overlap structure](/dsa/patterns/intervals-and-sweep-line) that the sort
+made visible. The general move, reframe a removal question as a keeping
+question and prove the greedy exchange, shows up across the family.

@@ -1,0 +1,214 @@
+---
+title: "Design a Rate Limiter (Code-Level)"
+summary: "Implementing the token bucket and sliding window as reusable classes, and the two design decisions that turn an algorithm into a library."
+---
+
+The [fundamentals page](/system-design/fundamentals/rate-limiting)
+covers the algorithms and the distributed questions. The code-level LLD
+interview is a different, smaller problem: *implement* a rate limiter as
+a reusable class, in a form that a team could actually adopt. That
+reframes everything interesting about it, because a library's job is not
+to pick the right algorithm. It's to make the algorithm safe under the
+conditions it will actually face, and those conditions are concurrency,
+precision, and configuration, in that order.
+
+## Requirements
+
+A realistic spec for this interview:
+
+- `allow(request) -> bool` (or `acquire()`), deciding whether a request
+  passes, and consuming budget when it does.
+- Configurable policy: algorithm (token bucket, sliding window), limits,
+  and window or refill rate.
+- Thread-safe: multiple threads share one limiter, and the limit must
+  hold *for the group*, not per-thread.
+- Reasonable memory: bounded by the window, not by traffic.
+- Optionally: non-blocking introspection (remaining budget, time to
+  refill), which clients use to back off politely.
+
+The requirements that shape the design are **thread-safety for the
+group** and **bounded memory**. Both are statements about what happens
+when the limiter is used for real, and both are where naive
+implementations break.
+
+## The naive version, and where it breaks
+
+A token bucket in one paragraph: a counter of tokens, refilled at a rate,
+consumed by requests.
+
+```cpp
+class NaiveTokenBucket {
+public:
+    NaiveTokenBucket(double rate, int capacity)
+        : rate_(rate), capacity_(capacity), tokens_(capacity) {}
+
+    bool allow() {
+        refill();                          // add elapsed-time tokens
+        if (tokens_ >= 1) {
+            tokens_ -= 1;                  // RACE: two threads pass together
+            return true;
+        }
+        return false;
+    }
+
+private:
+    void refill() {
+        auto now = std::chrono::steady_clock::now();
+        std::chrono::duration<double> elapsed = now - last_;
+        tokens_ = std::min(capacity_, tokens_ + elapsed.count() * rate_);
+        last_ = now;
+    }
+    double rate_;
+    int capacity_;
+    double tokens_;
+    std::chrono::steady_clock::time_point last_;
+};
+```
+
+Single-threaded, this is correct, and it is worth being able to write it
+in two minutes. The bug is the obvious one: `check tokens_ >= 1` then
+`tokens_ -= 1` is two operations, and two threads interleave between them,
+both pass, and the limit is silently `limit + 1` whenever contention
+strikes. Under load, a "100 per second" limiter lets through 140.
+
+## The fix: what to lock, and for how long
+
+The simplest correct version wraps the decision in a mutex, and the
+design discussion is then about *scope*, not safety:
+
+```cpp
+bool allow() {
+    std::lock_guard<std::mutex> guard(mutex_);
+    refill();                              // refill inside the lock:
+    if (tokens_ >= 1) {                    // clock read + update atomic
+        tokens_ -= 1;
+        return true;
+    }
+    return false;                          // no I/O, no waiting, no callbacks
+}
+```
+
+The rule that makes this correct *and* fast: the lock must cover the
+check-consume-refill sequence as one atomic unit, and it must cover
+**nothing else**. No logging, no callbacks, no network, nothing that can
+block. A lock that only guards a few nanoseconds of arithmetic is not a
+bottleneck at any realistic rate (a mutex acquire is tens of nanoseconds;
+a limiter deciding 100,000 requests/second occupies its lock 0.5% of the
+time). The instinct "locks are slow, avoid them" is exactly wrong here:
+the alternatives are slower (see below), and the lock is the *cheap*
+part.
+
+The alternatives, worth knowing so you can choose deliberately:
+
+- **`std::atomic` on the token count** with
+  compare-and-swap retry: lock-free, but the refill math (a read-modify
+  of both `tokens_` *and* `last_`, two values that must agree) makes
+  correct CAS loops genuinely hard. You need a packed 128-bit atomic or
+  a versioned scheme. This is the "clever, wrong" answer interviewers
+  watch for.
+- **Sharded limiters**: N independent buckets, each with its own lock,
+  each enforcing `limit/N`. No shared lock, and the approximation
+  (uneven traffic between shards) is acceptable for most uses. The
+  distributed version of the same idea, and the right answer when one
+  limiter is genuinely too contended.
+
+## The sliding window, done correctly
+
+The other implementable policy, with its own precision decision.
+Sliding-window-log (store every timestamp) is exact but unbounded in
+memory; the standard implementation is the **two-counter
+approximation**: keep a counter per minute (the current and previous),
+and estimate the live window as `previous * (fraction of current minute
+elapsed) + current`.
+
+```cpp
+class SlidingWindowCounter {
+public:
+    explicit SlidingWindowCounter(int limitPerMinute)
+        : limit_(limitPerMinute) {}
+
+    bool allow() {
+        std::lock_guard<std::mutex> guard(mutex_);
+        rollIfNeeded();
+
+        double currentFraction = fractionOfMinuteElapsed();
+        double estimate =
+            previousCount_ * (1.0 - currentFraction) + currentCount_;
+        if (estimate >= limit_) {
+            return false;
+        }
+        ++currentCount_;
+        return true;
+    }
+
+private:
+    void rollIfNeeded() {                   // minute boundary: rotate
+        // if current minute != stored minute:
+        //   previousCount_ = currentCount_; currentCount_ = 0;
+    }
+    double fractionOfMinuteElapsed() { return 0.5; /* computed */ }
+
+    int limit_;
+    int currentCount_ = 0;
+    int previousCount_ = 0;
+    // + the stored minute, rotated in rollIfNeeded
+};
+```
+
+Two fixed counters, O(1) memory, immune to the fixed-window boundary
+burst, at the cost of a small approximation error (the estimate is a
+smooth blend, so a burst exactly at a minute boundary can slightly
+exceed the true window). That trade, stated out loud, is the interview
+answer: the alternatives are a timestamp log (exact, unbounded) or a
+[queue that ages out](/dsa/patterns/stacks-and-queues/problems/number-of-recent-calls)
+(exact, bounded by window traffic), and this middle option when neither
+is acceptable.
+
+## The library decisions
+
+The last part of the design is the part that makes it *reusable*, and
+it's where this problem earns its LLD badge rather than being a data
+structure question:
+
+- **Policy as an interface** (`RateLimiter` with `TokenBucket` and
+  `SlidingWindow` implementations), configured at construction. Hardcoding
+  one algorithm is the "config file is code" of this domain: rate limits
+  are operational decisions that change.
+- **The clock is injectable.** Take a `Clock` (or function returning
+  "now"), don't call `steady_clock::now()` inline. This is what makes the
+  limiter *testable*: tests can set time to exactly the window boundary
+  and assert the rollover, which is otherwise untestable.
+- **Fail-open or fail-closed**: if the limiter itself errors (a broken
+  store, a bug), does the system reject everything or allow everything?
+  Both are defensible (fail-open: availability over protection; fail-closed:
+  the reverse), but the decision must be *made and documented*, because
+  "discovered in production" is how the choice gets made badly.
+- **Metrics**: count allowed/denied per key. A rate limiter nobody can
+  see is a [load balancer](/system-design/fundamentals/load-balancing)
+  with no health dashboard: technically working, operationally blind.
+
+## Variations
+
+- **Per-key limiters**: a map of key to limiter, each constructed on
+  first use, with its own thread-safety (the map needs a lock; the
+  limiters each have their own). Watch for unbounded map growth: keys
+  need expiry too, which is the same problem as
+  [cache](/system-design/fundamentals/caching) admission in miniature.
+- **Blocking acquire**: `acquire()` that waits until budget exists
+  (rather than rejecting), for producer-side
+  [backpressure](/system-design/fundamentals/backpressure-and-flow-control)
+  rather than consumer-side rejection. A condition variable on the same
+  mutex, and a very different feel: it converts "no" into "not yet".
+
+## Related concepts
+
+- [Rate Limiting](/system-design/fundamentals/rate-limiting) covers the
+  algorithms, the distributed options, and the protocol around the
+  decision.
+- [Concurrency & Parallelism](/system-design/fundamentals/concurrency-and-parallelism)
+  is the general theory behind the locking decision this design turns
+  on.
+- [Backpressure & Flow Control](/system-design/fundamentals/backpressure-and-flow-control)
+  is the internal counterpart, where the limiter is voluntary.
+- [Distributed Rate Limiter](/system-design/hld/rate-limiter-distributed)
+  is the system-level version of this same class.

@@ -3,15 +3,17 @@ title: "Sliding Window"
 summary: "Reuse work from the previous step instead of recomputing a subarray or substring from scratch, turning many O(n·k) scans into a single O(n) pass."
 ---
 
-Picture a window sliding across a row of numbers. At each step the window
-either grows from the right, or shrinks from the left, and the answer for the
-new window is just the old answer plus or minus the element that entered or
-left. That one trick turns a lot of nested-loop scans into a single pass.
+Here is an observation worth a whole pattern. Take the windows `[2, 1, 5]`
+and `[1, 5, 1]` out of an array. They share two of three elements, so
+computing both sums from scratch means adding up the overlap twice. The
+second window is just the first one, plus `1` entering on the right, minus
+`2` leaving on the left. That adjustment costs one addition and one
+subtraction.
 
-The problem a sliding window solves is this: you want the best *contiguous
-chunk* of an array or string, and re-checking every chunk from scratch costs
-O(k) per chunk. If you can update the answer in O(1) when the window moves,
-the whole scan becomes O(n).
+Sliding window is the systematic use of that observation: whenever a
+contiguous range shifts by one position, reuse everything that didn't change.
+A window re-checked from scratch costs O(k); a window *updated* costs O(1).
+Over an array of n elements, that difference is the whole game.
 
 ## How to spot it
 

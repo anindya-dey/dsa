@@ -1,0 +1,137 @@
+---
+title: "Decode String"
+difficulty: "Medium"
+variant: "Stack"
+practiceLinks: []
+---
+
+## Problem
+
+Given an encoded string, decode it. The encoding rule is `k[encoded_string]`,
+where the `encoded_string` inside the square brackets is repeated exactly
+`k` times. The input is always valid, and nesting is allowed.
+
+**Constraints**
+
+- `1 <= s.length <= 30`
+- `1 <= k <= 300`
+- `s` consists of digits, letters, and brackets `[]`.
+- The decoded string fits in memory.
+
+**Example**
+
+```text
+Input:  s = "3[a2[c]]"
+Output: "accaccacc"
+```
+
+The inner `2[c]` decodes to `cc`, so the outer `3[...]` decodes to
+`"acc"` repeated three times.
+
+## Brute force
+
+Find the innermost bracket pair (the one containing no other brackets),
+decode it, splice the result back, and repeat until no brackets remain.
+
+```cpp
+std::string decodeBrute(std::string s) {
+    while (true) {
+        int open = -1;
+        int close = -1;
+        for (int i = 0; i < static_cast<int>(s.size()); ++i) {
+            if (s[i] == '[') {
+                open = i;                    // last [ seen before first ]
+            } else if (s[i] == ']') {
+                close = i;
+                break;
+            }
+        }
+        if (open == -1) {
+            break;                           // no brackets: done
+        }
+
+        int digitStart = open;
+        while (digitStart > 0 && std::isdigit(
+                   static_cast<unsigned char>(s[digitStart - 1]))) {
+            --digitStart;
+        }
+        int k = std::stoi(s.substr(digitStart, open - digitStart));
+
+        std::string inner = s.substr(open + 1, close - open - 1);
+        std::string expanded;
+        for (int r = 0; r < k; ++r) {
+            expanded += inner;
+        }
+        s = s.substr(0, digitStart) + expanded + s.substr(close + 1);
+    }
+    return s;
+}
+```
+
+Correct, and each pass rescans the whole string to find the next
+innermost pair: quadratic passes with string rebuilding on top. The deeper
+issue is that it resolves the string inside-out, while a single
+left-to-right walk already visits everything in the order it needs to be
+resolved.
+
+## Optimal: a stack of suspended contexts
+
+Scan left to right. Each kind of character has one action:
+
+- A **letter**: append to the segment currently being built.
+- A **digit**: extend the number currently being read.
+- An **opening bracket**: the number and current segment are now
+  *suspended*. Push them onto a stack as a pair, and start building fresh:
+  the content inside this bracket is a new context.
+- A **closing bracket**: the innermost context just finished. Pop the
+  suspended pair, repeat the finished segment `k` times, and append that
+  to the suspended prefix: the result becomes the current segment again.
+
+```cpp
+std::string decodeString(const std::string& s) {
+    std::stack<std::pair<int, std::string>> pending;   // (multiplier, prefix)
+    std::string current;
+    int number = 0;
+
+    for (char c : s) {
+        if (std::isdigit(static_cast<unsigned char>(c))) {
+            number = number * 10 + (c - '0');
+        } else if (c == '[') {
+            pending.push({number, std::move(current)});
+            number = 0;
+        } else if (c == ']') {
+            auto [k, prefix] = pending.top();
+            pending.pop();
+            std::string repeated;
+            for (int r = 0; r < k; ++r) {
+                repeated += current;
+            }
+            current = prefix + repeated;
+        } else {
+            current += c;
+        }
+    }
+    return current;
+}
+```
+
+The stack's meaning is precise: it holds the *suspended outer contexts*,
+most recent on top, and every `]` resolves exactly the innermost
+unresolved one. Walk `3[a2[c]]` by hand once: `[` suspends `(3, "")`,
+then `[` suspends `(2, "a")`, then `]` builds `"cc"` and resumes to
+`"acc"`, then the final `]` builds `"accaccacc"`. The resolution order
+(innermost first) falls out of the arrival order (left to right)
+automatically, which is exactly the bracket-matching discipline from the
+[stacks page](/dsa/patterns/stacks-and-queues), with strings instead of
+symbols.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Innermost-first rescans | O(n²) passes | O(n) |
+| One pass with context stack | O(output) | O(n) |
+
+The output can dwarf the input (a multiplier of 300 nested twice expands
+90,000x), so the honest bound is linear in the *decoded* size, which no
+approach can beat: you must write the answer out.

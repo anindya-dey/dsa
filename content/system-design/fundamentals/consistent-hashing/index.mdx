@@ -3,16 +3,16 @@ title: "Consistent Hashing"
 summary: "Spread keys across a ring of servers so that adding or removing a machine only reshuffles a small fraction of the data instead of all of it."
 ---
 
-Suppose you run a cache across three servers and route each key by taking
-its hash modulo 3: `server = hash(key) % 3`. It's simple and it spreads load
-evenly. Then a fourth server arrives, and you recompute the modulus.
-Suddenly `hash(key) % 4` points somewhere else for roughly **three out of
-every four keys**. Your cache hit rate collapses: almost every key is being
-looked up from a server that no longer holds it. You've traded one machine's
-worth of memory for a stampede of misses against the database.
+You run a cache across three servers and route each key by taking its hash
+modulo 3: `server = hash(key) % 3`. It spreads load evenly and never misses.
+Then a fourth server arrives, and you recompute the modulus to distribute
+against 4. Suddenly `hash(key) % 4` points somewhere else for roughly **three
+out of every four keys**. Every key is being looked up from a server that no
+longer holds it. Your hit rate collapses, and the database behind the cache
+absorbs the entire inventory in a single afternoon.
 
-Consistent hashing solves exactly this: **when the number of servers
-changes, almost all keys stay where they were.**
+Consistent hashing exists to prevent exactly this failure: **when the number
+of servers changes, almost all keys stay where they were.**
 
 ## The ring idea
 

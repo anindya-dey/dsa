@@ -1,0 +1,98 @@
+---
+title: "Valid Palindrome"
+difficulty: "Easy"
+variant: "Converging"
+practiceLinks: []
+---
+
+## Problem
+
+Given a string `s`, decide whether it reads the same forwards and backwards,
+ignoring non-alphanumeric characters and case.
+
+**Constraints**
+
+- `1 <= s.length <= 2 * 10^5`
+- `s` consists of printable ASCII characters.
+
+**Example**
+
+```text
+Input:  s = "A man, a plan, a canal: Panama"
+Output: true
+```
+
+Stripped of punctuation and case, the string is `"amanaplanacanalpanama"`,
+which is a palindrome.
+
+## Brute force
+
+Build a cleaned copy of the string, then compare it against its reverse.
+
+```cpp
+bool isPalindromeBruteForce(const std::string& s) {
+    std::string clean;
+    for (char c : s) {
+        if (std::isalnum(static_cast<unsigned char>(c))) {
+            clean += std::tolower(static_cast<unsigned char>(c));
+        }
+    }
+    std::string reversed(clean.rbegin(), clean.rend());
+    return clean == reversed;
+}
+```
+
+Two passes and a full second copy of the string. It works, and for a
+once-off check nobody would care. But "reads the same from both ends" is a
+phrase that already contains the algorithm.
+
+## Optimal: converging pointers
+
+The ends are the natural place to start, because a palindrome is defined by
+its ends matching. Walk one pointer from each end toward the middle, skipping
+non-alphanumeric characters, comparing at each step. The first mismatch
+settles it.
+
+```cpp
+bool isPalindrome(const std::string& s) {
+    auto alphanumeric = [](char c) {
+        return std::isalnum(static_cast<unsigned char>(c)) != 0;
+    };
+
+    int left = 0;
+    int right = static_cast<int>(s.size()) - 1;
+
+    while (left < right) {
+        if (!alphanumeric(s[left])) {
+            ++left;
+            continue;
+        }
+        if (!alphanumeric(s[right])) {
+            --right;
+            continue;
+        }
+        if (std::tolower(static_cast<unsigned char>(s[left])) !=
+            std::tolower(static_cast<unsigned char>(s[right]))) {
+            return false;
+        }
+        ++left;
+        --right;
+    }
+    return true;
+}
+```
+
+One pass, no copies, and it returns early the moment the ends disagree.
+Note the loop structure: each iteration advances at least one pointer, so it
+terminates even when everything is punctuation.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Clean and reverse | O(n) | O(n) |
+| Converging pointers | O(n) | O(1) |
+
+Same time complexity, but the pointer version needs no extra memory and
+exits early. That combination (asymptotically equal, practically better) is
+worth noticing, because interview grades often do.

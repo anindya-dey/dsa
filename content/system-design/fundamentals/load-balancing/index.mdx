@@ -3,15 +3,17 @@ title: "Load Balancing"
 summary: "One front door that spreads incoming traffic across your servers so no single machine becomes the bottleneck or the single point of failure."
 ---
 
-Picture a bank with one teller and a line out the door. The obvious fix is
-to open more teller windows, but now you need something else: a greeter
-directing each customer to a free window. In a web system that greeter is
-the **load balancer**: a single front door that decides, for every request,
-which server should handle it.
+A single server fails in an obvious way: too much traffic, and it falls
+over. But there's a second, sneakier failure that comes right after you fix
+the first. Add ten more servers, and traffic still has to *arrive*
+somewhere. If every caller has to know about every server, adding an
+eleventh means telling all your users, and a server dying means a fraction
+of them get errors.
 
-The job is simple to state and far-reaching: spread the work so no machine
-is overwhelmed, keep serving even when machines die, and do it all so
-transparently that the customer never notices any of it.
+The load balancer is the answer to both problems at once: one front door
+that decides, for every request, which server should handle it. Spread the
+work so no machine is overwhelmed, keep serving even when machines die, and
+do it transparently enough that the customer never notices any of it.
 
 ## Why you need one
 

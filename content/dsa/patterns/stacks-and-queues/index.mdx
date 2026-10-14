@@ -1,0 +1,143 @@
+---
+title: "Stacks & Queues"
+summary: "Last-in-first-out and first-in-first-out are order-of-arrival disciplines, and a surprising number of problems are really asking: what order did things arrive in?"
+---
+
+A stack and a queue are both just a list with a rule about which element
+leaves next. The stack's rule is **last in, first out**: the most recent
+arrival leaves first. The queue's is **first in, first out**: the oldest
+arrival leaves first. Neither structure does anything clever; each enforces
+one property about *order*, and the problems they solve are all problems
+where order-of-arrival carries meaning.
+
+That framing is what makes this pattern more than trivia. When a problem
+asks about nesting ("did this close in the right order?"), recency ("undo
+the most recent thing"), or deferment ("process things in the order they
+came, but only when they're ready"), it is asking about arrival order, and
+one of these two structures is the tool.
+
+## How to spot it
+
+- **Nesting or matching**: brackets, HTML tags, directory paths. The most
+  recent unclosed thing must be closed first: last in, first out.
+- **Undo/redo, backtracking, expression evaluation**: the most recent
+  action is the first one to reverse: stack.
+- **Order preservation**: process requests in arrival order (message
+  queues, BFS frontiers, buffering): first in, first out.
+- **"Nearest so far"**: min-stack, max-stack: a stack that remembers the
+  running extreme, which is the bridge to
+  [monotonic structures](/dsa/patterns/monotonic-structures).
+
+## Matching: the stack's signature problem
+
+Valid parentheses is the archetype. The reason a stack fits is structural:
+whenever a closing bracket appears, it must match the **most recently
+opened still-unmatched** bracket. That phrase ("most recently
+still-unresolved") is the definition of the stack top, and its
+recognition is the whole skill.
+
+```cpp
+bool isValidBrackets(const std::string& s) {
+    std::stack<char> open;
+    for (char c : s) {
+        if (c == '(' || c == '[' || c == '{') {
+            open.push(c);
+        } else {
+            if (open.empty()) {
+                return false;            // close with nothing open
+            }
+            char top = open.top();
+            bool matches = (c == ')' && top == '(') ||
+                           (c == ']' && top == '[') ||
+                           (c == '}' && top == '{');
+            if (!matches) {
+                return false;            // wrong partner
+            }
+            open.pop();
+        }
+    }
+    return open.empty();                 // everything must be closed
+}
+```
+
+The three failure modes in that code (close with nothing open, wrong
+partner, left open at the end) are the entire problem, and each one
+corresponds to a way nesting can break. Missing any of the three is the
+classic partial-solution bug.
+
+## The running extreme: min-stack
+
+The other stack signature: a structure that answers "what is the smallest
+element right now?" in O(1), with pops included. A running minimum
+variable survives pushes but not pops, because a pop might remove *the*
+minimum, and a single scalar can't remember the runner-up. The fix is a
+second stack that remembers, for each element, the minimum among
+everything *at or below* it. Each element carries the answer for its own
+era, so a pop restores the previous era's answer exactly.
+
+## Queues: order as the invariant
+
+The queue's job is preserving arrival order, which shows up mostly as the
+frontier discipline in
+[BFS](/dsa/patterns/graph-traversals): explore in the order things were
+discovered, and shortest paths in unweighted graphs fall out. It also
+shows up wherever a system must be fair or sequential (job queues, print
+spooling, rate smoothing), which is the same discipline in a systems
+guise, and the moment you need "oldest element past a deadline" or "newest
+within a window", you're describing a
+[monotonic deque](/dsa/patterns/monotonic-structures).
+
+## Implementing one from the other
+
+A classic exercise that earns its place: implement a queue with two
+stacks. One stack receives (`in`), the other dispenses (`out`). When `out`
+empties, pour all of `in` into it in one go, which reverses them back into
+arrival order.
+
+```cpp
+template <typename T>
+class MyQueue {
+public:
+    void push(T value) {
+        in_.push(std::move(value));
+    }
+
+    T pop() {
+        if (out_.empty()) {
+            while (!in_.empty()) {          // pour: reversal restores order
+                out_.push(in_.top());
+                in_.pop();
+            }
+        }
+        T value = out_.top();
+        out_.pop();
+        return value;
+    }
+
+private:
+    std::stack<T> in_;
+    std::stack<T> out_;
+};
+```
+
+The amortized analysis is the instructive part: each element is pushed
+twice and popped twice at most, ever, so n operations cost O(n) total even
+though a single `pop` can move half the structure.
+
+## When not to reach for them
+
+Neither structure answers *search* questions. If you need the middle, the
+median, or "is x present?", a stack or queue does nothing for you: that's
+[hash](/dsa/patterns/hash-based-structures) or heap
+(/dsa/patterns/heaps-and-priority-queues) territory. And when a stack
+problem seems to need random access into the stack, it usually means you
+actually want a
+[monotonic structure](/dsa/patterns/monotonic-structures), which is a
+stack plus a discipline about what's allowed to stay.
+
+## The takeaway
+
+Ask what order the problem cares about. If the answer is "most recent
+unresolved first", use a stack. If it's "oldest first", use a queue. The
+structure is the discipline made concrete; everything else is
+implementation details.

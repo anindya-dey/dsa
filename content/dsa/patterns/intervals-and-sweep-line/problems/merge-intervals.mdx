@@ -1,0 +1,113 @@
+---
+title: "Merge Intervals"
+difficulty: "Medium"
+variant: "Sort and Merge"
+practiceLinks: []
+---
+
+## Problem
+
+Given an array of intervals `intervals` where `intervals[i] = [start, end]`,
+merge all overlapping intervals and return the resulting non-overlapping
+list. Intervals that merely touch at a boundary (one ends where another
+begins) count as overlapping here.
+
+**Constraints**
+
+- `1 <= n <= 10^4`
+- `0 <= start <= end <= 10^4`
+
+**Example**
+
+```text
+Input:  intervals = [[1,3],[2,6],[8,10],[15,18]]
+Output: [[1,6],[8,10],[15,18]]
+```
+
+`[1,3]` and `[2,6]` overlap (2 is inside [1,3]) and merge into `[1,6]`.
+The others touch nothing.
+
+## Brute force
+
+Compare every pair of intervals, merging whenever two overlap, restarting
+the scan each time a merge changes something.
+
+```cpp
+std::vector<std::vector<int>> mergeBrute(
+        std::vector<std::vector<int>> intervals) {
+    bool changed = true;
+    while (changed) {
+        changed = false;
+        for (int i = 0;
+             i < static_cast<int>(intervals.size()) && !changed; ++i) {
+            for (int j = i + 1;
+                 j < static_cast<int>(intervals.size()) && !changed; ++j) {
+                if (intervals[i][0] <= intervals[j][1] &&
+                    intervals[j][0] <= intervals[i][1]) {
+                    intervals[i][0] =
+                        std::min(intervals[i][0], intervals[j][0]);
+                    intervals[i][1] =
+                        std::max(intervals[i][1], intervals[j][1]);
+                    intervals.erase(intervals.begin() + j);
+                    changed = true;              // restart: everything moved
+                }
+            }
+        }
+    }
+    std::sort(intervals.begin(), intervals.end());
+    return intervals;
+}
+```
+
+Each merge invalidates every comparison made so far (the merged interval
+can now reach farther), so the scan restarts: quadratic, with a constant
+hidden in every restart. The structural problem is that the input order
+carries no information about who could overlap whom.
+
+## Optimal: sort by start, then one walk
+
+Sort by start. Now every interval is already positioned next to anything
+that could possibly overlap it, and only one question remains per step:
+does this interval begin before the last one ended?
+
+```cpp
+std::vector<std::vector<int>> merge(
+        std::vector<std::vector<int>> intervals) {
+    std::sort(intervals.begin(), intervals.end());
+
+    std::vector<std::vector<int>> merged;
+    for (auto& interval : intervals) {
+        if (!merged.empty() && interval[0] <= merged.back()[1]) {
+            merged.back()[1] =
+                std::max(merged.back()[1], interval[1]);   // extend
+        } else {
+            merged.push_back(interval);                   // new component
+        }
+    }
+    return merged;
+}
+```
+
+Why is extending the *last* merged interval enough, rather than checking
+further back? Because the input is sorted by start: any earlier merged
+interval ends no later than the last one's start, and this interval begins
+at or after that start. Anything two components back already stopped
+before this interval began. The sort proves, once, that a single
+comparison suffices for every step.
+
+The `std::max` in the extend branch matters more than it looks: a fully
+contained interval like `[2, 3]` merging into `[1, 6]` must *not* shrink the
+end to 3.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Pairwise merging with restarts | O(n²) worst | O(1) extra |
+| Sort and one walk | O(n log n) | O(n) |
+
+This is the base mechanic of the whole
+[intervals family](/dsa/patterns/intervals-and-sweep-line): sort, then
+trust that only the neighbor you're standing on can interact with you.
+Every other problem in the family (insert interval, meeting rooms, covered
+length) is a variation on that walk.

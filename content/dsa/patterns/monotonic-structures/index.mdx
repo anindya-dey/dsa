@@ -1,0 +1,114 @@
+---
+title: "Monotonic Structures"
+summary: "Keep a stack or deque whose contents stay ordered, so the answer to 'what's the next greater element' is a pop instead of a search."
+---
+
+Some questions are cheap if you happen to be holding the right data, and
+expensive otherwise. "What is the nearest taller building to my left?" costs
+a full scan if all you have is the array. It costs a single pop if what
+you're holding is a list that you've been *maintaining* as interesting
+elements only. A monotonic stack is exactly that list, maintained lazily as
+you scan: a stack whose values are always sorted (increasing or decreasing
+from bottom to top).
+
+The reason this shape keeps reappearing is that many problems only need
+*some* of the elements they've seen, and "which ones" is exactly what the
+stack's ordering enforces. The moment a new element arrives that breaks the
+order, everything it dominates has just been answered, and is discarded.
+
+## How to spot it
+
+The trigger words are "next greater", "next smaller", "nearest larger",
+"span until", "window maximum". Anything that asks, for each element, about
+the nearest element in some direction with some comparison. Also:
+problems where a brute force compares each element against everything to
+its left (or right), which is the O(n²) signature of a monotonic stack
+candidate.
+
+## Monotonic stack: next greater element
+
+Walk the array, stack of indices. For each new element, pop every index
+whose value is smaller: the new element is their "next greater". Push the
+newcomer.
+
+```cpp
+// For each index i, nextGreater[i] = index of the first element to the
+// right that is strictly greater than nums[i], or -1.
+std::vector<int> nextGreaterIndices(const std::vector<int>& nums) {
+    std::vector<int> nextGreater(nums.size(), -1);
+    std::vector<int> stack;                      // indices, values decreasing
+
+    for (int i = 0; i < static_cast<int>(nums.size()); ++i) {
+        while (!stack.empty() && nums[stack.back()] < nums[i]) {
+            nextGreater[stack.back()] = i;        // nums[i] is their answer
+            stack.pop_back();
+        }
+        stack.push_back(i);
+    }
+    return nextGreater;
+}
+```
+
+Two facts make this O(n) despite the nested loop. Each index is pushed
+exactly once and popped at most once, so the total work across all
+iterations is bounded by 2n. And notice what the stack holds at every
+moment: exactly the elements that have no answer yet. Everything that got
+an answer is gone. The structure maintains the meaning, not just the
+order.
+
+The classic application worth knowing cold: **largest rectangle in a
+histogram**. For each bar, the widest rectangle using its full height runs
+from the first shorter bar on the left to the first shorter bar on the
+right, and a monotonic stack finds both boundaries in one pass.
+
+## Monotonic deque: sliding window maximum
+
+The stack works because you only ever look in one direction. Windows need
+answers from both sides, so use a deque: push and pop at both ends, still
+keeping values ordered.
+
+```cpp
+// Maximum of each window of size k.
+std::vector<int> maxSlidingWindow(const std::vector<int>& nums, int k) {
+    std::vector<int> result;
+    std::deque<int> window;                       // indices, values decreasing
+
+    for (int i = 0; i < static_cast<int>(nums.size()); ++i) {
+        if (!window.empty() && window.front() <= i - k) {
+            window.pop_front();                   // element left the window
+        }
+        while (!window.empty() && nums[window.back()] <= nums[i]) {
+            window.pop_back();                    // dominated: can never win
+        }
+        window.push_back(i);
+        if (i >= k - 1) {
+            result.push_back(nums[window.front()]);   // front is the max
+        }
+    }
+    return result;
+}
+```
+
+The front of the deque is always the window's maximum, because anything
+smaller *and older* than a newer element can never be the max of any window
+both belong to. That "dominated elements can be discarded" principle is
+the whole structure: the deque doesn't remember the window, only the
+elements that could still matter.
+
+## When it doesn't fit
+
+The pattern needs a comparison you can apply *when the element arrives*
+(next greater/smaller). If the question is about elements that arrive
+later ("is this the max of the *whole* prefix?"), a running variable is
+simpler and sufficient. And if elements can be revoked (answers depend on
+ranges you learn about afterward), you may need the heavier
+[range-query structures](/dsa/patterns/range-query-structures) instead.
+
+## The takeaway
+
+A monotonic stack or deque is a cache of *not-yet-answered* elements. Each
+element waits in it until something arrives that answers it. The total
+work is linear because each element enters once and leaves once, and the
+"nested loop" is just the leaving, batched. Whenever brute force re-scans
+to the left or right, ask what that scan is looking for, and store exactly
+that.

@@ -1,0 +1,112 @@
+---
+title: "Observability"
+summary: "Logs, metrics, and traces answer different questions, and a system is debuggable only when all three can be cross-referenced."
+---
+
+2 AM. An on-call engineer is paged: checkout latency is at the 99.9th
+percentile. What do you reach for? That question is what observability
+design is about: at the moment something breaks, you need enough
+instrumentation, in the right shapes, to answer "what happened, where,
+since when" without adding code to a production system.
+
+The classic trio (logs, metrics, traces) are not three synonyms. They are
+three different *questions*, with different storage, cost, and scale.
+
+## Metrics: "how much, over time"
+
+Metrics are numbers with timestamps: request rate, error count, p99
+latency, CPU utilization, queue depth. They are aggregated by nature
+(averages, histograms, counters), which makes them cheap to store, fast
+to query, and easy to alert on. Alerting is the point: a dashboard
+watching "error rate > 1% for 5 minutes" is what wakes the engineer at
+2 AM, and it's metrics' job to power it.
+
+The cost of that cheapness is *aggregation*: metrics tell you the checkout
+service is slow, but not *which* request, for *which* user, or *why*. They
+answer "how much, over time" and nothing else.
+
+Two design decisions dominate metrics:
+
+- **Percentiles over averages.** A mean latency of 150ms can be a
+  beautifully fast system for 99% of users and an unusable timeout for
+  1%. Latency distributions are heavy-tailed, and the tail is where the
+  pain lives: alert on p95/p99, not the mean.
+- **Cardinality.** Every distinct label combination (endpoint x region x
+  status x ...) is a separate stored series. "Status code" is 50 series;
+  "user ID" is 10 million series, and your metrics store dies. Cardinality
+  discipline (aggregate away user IDs, keep the dimensions you'd actually
+  debug with) is the difference between a metrics system that scales and
+  one that falls over.
+
+## Logs: "what exactly happened here"
+
+Logs are the events: one line (or structured record) per thing that
+happened, with whatever context you put in it. Unlike metrics, logs can
+answer the *which* and *why*: this order, this user, this stack trace,
+this error message.
+
+The cost is volume. A service doing 10,000 requests/second that logs 10
+lines per request is producing 100k lines/second, which must be shipped,
+stored, and *retentioned* (typically 30 days hot, then cheap cold
+storage, because nobody pays to keep debug logs from last year
+queryable). That cost is also why "structured logging" (JSON records
+with stable fields, not free-text strings) matters: fields are
+queryable, strings are grep-able, and grep doesn't join.
+
+## Traces: "where did the time go"
+
+A trace follows one logical request across every service it touched: the
+API call, the auth check, the two database reads, the queue publish,
+the downstream service's internal work, each with its own timing. Spans
+link into a tree, and the tree shows you the shape of the latency: 200ms
+total, 180 of it in the inventory service, 170 of that in one database
+query.
+
+Traces are the only instrument that answers the distributed question
+("*which* hop was slow?"), and their sampling is the design tension:
+tracing every request is prohibitively expensive, so systems sample (1%
+of requests, or 100% of erroring requests, or all requests slower than X
+seconds). The sampling decision is what you're actually engineering:
+tail-based sampling (keep the slow and failed traces) is more valuable
+per dollar than head-based (keep 1% of everything), because the rare
+traces are the ones you need.
+
+## The whole: correlation
+
+Any one of the three answers a narrow question. Debugging requires
+moving between them:
+
+- The **metric** (p99 latency spike) tells you *that* something is wrong.
+- The **trace** (sampled from that window) tells you *where*.
+- The **logs** (from that service, that time window) tell you *why*.
+
+Making that movement mechanical is the actual engineering. The standard
+is **context propagation**: every request carries a trace ID, services
+pass it along, and every log line includes it. Now "p99 spike at 02:13"
+becomes "show me traces from 02:13" becomes "show me the logs for trace
+ID abc123", and the 2 AM investigation is ten minutes instead of an hour.
+Without a shared identifier, each instrument is a separate, unjoinable
+island, and you're back to correlating by timestamps and hope.
+
+## The SLO connection
+
+Observability's output is not dashboards, it's *decisions*, and the
+frame that turns measurement into decisions is
+[reliability engineering](/system-design/fundamentals/reliability-engineering):
+define an SLO (99.9% of checkout requests under 500ms), measure it with
+metrics, and spend the error budget on deliberate risk. Under that
+frame, alerts become "the SLO is burning" instead of "some threshold was
+crossed", which is the difference between alerts that get acted on and
+alerts that get muted.
+
+## Related concepts
+
+- [Reliability Engineering (SLOs & Error Budgets)](/system-design/fundamentals/reliability-engineering)
+  is what the measurement is *for*.
+- [Caching](/system-design/fundamentals/caching) is the classic "what
+  observability catches": cache hit rate and eviction metrics are how you
+  notice a stale or missing cache.
+- [Rate Limiting](/system-design/fundamentals/rate-limiting) needs
+  metrics (429 rates) and the alerts they drive.
+- [Log Aggregation System](/system-design/hld/log-aggregation-system)
+  is the infrastructure built around one third of this trio.

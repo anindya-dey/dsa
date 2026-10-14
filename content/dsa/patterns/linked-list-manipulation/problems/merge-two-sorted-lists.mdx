@@ -1,0 +1,106 @@
+---
+title: "Merge Two Sorted Lists"
+difficulty: "Easy"
+variant: "Two-List Weave"
+practiceLinks: []
+---
+
+## Problem
+
+Merge two sorted linked lists into one sorted linked list by splicing
+together their nodes, and return the head of the merged list.
+
+**Constraints**
+
+- Both lists have between 0 and 50 nodes.
+- `-100 <= Node.val <= 100`.
+- Both lists are sorted in non-decreasing order.
+
+**Example**
+
+```text
+Input:  1 -> 2 -> 4   and   1 -> 3 -> 4
+Output: 1 -> 1 -> 2 -> 3 -> 4 -> 4
+```
+
+## Brute force
+
+Collect all values from both lists into an array, sort it, and build a
+third list from the result.
+
+```cpp
+ListNode* mergeBrute(ListNode* a, ListNode* b) {
+    std::vector<int> values;
+    for (ListNode* node = a; node != nullptr; node = node->next) {
+        values.push_back(node->val);
+    }
+    for (ListNode* node = b; node != nullptr; node = node->next) {
+        values.push_back(node->val);
+    }
+    std::sort(values.begin(), values.end());
+
+    ListNode dummy(0);
+    ListNode* tail = &dummy;
+    for (int value : values) {
+        tail->next = new ListNode(value);
+        tail = tail->next;
+    }
+    return dummy.next;
+}
+```
+
+Correct but doubly wasteful: it sorts inputs that are already sorted
+(O(n log n) for what should be O(n)), and it allocates a third set of
+nodes instead of reusing the two it was given. The lists arrive
+pre-ordered, and that structure is exactly the information the sort is
+recomputing.
+
+## Optimal: weave with a dummy head
+
+Both lists are sorted, so at every step the next node of the merged result
+is the smaller of the two current heads. Weave: compare, attach the winner,
+advance that list's head. Repeat until one list runs dry, then splice the
+remainder whole.
+
+```cpp
+ListNode* mergeTwoLists(ListNode* list1, ListNode* list2) {
+    ListNode dummy(0);                      // placeholder head: never null
+    ListNode* tail = &dummy;                 // last node wired into result
+
+    while (list1 != nullptr && list2 != nullptr) {
+        if (list1->val <= list2->val) {
+            tail->next = list1;              // splice the node itself
+            list1 = list1->next;
+        } else {
+            tail->next = list2;
+            list2 = list2->next;
+        }
+        tail = tail->next;
+    }
+    tail->next = (list1 != nullptr) ? list1 : list2;
+    return dummy.next;
+}
+```
+
+The dummy head is the piece that makes this clean, and it's worth being
+explicit about why. Without it, the first splice needs a special case: "is
+the result head assigned yet?". With it, `tail` is always a real node,
+every splice is the same line, and the answer is `dummy.next`. One
+placeholder removes the branch, and the same trick pays off in every
+merge/reorder/partition problem in this family.
+
+Note the final splice is a single line, not a loop: the remainder of a
+sorted list is already sorted, so attaching it whole is correct.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Collect, sort, rebuild | O((n+m) log(n+m)) | O(n + m) |
+| Weave with dummy head | O(n + m) | O(1) |
+
+This is the same merge step that powers merge sort, and it reappears in
+this pattern as the k-way merge (via a
+[heap](/dsa/patterns/heaps-and-priority-queues)) and as the second half of
+"sort a linked list": split with
+[fast and slow pointers](/dsa/patterns/two-pointers), then weave.

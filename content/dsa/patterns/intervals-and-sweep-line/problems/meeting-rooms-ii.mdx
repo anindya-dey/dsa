@@ -1,0 +1,108 @@
+---
+title: "Meeting Rooms II"
+difficulty: "Medium"
+variant: "Sweep Line"
+practiceLinks: []
+---
+
+## Problem
+
+Given an array of meeting time intervals `[start, end]`, find the minimum
+number of rooms required so that every meeting has a room for its whole
+duration.
+
+**Constraints**
+
+- `1 <= n <= 10^4`
+- `0 <= start < end <= 10^6`
+
+**Example**
+
+```text
+Input:  intervals = [[0,30],[5,10],[15,20]]
+Output: 2
+```
+
+Meeting `[5,10]` and `[15,20]` can share a room (one ends before the other
+begins), but `[0,30]` overlaps both, so two rooms are needed.
+
+## Brute force
+
+For each meeting, count how many other meetings overlap it: the maximum
+such count is the number of rooms.
+
+```cpp
+int minRoomsBrute(const std::vector<std::vector<int>>& intervals) {
+    int best = 0;
+    for (int i = 0; i < static_cast<int>(intervals.size()); ++i) {
+        int concurrent = 1;
+        for (int j = 0; j < static_cast<int>(intervals.size()); ++j) {
+            if (i == j) {
+                continue;
+            }
+            if (intervals[j][0] < intervals[i][1] &&
+                intervals[i][0] < intervals[j][1]) {
+                ++concurrent;
+            }
+        }
+        best = std::max(best, concurrent);
+    }
+    return best;
+}
+```
+
+O(n²), and subtly wrong in spirit even when correct in output: it counts
+how many meetings each *meeting* conflicts with, not how many are in the
+air at once. The right framing isn't about pairs at all.
+
+## Optimal: sweep the events
+
+The answer is the largest number of meetings alive at any instant, so
+instantiate the instants. Each meeting becomes two events: a start
+(+1) and an end (-1). Sort all events and walk them with a running count;
+the count's peak is the room requirement.
+
+```cpp
+int minRooms(const std::vector<std::vector<int>>& intervals) {
+    std::vector<std::pair<int, int>> events;      // (time, delta)
+    for (const auto& meeting : intervals) {
+        events.push_back({meeting[0], +1});
+        events.push_back({meeting[1], -1});
+    }
+    std::sort(events.begin(), events.end());     // same time: -1 first
+
+    int open = 0;
+    int best = 0;
+    for (auto [time, delta] : events) {
+        open += delta;
+        best = std::max(best, open);
+    }
+    return best;
+}
+```
+
+The sort's tie-break is the one decision in this problem. When a meeting
+ends at time 10 and another starts at time 10, they can share a room, so
+the end event must be processed first. Sorting pairs `(time, delta)` puts
+`-1` before `+1` at equal times, which is exactly that convention. If the
+interview's semantics were "buffer needed between meetings", you'd flip
+the tie and answer one room higher.
+
+A second, equally valid framing worth knowing: sort meetings by start, and
+hold a **min-heap of end times** (the earliest-finishing occupied room).
+For each meeting, if the heap's earliest end is at or before this start,
+reuse that room (pop it); otherwise you need a new one. The heap's maximum
+size ever is the answer. Same complexity, more machinery, but generalizes
+nicely when rooms have identities.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Count overlaps per meeting | O(n²) | O(1) |
+| Sweep events | O(n log n) | O(n) |
+
+The transition from brute force to sweep line is the whole lesson here:
+the question "how many pairs conflict" was the wrong question, and the
+right one, "how many are open at once," only exists after you represent
+meetings as events on a line.

@@ -1,0 +1,94 @@
+---
+title: "Reverse Linked List"
+difficulty: "Easy"
+variant: "In-Place Reversal"
+practiceLinks: []
+---
+
+## Problem
+
+Given the `head` of a singly linked list, reverse the list in place and
+return the new head.
+
+**Constraints**
+
+- The number of nodes is in `[0, 5000]`.
+- `-5000 <= Node.val <= 5000`.
+
+**Example**
+
+```text
+Input:  1 -> 2 -> 3 -> 4 -> 5
+Output: 5 -> 4 -> 3 -> 2 -> 1
+```
+
+## Brute force
+
+Walk the list collecting values into an array, reverse the array, and write
+the values back into the same nodes.
+
+```cpp
+ListNode* reverseBrute(ListNode* head) {
+    std::vector<int> values;
+    for (ListNode* node = head; node != nullptr; node = node->next) {
+        values.push_back(node->val);
+    }
+    std::reverse(values.begin(), values.end());
+    int i = 0;
+    for (ListNode* node = head; node != nullptr; node = node->next) {
+        node->val = values[i++];
+    }
+    return head;
+}
+```
+
+Correct, and O(n) time. What it gives up is the point of the exercise: it
+reverses the *values*, not the *list*, using O(n) extra memory and never
+touching a pointer. Fine for a utility; wrong as an answer to "reverse a
+linked list", because interviewers mean the structure.
+
+## Optimal: flip the pointers as you walk
+
+The list is reversed the moment every node points at its predecessor
+instead of its successor. Walk forward flipping one node at a time, with
+three labeled pointers doing all the work.
+
+```cpp
+ListNode* reverseList(ListNode* head) {
+    ListNode* prev = nullptr;               // head of the already-reversed prefix
+    ListNode* current = head;               // the node about to be flipped
+
+    while (current != nullptr) {
+        ListNode* next = current->next;     // save the rest: about to destroy
+        current->next = prev;               // flip: point backwards
+        prev = current;                     // prefix grew by one
+        current = next;                     // move to the saved rest
+    }
+    return prev;                            // old tail = new head
+}
+```
+
+Read the loop invariant off the variable names: after each iteration,
+`prev` is the head of a correctly reversed prefix of the list, and
+`current` is the head of the still-untouched suffix. The loop ends when the
+suffix is exhausted, and `prev` holds the whole reversed list.
+
+The one line that matters most is the save: `next` must be captured
+*before* `current->next = prev` destroys it. Delete that line and the
+walk loses the rest of the list on the first flip. That single move ("save
+what you're about to overwrite") is the heart of every pointer-surgery
+problem in this family.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Collect and rewrite values | O(n) | O(n) |
+| In-place pointer flip | O(n) | O(1) |
+
+The recursive version (`reverse(rest); head->next->next = head;
+head->next = nullptr;`) is elegant and worth knowing, but it consumes O(n)
+call stack and overflows on long lists. The iterative flip is the
+production answer, and it's the foundation for the harder compositions:
+reversing a sublist (`reverseBetween`), reversing in k-groups, and
+palindrome-checking a list by reversing its back half.

@@ -3,14 +3,16 @@ title: "CAP Theorem & Consistency Models"
 summary: "When a network break forces a choice, do you serve possibly-stale data or refuse to answer? Everything else is a continuum of that trade."
 ---
 
-Imagine the same customer record stored in a New York database and a Tokyo
-database. A customer updates their address in New York. One millisecond
+The same customer record is stored in a New York database and a Tokyo
+database. The customer updates their address in New York. One millisecond
 later, a request reads that record in Tokyo. What should Tokyo return?
 
-That question, with the network between the two copies possibly broken, is
-what CAP is about. And the honest answer is: it depends on what your
-application can tolerate, which is why this topic exists as a topic rather
-than a rule.
+Almost every hard problem in distributed data comes back to that question,
+because it has no free answer. Tokyo can return the old address (fast, but
+wrong), or refuse until it can confirm the update (right, but slow), and
+what the network will allow you to choose depends on whether New York and
+Tokyo can even talk to each other right now. CAP is the theorem that makes
+this trade precise.
 
 ## What CAP actually says
 

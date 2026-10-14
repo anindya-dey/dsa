@@ -3,15 +3,18 @@ title: "Message Queues & Pub/Sub"
 summary: "Put work in a durable pile and let someone else deal with it later, so producers and consumers never have to be running, fast, or sized like each other."
 ---
 
-Imagine a restaurant with the kitchen visible from the counter. If the
-cashier must stand at the kitchen window and wait for each dish before taking
-the next order, the whole restaurant runs at the kitchen's speed. The fix
-invented by every real restaurant: the ticket rail. The cashier clips
-orders to the rail and moves on. The kitchen pulls tickets at its own pace.
-The rush at lunch doesn't have to match the kitchen's capacity, because the
-rail absorbs the difference.
+Change one thing about a restaurant and watch the whole system strain: put
+the cashier where they must stand at the kitchen window and wait for each
+dish before taking the next order. Now the restaurant runs at exactly the
+kitchen's speed. Customers stack up when the kitchen is slow; the cashier
+idles when it's fast.
 
-A message queue is that rail, and it buys three separate things at once.
+Put a ticket rail between them and both sides are free. Orders clip onto
+the rail at the cashier's pace; the kitchen pulls tickets at its own. The
+rush at lunch doesn't have to match the kitchen's capacity, because the rail
+absorbs the difference. That rail, with all its consequences, is a message
+queue: a durable place to put work so the producer and the consumer never
+have to be running, fast, or sized like each other.
 
 ## What you actually buy
 

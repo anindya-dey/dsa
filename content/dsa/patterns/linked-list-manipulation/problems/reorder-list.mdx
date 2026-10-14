@@ -1,0 +1,134 @@
+---
+title: "Reorder List"
+difficulty: "Medium"
+variant: "Midpoint + Reverse + Weave"
+practiceLinks: []
+---
+
+## Problem
+
+Given the head of a singly linked list `L0 -> L1 -> ... -> Ln-1 -> Ln`,
+reorder it in place to `L0 -> Ln -> L1 -> Ln-1 -> L2 -> Ln-2 -> ...`. That
+is: alternate nodes from the front and the back, without modifying the
+values, only the pointers.
+
+**Constraints**
+
+- The number of nodes is in `[1, 10^5]`.
+- `1 <= Node.val <= 1000`.
+
+**Example**
+
+```text
+Input:  1 -> 2 -> 3 -> 4
+Output: 1 -> 4 -> 2 -> 3
+
+Input:  1 -> 2 -> 3 -> 4 -> 5
+Output:  1 -> 5 -> 2 -> 4 -> 3
+```
+
+## Brute force
+
+Walk the list once collecting nodes into an array, then rebuild by picking
+alternately from the front and back of the array.
+
+```cpp
+void reorderListBrute(ListNode* head) {
+    std::vector<ListNode*> nodes;
+    for (ListNode* node = head; node != nullptr; node = node->next) {
+        nodes.push_back(node);
+    }
+
+    ListNode dummy(0);
+    ListNode* tail = &dummy;
+    int left = 0;
+    int right = static_cast<int>(nodes.size()) - 1;
+    while (left <= right) {
+        tail->next = nodes[left++];
+        tail = tail->next;
+        if (left <= right) {
+            tail->next = nodes[right--];
+            tail = tail->next;
+        }
+    }
+    tail->next = nullptr;
+    head = dummy.next;                        // caller still sees old head: broken
+}
+```
+
+O(n) time but O(n) memory, and there's a real bug lurking in that last
+line: reassigning the local `head` doesn't change anything for the caller,
+so the nodes' `next` pointers must be fixed in place, not rebuilt through a
+dummy. The array version is fixable (wire `nodes[i]->next` directly), but
+the memory cost stands, and the problem's "in place" is doing real work.
+
+## Optimal: three moves in the toolbox
+
+The insight is that the second half of the list is needed in *reverse
+order*, and both halves then interleave cleanly. So: find the midpoint,
+reverse the back half, then weave the two halves. Each step is a move from
+the [linked list toolbox](/dsa/patterns/linked-list-manipulation), already
+practiced separately.
+
+```cpp
+void reorderList(ListNode* head) {
+    if (head == nullptr || head->next == nullptr) {
+        return;
+    }
+
+    // 1. Find the midpoint (slow ends at first half's last node).
+    ListNode* slow = head;
+    ListNode* fast = head;
+    while (fast->next != nullptr && fast->next->next != nullptr) {
+        slow = slow->next;
+        fast = fast->next->next;
+    }
+
+    // 2. Detach and reverse the back half.
+    ListNode* second = slow->next;
+    slow->next = nullptr;                       // first half ends here
+    ListNode* prev = nullptr;
+    while (second != nullptr) {
+        ListNode* next = second->next;
+        second->next = prev;
+        prev = second;
+        second = next;
+    }
+
+    // 3. Weave first half with the reversed back half.
+    ListNode* first = head;
+    ListNode* back = prev;                       // reversed second half head
+    while (back != nullptr) {
+        ListNode* firstNext = first->next;        // save both succcessors
+        ListNode* backNext = back->next;
+        first->next = back;                       // take from the back
+        back->next = firstNext;
+        first = firstNext;
+        back = backNext;
+    }
+}
+```
+
+Walk the even-length example by hand: `1 2 3 4` splits into `1 2` and
+`3 4`; the back half reverses to `4 3`; the weave produces
+`1 4 2 3`, which is the required order. The odd length works the same
+way, with the middle node sitting at the end of the first half (`1 2 3`
+and `4 5` reversed to `5 4`, weaving to `1 5 2 4 3`).
+
+The bug class to watch for is step 2's detach: without `slow->next =
+nullptr`, the first half still reaches into the reversed territory, and
+the weave cycles. Every step here is an old move; the composition is the
+new thing, and the discipline is labeling what each pointer means (first
+half's head, reversed back half's head, and their two saved successors).
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Array rebuild | O(n) | O(n) |
+| Midpoint + reverse + weave | O(n) | O(1) |
+
+This problem earns its Medium rating purely from composition: no new
+mechanism, three rehearsed moves sequenced correctly, each with one
+subtle detail (the midpoint convention, the detach, the double save in
+the weave). It's the best single practice problem for this whole pattern.

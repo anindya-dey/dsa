@@ -3,13 +3,18 @@ title: "Scalability"
 summary: "What it actually means for a system to handle more load, and the two levers you can pull when it can't."
 ---
 
-Imagine a small bakery. One counter, one oven, one clerk. On a normal
-Saturday morning it hums along fine. Then a food blog mentions the place,
-and suddenly there's a line down the street. The bakery has two options:
-install a bigger, faster oven (vertical scaling), or open more counters
-with identical ovens and split customers between them (horizontal scaling).
-That choice, and everything it drags along with it, is the entire subject of
-scalability.
+"Can this system handle more load?" sounds like one question, but it's
+really two. Can it handle more *requests per second*, and can it handle more
+*data*? A bakery can take a line down the street by opening more counters,
+and then collapse anyway the day the freezer fills up. Those are different
+problems with different fixes, and confusing them is the most common mistake
+in the whole topic.
+
+Scalability is the study of both: what happens when load increases, and
+which of two levers you pull when the answer is "it breaks". Those levers
+are vertical scaling (a bigger machine) and horizontal scaling (more
+machines), and the choice between them drags along most of distributed
+systems behind it.
 
 ## What "scaling" actually means
 

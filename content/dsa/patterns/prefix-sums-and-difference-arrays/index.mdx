@@ -3,14 +3,17 @@ title: "Prefix Sums & Difference Arrays"
 summary: "Precompute the running total once, then answer any range question by subtracting two numbers, turning O(n) range queries into O(1)."
 ---
 
-Suppose a cashier wants to know how much money came in between 2pm and 5pm
-every day. Re-counting the register's transaction log every time is tedious.
-The fix is to keep a running total and write it down at each hour. Now any
-window's total is two lookups: the running total at 5pm minus the one at
-2pm. That running total is a prefix sum.
+What is the sum of `[3, 1, 4, 1, 5]`? Ten seconds of work. Now: what is the
+sum of the middle three elements? And the last four? And how would you feel
+about answering a thousand such questions?
 
-The idea applies whenever the same question is asked about many ranges: pay
-O(n) once to precompute, then answer each range in O(1).
+Adding up a range takes work proportional to its length, and doing it again
+and again is what makes range problems expensive. Unless you notice one
+thing: the sum of `[4, 1]` can be written as (sum of the first three)
+minus (sum of the first two). If you wrote down those running totals ahead
+of time, every range question would be a subtraction. That is the entire
+idea of a prefix sum: pay O(n) once to precompute, then answer any range in
+O(1).
 
 ## How to spot it
 

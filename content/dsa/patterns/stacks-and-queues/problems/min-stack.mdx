@@ -1,0 +1,120 @@
+---
+title: "Min Stack"
+difficulty: "Medium"
+variant: "Stack"
+practiceLinks: []
+---
+
+## Problem
+
+Design a stack that supports `push`, `pop`, and `top` in O(1), and also
+`getMin`, returning the smallest element currently in the stack, also in
+O(1). All operations must stay O(1) even as elements come and go.
+
+**Constraints**
+
+- `-2^31 <= value <= 2^31 - 1`
+- Methods pop, top, and getMin will only be called on a non-empty stack.
+
+**Example**
+
+```text
+push(2), push(1), push(3)
+getMin() -> 1
+pop()    -> 3
+getMin() -> 1
+pop()    -> 1
+getMin() -> 2
+```
+
+## Brute force
+
+Keep a plain stack, and on `getMin`, scan everything.
+
+```cpp
+class MinStackBrute {
+public:
+    void push(int value) { elements_.push_back(value); }
+    void pop() { elements_.pop_back(); }
+    int top() { return elements_.back(); }
+
+    int getMin() {
+        int best = elements_[0];
+        for (int value : elements_) {
+            best = std::min(best, value);
+        }
+        return best;
+    }
+
+private:
+    std::vector<int> elements_;
+};
+```
+
+`getMin` is O(n), so a workload of n operations costs O(n²). The
+temptation is to fix it with a scalar: keep `minSoFar` updated on every
+push. That works until a pop removes *the* minimum, at which point the
+scalar knows the wrong answer and has no way to recover what the previous
+minimum was. The problem isn't tracking the minimum; it's *restoring*
+the minimum of the remaining elements after the current one leaves.
+
+## Optimal: each element remembers its own era
+
+The fix is to stop storing one global answer and store, per element, the
+minimum among everything *at or below it*. A second stack, pushed and
+popped in lockstep, holding exactly that.
+
+```cpp
+class MinStack {
+public:
+    void push(int value) {
+        elements_.push_back(value);
+        if (mins_.empty() || value <= mins_.back()) {
+            mins_.push_back(value);       // new era: value is the minimum
+        } else {
+            mins_.push_back(mins_.back()); // old era continues
+        }
+    }
+
+    void pop() {
+        elements_.pop_back();
+        mins_.pop_back();                 // lockstep: the era ends too
+    }
+
+    int top() {
+        return elements_.back();
+    }
+
+    int getMin() {
+        return mins_.back();
+    }
+
+private:
+    std::vector<int> elements_;
+    std::vector<int> mins_;               // mins_[i] = min(elements_[0..i])
+}
+```
+
+Read `mins_` as a timestamped history: `mins_[i]` is the minimum of the
+stack's first i+1 elements, so `mins_.back()` answers "minimum right now",
+and popping *automatically* rewinds to the previous era's answer. The pop
+that broke the scalar version is a no-op here: the previous minimum was
+never overwritten, only stacked on top of.
+
+The `<=` in the push comparison (rather than `<`) is a deliberate choice
+worth noticing: equal values each get their own entry, so duplicates pop
+cleanly. The alternative (strict `<`, plus "only pop from `mins_` if the
+values are equal") saves memory but is easier to get wrong.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Scan on getMin | O(n) per getMin | O(n) |
+| Lockstep minimum stack | O(1) all operations | O(2n) = O(n) |
+
+This problem is the smallest complete example of a running-extreme stack,
+and it is the stepping stone to [monotonic
+stacks](/dsa/patterns/monotonic-structures), which answer "nearest greater
+element" questions with the same era-restore trick, plus a rule for
+discarding elements whose era has permanently ended.
