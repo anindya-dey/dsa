@@ -10,9 +10,12 @@ export interface DsaPatternMeta {
 
 export type SystemDesignTrack = "fundamentals" | "lld" | "hld";
 
+export type SystemDesignTrackGroup = string;
+
 export interface SystemDesignTopicMeta {
   slug: string;
   title: string;
   track: SystemDesignTrack;
   summary: string;
+  group?: SystemDesignTrackGroup;
 }

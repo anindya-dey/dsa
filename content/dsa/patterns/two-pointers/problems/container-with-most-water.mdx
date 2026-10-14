@@ -7,10 +7,14 @@ practiceLinks: []
 
 ## Problem
 
-You're given an array `height` of `n` non-negative integers, where
-`height[i]` represents the height of a vertical line at position `i`. Two
-lines, together with the x-axis, form a container. Find two lines that
-together hold the most water.
+You're given an array `height` of `n` non-negative integers. Each value is
+the height of a vertical line drawn at that index. Pick two lines; together
+with the x-axis they form a container. Return the largest amount of water
+any two lines can hold.
+
+The water a pair holds is the area between them:
+
+    area = (distance between the lines) × (height of the shorter line)
 
 **Constraints**
 
@@ -24,14 +28,14 @@ Input:  height = [1,8,6,2,5,4,8,3,7]
 Output: 49
 ```
 
-The best container is formed by the lines at index 1 (height 8) and index
-8 (height 7): width `8 - 1 = 7`, bounded by the shorter line (height 7),
-giving `7 * 7 = 49`.
+The winning pair is index 1 (height 8) and index 8 (height 7). The width is
+`8 - 1 = 7`, and the water is capped by the shorter line, so the area is
+`7 * 7 = 49`.
 
-## Brute Force
+## Brute force
 
-Try every pair of lines, compute the area, and keep the maximum. The area
-between lines `i` and `j` is `(j - i) * min(height[i], height[j])`.
+Try every pair, compute the area, and keep the largest. That's two nested
+loops over all `n` positions.
 
 ```cpp
 int maxAreaBruteForce(const std::vector<int>& height) {
@@ -46,16 +50,26 @@ int maxAreaBruteForce(const std::vector<int>& height) {
 }
 ```
 
-**Why it's slow:** every pair is checked, including pairs that can never
-beat the current best once you know which line is the bottleneck.
+This is correct, but it's O(n²). For `n = 10^5` that's up to ten billion
+comparisons, far too many.
 
-## Optimal: Converging Two Pointers
+## Optimal: converging two pointers
 
-Start with the widest possible container — the two ends of the array.
-The area is capped by the **shorter** of the two lines, so moving the
-taller pointer inward can only shrink the width without raising the cap.
-The only pointer worth moving is the shorter one, since that's the only
-move that *might* find a taller line and increase the area.
+The trick is to start with the *widest* container possible, the two ends of
+the array, and then narrow it in a way that can never throw away the best
+answer.
+
+Set `left` at the start and `right` at the end. The water is limited by the
+shorter of the two lines, so think about what moving each side would do:
+
+- If `height[left] < height[right]`, the left line is the bottleneck. Moving
+  `right` inward only makes the container narrower, and the height can't
+  improve because the left line still caps it. The only move with any chance
+  of helping is to advance `left`, hoping for a taller line.
+- If `height[right]` is the shorter one, the same argument applies in
+  reverse, so you move `right`.
+
+So each step, record the area and then move the shorter side inward.
 
 ```cpp
 int maxArea(const std::vector<int>& height) {
@@ -79,8 +93,17 @@ int maxArea(const std::vector<int>& height) {
 }
 ```
 
-Each step either moves `left` forward or `right` backward, and the loop
-ends when they meet — so every index is visited at most once.
+### Why this is safe
+
+It feels like we might skip the optimal pair, so here's the argument. Take
+any step with lines `L` and `R`, and suppose `L` is the shorter one. Any
+pair that uses `L` together with a line between `L` and `R` has a smaller
+width than the current one, and its height can be at most `height[L]`. So
+none of those pairs can beat the area we just measured with `L` and `R`.
+That means we're free to discard `L` entirely and move past it. The same
+holds symmetrically when `R` is shorter. Since we discard exactly one line
+per step and check the area at every step, the true maximum can't slip
+through.
 
 ## Complexity
 
@@ -88,3 +111,5 @@ ends when they meet — so every index is visited at most once.
 | --- | --- | --- |
 | Brute force | O(n²) | O(1) |
 | Converging two pointers | O(n) | O(1) |
+
+Each pointer only ever moves inward, so the loop runs at most `n` times.

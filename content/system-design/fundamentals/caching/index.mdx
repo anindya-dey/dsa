@@ -3,79 +3,145 @@ title: "Caching"
 summary: "Store a copy of expensive-to-compute or expensive-to-fetch data somewhere faster, so most requests never touch the slow path."
 ---
 
-Caching trades **correctness freshness** for **speed**, by keeping a copy
-of data somewhere faster than its source of truth — memory instead of
-disk, a nearby server instead of a cross-region database call. Every
-caching decision reduces to three questions: where does the cache live,
-what gets evicted when it's full, and how do you keep it from lying to
-you.
+Imagine a product page that takes 400ms to build because it reads from a
+database three time zones away. If a thousand people load that page in a
+minute, you pay that 400ms a thousand times for the exact same result. A
+cache fixes this by keeping a copy of the result somewhere faster, so most
+of those requests get an answer in a millisecond or two.
 
-## Where a Cache Lives
+That's the whole idea: trade a little freshness for a lot of speed. The copy
+might be a few seconds out of date, but it's close and it's fast.
 
-- **Client-side** — in the browser or mobile app. Zero network cost on
-  a hit, but you have the least control over invalidation.
-- **CDN / edge** — close to the user, shared across many clients. Great
-  for content that's identical for everyone (static assets, public API
-  responses).
-- **Application-level (in-process)** — a map inside the service itself.
-  Fastest possible hit, but doesn't survive a restart and isn't shared
-  across instances.
-- **Distributed cache** (Redis, Memcached) — shared across every
-  instance of a service, survives individual instance restarts, but adds a
-  network hop on every access.
-- **Database-level** — the database's own buffer pool or query cache,
-  mostly out of the application's control.
+## Why caching works: locality
 
-Each layer closer to the user removes latency but makes invalidation
-harder, since more copies of the same data now exist.
+Caching only pays off because of a simple fact about real traffic: **the
+same data tends to be requested again and again, soon after the first
+request.** A trending post, a popular product, a user refreshing their own
+dashboard. If every request were for different data, a cache would just be
+dead weight.
 
-## Eviction Policies
+So the first thing to check before adding a cache is whether your traffic is
+actually repetitive. If it isn't, caching won't save you.
 
-A cache is finite, so something has to decide what to remove when it's
-full:
+## The cache-aside read path
 
-- **LRU (Least Recently Used)** — evict whatever hasn't been accessed in
-  the longest time. Good default; assumes recently used data will be used
-  again soon.
-- **LFU (Least Frequently Used)** — evict whatever has been accessed the
-  fewest times. Better than LRU when some items are consistently hot and
-  others are one-off spikes.
-- **TTL (Time To Live)** — evict based on age regardless of usage.
-  Essential when staleness itself is the risk, not memory pressure.
+The most common pattern is **cache-aside**. The application checks the cache
+first. On a hit it returns immediately. On a miss it reads from the source
+of truth, stores the result in the cache, and returns it.
 
-Most production caches combine TTL with LRU: TTL bounds how stale data can
-get, LRU decides what to evict early if memory runs out before TTL does.
+```mermaid
+sequenceDiagram
+    participant App
+    participant Cache
+    participant DB as Database
+    App->>Cache: GET key
+    alt cache hit
+        Cache-->>App: value
+    else cache miss
+        App->>DB: query
+        DB-->>App: value
+        App->>Cache: SET key
+    end
+```
 
-## Invalidation: the Hard Part
+Notice that a miss is *more* expensive than having no cache at all, because
+you pay for both the database read and the cache write. That's the bet. The
+first request is slower, and every request after it is much faster.
 
-> "There are only two hard things in Computer Science: cache invalidation
-> and naming things."
+## Where to put the cache
 
-- **Write-through** — update the cache and the source of truth together,
-  on every write. Cache is never stale, but every write pays the cache's
-  latency too.
-- **Write-around** — write only to the source of truth; the cache fills
-  in lazily on the next read. Avoids caching data that's never read again,
-  at the cost of the first read after a write always being a miss.
-- **Write-back** — write to the cache first and flush to the source of
-  truth later. Fastest writes, but risks data loss if the cache fails
-  before the flush.
-- **TTL-only** — don't actively invalidate at all; just accept staleness
-  up to the TTL window. Simplest to reason about, but only acceptable when
-  the business can tolerate that staleness window.
+Where the cache lives is a trade-off between speed and control.
 
-## When Caching Makes Things Worse
+An **in-process cache** (a map inside your service) gives the fastest
+possible hit because there's no network call at all. The catch is that it
+isn't shared. Each server keeps its own copy, it disappears on restart, and
+you have to invalidate it on every machine separately.
 
-- **Cache stampede** — a hot key expires and thousands of requests miss
-  at once, all hammering the source of truth simultaneously. Mitigated
-  with jittered TTLs or a lock so only one request repopulates the cache.
-- **Thundering herd on cold start** — the same problem at a larger scale,
-  right after a cache is flushed or a new instance boots with an empty
-  cache.
-- **Hiding a real capacity problem** — caching a slow query instead of
-  fixing the query postpones the cost; the moment the cache is cold, the
-  underlying problem reappears, now with less warning.
+A **distributed cache** like Redis or Memcached is shared across all your
+servers. It survives an individual server restart and gives every instance
+the same view. The cost is a network hop on every access, usually well under
+a millisecond but never free.
 
-The question to ask before adding a cache is not "will this be faster?"
-(it almost always will be) but "what happens, specifically, the moment
-this cache is wrong, empty, or unavailable?"
+A **CDN** pushes the cache out to the edge, physically close to the user.
+It's perfect for content that's identical for everyone, like images or
+public API responses, and useless for anything personalized. The browser
+caches too, driven by `Cache-Control` headers. That's the fastest hit of all
+and the one you control the least.
+
+The rule of thumb: the closer the cache is to the user, the faster the hit
+and the harder the invalidation, because there are now more copies of the
+same data to keep in sync.
+
+## What to evict when it's full
+
+A cache is finite, so it needs a rule for what to throw away when it fills
+up. The two you'll use most:
+
+**LRU (Least Recently Used)** throws out whatever hasn't been touched in the
+longest time. It's a good default, because recently used data usually gets
+used again soon. Think of a small desk: when it's full, you clear off the
+papers you haven't looked at in a while.
+
+**LFU (Least Frequently Used)** throws out whatever has been accessed the
+fewest times. It beats LRU when a handful of items are permanently hot and
+everything else is noise.
+
+**TTL (Time To Live)** is a different kind of rule. Every entry expires
+after a set time, whether or not it's popular. You reach for TTL when being
+*stale* is the danger, rather than running out of memory.
+
+In practice you often combine them. TTL caps how out of date an entry can
+get, and LRU decides what to drop early if memory runs out before the TTL
+does.
+
+## Keeping the cache honest
+
+The hard part of caching isn't storing data. It's keeping the copy from
+lying to you after the source of truth changes. There are a few standard
+answers.
+
+**Write-through** updates the cache and the database together on every
+write. The cache is never stale, but every write now also pays the cache's
+latency.
+
+**Write-around** writes only to the database and lets the cache refill on
+the next read. Good when written data is rarely read back, but the first
+read after a write is always a miss.
+
+**Write-back** writes to the cache first and flushes to the database later.
+Writes are fast, but if the cache dies before the flush, you lose data.
+
+**TTL-only** does no active invalidation at all. You simply accept that data
+can be stale for up to the TTL. It's the simplest to reason about, and often
+the right choice when the business can tolerate a short staleness window.
+
+## When a cache makes things worse
+
+Caches fail in ways that are easy to miss until they do.
+
+A **cache stampede** happens when a hot key expires and thousands of
+requests miss at the same instant, all hitting the database together. The
+usual fix is to spread out expirations with jitter, or to let only one
+request rebuild the value while the rest wait.
+
+A **cold cache** causes the same problem at a larger scale, right after a
+deploy or a flush leaves the cache empty.
+
+And the quiet one: a cache can **hide a real problem**. If a query is slow,
+caching it makes the symptom disappear while the cause stays. The next time
+the cache is cold, the problem returns, now with less warning.
+
+So the question to ask before adding a cache isn't "will this be faster?"
+It almost always will. It's "what happens, specifically, the moment this
+cache is wrong, empty, or unavailable?"
+
+## Related concepts
+
+- [Content Delivery Networks](/system-design/fundamentals/cdn) push caching
+  out to the network edge.
+- [Database Fundamentals](/system-design/fundamentals/database-fundamentals)
+  covers the source of truth a cache stays in sync with.
+- [Consistent Hashing](/system-design/fundamentals/consistent-hashing)
+  explains how a distributed cache spreads keys across nodes.
+- [Observability](/system-design/fundamentals/observability) is how you
+  notice a cache is stale or missing.

@@ -7,21 +7,21 @@ practiceLinks: []
 
 ## Problem
 
-Given the `head` of a singly linked list, determine whether the list
-contains a cycle — i.e., some node's `next` pointer eventually points
-back to a node earlier in the list.
+Given the `head` of a singly linked list, decide whether the list contains a
+cycle. A cycle means some node's `next` pointer eventually leads back to a
+node you've already visited, so walking forward never reaches `nullptr`.
 
 **Constraints**
 
 - The list may be empty.
-- You may not modify the list, and you should avoid extra memory
-  proportional to the number of nodes if possible.
+- Don't modify the list.
+- Avoid extra memory proportional to the number of nodes if you can.
 
-## Brute Force
+## Brute force
 
-Track every node you've already visited in a hash set. If you ever reach a
-node you've seen before, there's a cycle; if you reach `nullptr`, there
-isn't.
+Walk the list and remember every node you pass in a hash set. If you ever
+arrive at a node that's already in the set, there's a cycle. If you reach
+`nullptr`, there isn't.
 
 ```cpp
 bool hasCycleBruteForce(Node* head) {
@@ -40,15 +40,18 @@ bool hasCycleBruteForce(Node* head) {
 }
 ```
 
-**Why it's costly:** it works in O(n) time, but it spends O(n) extra space
-on the hash set — space the pointer-based approach doesn't need.
+This is O(n) time, which is fine, but it costs O(n) extra space. The set
+grows with the list, and for a long list that's a lot of memory spent just
+to answer a yes-or-no question.
 
-## Optimal: Fast & Slow Pointers (Floyd's Cycle Detection)
+## Optimal: fast & slow pointers (Floyd's cycle detection)
 
-Move two pointers through the list at different speeds: `slow` advances
-one node at a time, `fast` advances two. If there's no cycle, `fast`
-reaches the end first. If there is a cycle, `fast` will eventually lap
-`slow` from behind and the two pointers will land on the same node.
+Think of a tortoise and a hare running around a track. The hare runs twice
+as fast. If the track is a straight line, the hare reaches the finish first.
+If the track loops, the hare keeps lapping and will eventually run into the
+tortoise from behind.
+
+We do exactly that. `slow` moves one node per step, `fast` moves two:
 
 ```cpp
 bool hasCycle(Node* head) {
@@ -68,9 +71,12 @@ bool hasCycle(Node* head) {
 }
 ```
 
-The gap between `slow` and `fast` shrinks by exactly one node every
-iteration once both are inside the cycle, so they are guaranteed to meet
-rather than pass each other.
+If there's no cycle, `fast` hits `nullptr` and we return false. If there is
+one, both pointers end up inside the loop. Once they're both in the cycle,
+`fast` gains one position on `slow` every step, so the gap between them
+shrinks by exactly one each time. A gap that shrinks by one can only reach
+zero, never jump over it, which is why they're guaranteed to meet rather
+than pass each other.
 
 ## Complexity
 
@@ -78,3 +84,6 @@ rather than pass each other.
 | --- | --- | --- |
 | Hash set of visited nodes | O(n) | O(n) |
 | Fast & slow pointers | O(n) | O(1) |
+
+Floyd's algorithm keeps the same O(n) time and drops the extra memory
+entirely, which is why it's the expected answer in interviews.

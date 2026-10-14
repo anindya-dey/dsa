@@ -3,37 +3,66 @@ title: "Two Pointers"
 summary: "Walk two indices through a structure instead of nesting loops, cutting many O(n²) scans down to O(n)."
 ---
 
-Two Pointers covers any technique that tracks **two indices moving through
-a structure** instead of one, replacing an inner loop with a second pointer
-that moves based on what the first one finds. The pattern shows up in two
-distinct shapes:
+Picture two fingers walking along the same row of numbers, one starting at
+the left end and one at the right. Instead of checking every pair with a
+nested loop, you move a single finger each step and use what you see under
+both to decide which one moves next. That one idea is the whole pattern, and
+it turns a lot of O(n²) double scans into a single O(n) pass.
 
-### Converging (Left/Right)
+Two pointers is really a family of techniques rather than one trick. The
+shape you use depends on what you're looking for, and there are two you'll
+meet again and again.
 
-Start one pointer at each end of a sorted array (or a string you're
-checking for symmetry) and move them toward each other. On each step, use
-the values at both pointers to decide which one to move — this is what
-turns an O(n²) pair search into a single O(n) pass.
+## How to spot it
+
+Reach for two pointers when a problem gives you any of these signals:
+
+- The input is **sorted**, or you're allowed to sort it first.
+- You're hunting for a **pair, triplet, or subsegment** that meets a
+  condition, like a target sum, a palindrome, or a partition.
+- You need to compare the two **ends** of a sequence.
+- You're working with a **linked list** and want to detect a cycle, find the
+  middle, or find the n-th node from the end.
+
+The common thread is that a second pointer lets you reuse work you've
+already done, instead of starting over for every candidate.
+
+## Converging (left and right)
+
+Start one pointer at each end and walk them toward each other. At every
+step, look at both values and move the pointer that can't be part of the
+answer. Here's the classic sorted-array target sum:
 
 ```cpp
-int left = 0, right = static_cast<int>(nums.size()) - 1;
+// nums is sorted ascending; target is the pair sum we're looking for.
+int left = 0;
+int right = static_cast<int>(nums.size()) - 1;
 while (left < right) {
-    // Inspect nums[left] and nums[right], then move
-    // whichever pointer the comparison tells you to.
-    if (/* condition favors moving left */ true) {
-        ++left;
+    int sum = nums[left] + nums[right];
+    if (sum == target) {
+        break;          // found the pair
+    }
+    if (sum < target) {
+        ++left;         // too small, need a larger value
     } else {
-        --right;
+        --right;        // too large, need a smaller value
     }
 }
 ```
 
-### Fast & Slow (Floyd's Cycle)
+Why is moving only one pointer enough? If the sum is too small, the only way
+to make it bigger is to bring in a larger number. Because the array is
+sorted, that larger number sits to the right of `left`, so `left` moves. If
+the sum is too large, the mirror-image argument moves `right`. Every step
+permanently rules out one position, which is why the whole thing finishes in
+a single pass.
 
-Both pointers start at the same place but move at different speeds —
-typically one step vs. two steps per iteration. This shape is less about
-searching a sorted range and more about **detecting structure in a
-sequence**: cycles, midpoints, and duplicates.
+## Fast and slow (Floyd's cycle)
+
+Here both pointers start at the same place but move at different speeds,
+usually one step versus two. This shape isn't about a sorted range at all.
+It's about detecting structure in a sequence: cycles, midpoints, and
+duplicates.
 
 ```cpp
 Node* slow = head;
@@ -42,12 +71,27 @@ while (fast != nullptr && fast->next != nullptr) {
     slow = slow->next;
     fast = fast->next->next;
     if (slow == fast) {
-        // cycle detected
-        break;
+        break;          // cycle detected
     }
 }
 ```
 
-Both variants share the same underlying insight: once you know *why* one
-pointer should move independently of the other, you've eliminated the need
-to re-scan the structure from the start on every step.
+The picture is a tortoise and a hare on a circular track. The hare runs
+twice as fast, so if the track loops he eventually catches the tortoise from
+behind. On a straight track, the hare just reaches the end and you know
+there was no loop.
+
+## When it doesn't fit
+
+Two pointers is not a universal upgrade for nested loops. It depends on
+being able to rule out a position from the values under the pointers. If the
+data is unsorted and sorting would destroy information you need, like the
+original indices, converging pointers won't help. And if the problem asks
+for *all* qualifying pairs rather than the best one, you're back to O(n²)
+whatever you do.
+
+## The takeaway
+
+Both shapes answer the same question: once I know something about one
+pointer, what does that tell me about where the other should go? Answer it,
+and you've replaced re-scanning the structure with a single walk through it.
