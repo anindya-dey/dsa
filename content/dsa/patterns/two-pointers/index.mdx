@@ -1,0 +1,53 @@
+---
+title: "Two Pointers"
+summary: "Walk two indices through a structure instead of nesting loops, cutting many O(n²) scans down to O(n)."
+---
+
+Two Pointers covers any technique that tracks **two indices moving through
+a structure** instead of one, replacing an inner loop with a second pointer
+that moves based on what the first one finds. The pattern shows up in two
+distinct shapes:
+
+### Converging (Left/Right)
+
+Start one pointer at each end of a sorted array (or a string you're
+checking for symmetry) and move them toward each other. On each step, use
+the values at both pointers to decide which one to move — this is what
+turns an O(n²) pair search into a single O(n) pass.
+
+```cpp
+int left = 0, right = static_cast<int>(nums.size()) - 1;
+while (left < right) {
+    // Inspect nums[left] and nums[right], then move
+    // whichever pointer the comparison tells you to.
+    if (/* condition favors moving left */ true) {
+        ++left;
+    } else {
+        --right;
+    }
+}
+```
+
+### Fast & Slow (Floyd's Cycle)
+
+Both pointers start at the same place but move at different speeds —
+typically one step vs. two steps per iteration. This shape is less about
+searching a sorted range and more about **detecting structure in a
+sequence**: cycles, midpoints, and duplicates.
+
+```cpp
+Node* slow = head;
+Node* fast = head;
+while (fast != nullptr && fast->next != nullptr) {
+    slow = slow->next;
+    fast = fast->next->next;
+    if (slow == fast) {
+        // cycle detected
+        break;
+    }
+}
+```
+
+Both variants share the same underlying insight: once you know *why* one
+pointer should move independently of the other, you've eliminated the need
+to re-scan the structure from the start on every step.

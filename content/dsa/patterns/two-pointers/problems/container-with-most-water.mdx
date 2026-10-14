@@ -1,0 +1,90 @@
+---
+title: "Container With Most Water"
+difficulty: "Medium"
+variant: "Converging"
+practiceLinks: []
+---
+
+## Problem
+
+You're given an array `height` of `n` non-negative integers, where
+`height[i]` represents the height of a vertical line at position `i`. Two
+lines, together with the x-axis, form a container. Find two lines that
+together hold the most water.
+
+**Constraints**
+
+- `2 <= n <= 10^5`
+- `0 <= height[i] <= 10^4`
+
+**Example**
+
+```text
+Input:  height = [1,8,6,2,5,4,8,3,7]
+Output: 49
+```
+
+The best container is formed by the lines at index 1 (height 8) and index
+8 (height 7): width `8 - 1 = 7`, bounded by the shorter line (height 7),
+giving `7 * 7 = 49`.
+
+## Brute Force
+
+Try every pair of lines, compute the area, and keep the maximum. The area
+between lines `i` and `j` is `(j - i) * min(height[i], height[j])`.
+
+```cpp
+int maxAreaBruteForce(const std::vector<int>& height) {
+    int best = 0;
+    for (int i = 0; i < static_cast<int>(height.size()); ++i) {
+        for (int j = i + 1; j < static_cast<int>(height.size()); ++j) {
+            int area = (j - i) * std::min(height[i], height[j]);
+            best = std::max(best, area);
+        }
+    }
+    return best;
+}
+```
+
+**Why it's slow:** every pair is checked, including pairs that can never
+beat the current best once you know which line is the bottleneck.
+
+## Optimal: Converging Two Pointers
+
+Start with the widest possible container — the two ends of the array.
+The area is capped by the **shorter** of the two lines, so moving the
+taller pointer inward can only shrink the width without raising the cap.
+The only pointer worth moving is the shorter one, since that's the only
+move that *might* find a taller line and increase the area.
+
+```cpp
+int maxArea(const std::vector<int>& height) {
+    int left = 0;
+    int right = static_cast<int>(height.size()) - 1;
+    int best = 0;
+
+    while (left < right) {
+        int width = right - left;
+        int boundingHeight = std::min(height[left], height[right]);
+        best = std::max(best, width * boundingHeight);
+
+        if (height[left] < height[right]) {
+            ++left;
+        } else {
+            --right;
+        }
+    }
+
+    return best;
+}
+```
+
+Each step either moves `left` forward or `right` backward, and the loop
+ends when they meet — so every index is visited at most once.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Brute force | O(n²) | O(1) |
+| Converging two pointers | O(n) | O(1) |

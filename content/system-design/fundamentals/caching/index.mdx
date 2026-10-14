@@ -1,0 +1,81 @@
+---
+title: "Caching"
+summary: "Store a copy of expensive-to-compute or expensive-to-fetch data somewhere faster, so most requests never touch the slow path."
+---
+
+Caching trades **correctness freshness** for **speed**, by keeping a copy
+of data somewhere faster than its source of truth — memory instead of
+disk, a nearby server instead of a cross-region database call. Every
+caching decision reduces to three questions: where does the cache live,
+what gets evicted when it's full, and how do you keep it from lying to
+you.
+
+## Where a Cache Lives
+
+- **Client-side** — in the browser or mobile app. Zero network cost on
+  a hit, but you have the least control over invalidation.
+- **CDN / edge** — close to the user, shared across many clients. Great
+  for content that's identical for everyone (static assets, public API
+  responses).
+- **Application-level (in-process)** — a map inside the service itself.
+  Fastest possible hit, but doesn't survive a restart and isn't shared
+  across instances.
+- **Distributed cache** (Redis, Memcached) — shared across every
+  instance of a service, survives individual instance restarts, but adds a
+  network hop on every access.
+- **Database-level** — the database's own buffer pool or query cache,
+  mostly out of the application's control.
+
+Each layer closer to the user removes latency but makes invalidation
+harder, since more copies of the same data now exist.
+
+## Eviction Policies
+
+A cache is finite, so something has to decide what to remove when it's
+full:
+
+- **LRU (Least Recently Used)** — evict whatever hasn't been accessed in
+  the longest time. Good default; assumes recently used data will be used
+  again soon.
+- **LFU (Least Frequently Used)** — evict whatever has been accessed the
+  fewest times. Better than LRU when some items are consistently hot and
+  others are one-off spikes.
+- **TTL (Time To Live)** — evict based on age regardless of usage.
+  Essential when staleness itself is the risk, not memory pressure.
+
+Most production caches combine TTL with LRU: TTL bounds how stale data can
+get, LRU decides what to evict early if memory runs out before TTL does.
+
+## Invalidation: the Hard Part
+
+> "There are only two hard things in Computer Science: cache invalidation
+> and naming things."
+
+- **Write-through** — update the cache and the source of truth together,
+  on every write. Cache is never stale, but every write pays the cache's
+  latency too.
+- **Write-around** — write only to the source of truth; the cache fills
+  in lazily on the next read. Avoids caching data that's never read again,
+  at the cost of the first read after a write always being a miss.
+- **Write-back** — write to the cache first and flush to the source of
+  truth later. Fastest writes, but risks data loss if the cache fails
+  before the flush.
+- **TTL-only** — don't actively invalidate at all; just accept staleness
+  up to the TTL window. Simplest to reason about, but only acceptable when
+  the business can tolerate that staleness window.
+
+## When Caching Makes Things Worse
+
+- **Cache stampede** — a hot key expires and thousands of requests miss
+  at once, all hammering the source of truth simultaneously. Mitigated
+  with jittered TTLs or a lock so only one request repopulates the cache.
+- **Thundering herd on cold start** — the same problem at a larger scale,
+  right after a cache is flushed or a new instance boots with an empty
+  cache.
+- **Hiding a real capacity problem** — caching a slow query instead of
+  fixing the query postpones the cost; the moment the cache is cold, the
+  underlying problem reappears, now with less warning.
+
+The question to ask before adding a cache is not "will this be faster?"
+(it almost always will be) but "what happens, specifically, the moment
+this cache is wrong, empty, or unavailable?"

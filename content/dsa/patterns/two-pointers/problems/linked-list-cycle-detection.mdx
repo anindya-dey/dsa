@@ -1,0 +1,80 @@
+---
+title: "Linked List Cycle Detection"
+difficulty: "Easy"
+variant: "Fast & Slow"
+practiceLinks: []
+---
+
+## Problem
+
+Given the `head` of a singly linked list, determine whether the list
+contains a cycle — i.e., some node's `next` pointer eventually points
+back to a node earlier in the list.
+
+**Constraints**
+
+- The list may be empty.
+- You may not modify the list, and you should avoid extra memory
+  proportional to the number of nodes if possible.
+
+## Brute Force
+
+Track every node you've already visited in a hash set. If you ever reach a
+node you've seen before, there's a cycle; if you reach `nullptr`, there
+isn't.
+
+```cpp
+bool hasCycleBruteForce(Node* head) {
+    std::unordered_set<Node*> visited;
+    Node* current = head;
+
+    while (current != nullptr) {
+        if (visited.count(current)) {
+            return true;
+        }
+        visited.insert(current);
+        current = current->next;
+    }
+
+    return false;
+}
+```
+
+**Why it's costly:** it works in O(n) time, but it spends O(n) extra space
+on the hash set — space the pointer-based approach doesn't need.
+
+## Optimal: Fast & Slow Pointers (Floyd's Cycle Detection)
+
+Move two pointers through the list at different speeds: `slow` advances
+one node at a time, `fast` advances two. If there's no cycle, `fast`
+reaches the end first. If there is a cycle, `fast` will eventually lap
+`slow` from behind and the two pointers will land on the same node.
+
+```cpp
+bool hasCycle(Node* head) {
+    Node* slow = head;
+    Node* fast = head;
+
+    while (fast != nullptr && fast->next != nullptr) {
+        slow = slow->next;
+        fast = fast->next->next;
+
+        if (slow == fast) {
+            return true;
+        }
+    }
+
+    return false;
+}
+```
+
+The gap between `slow` and `fast` shrinks by exactly one node every
+iteration once both are inside the cycle, so they are guaranteed to meet
+rather than pass each other.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Hash set of visited nodes | O(n) | O(n) |
+| Fast & slow pointers | O(n) | O(1) |
