@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { RoadmapSection } from "@/components/roadmap-section";
 import { TopicList } from "@/components/topic-list";
 import {
+  getSystemDesignGroupsByTrack,
   getSystemDesignTopicsByTrack,
   systemDesignTrackDescriptions,
   systemDesignTrackTitles,
@@ -30,12 +31,11 @@ export default function SystemDesignRoadmapPage() {
 
       <div className="space-y-10 lg:space-y-14">
         {TRACKS.map((track, index) => {
-          const items = getSystemDesignTopicsByTrack(track).map((topic) => ({
-            href: `/system-design/${track}/${topic.slug}`,
-            title: topic.title,
-            summary: topic.summary,
-            available: topicHasContent(track, topic.slug),
-          }));
+          const topics = getSystemDesignTopicsByTrack(track);
+          const groups = getSystemDesignGroupsByTrack(track);
+          const ready = topics.filter((topic) =>
+            topicHasContent(track, topic.slug),
+          ).length;
 
           return (
             <RoadmapSection
@@ -44,10 +44,31 @@ export default function SystemDesignRoadmapPage() {
               index={index + 1}
               title={systemDesignTrackTitles[track]}
               description={systemDesignTrackDescriptions[track]}
-              ready={items.filter((item) => item.available).length}
-              total={items.length}
+              ready={ready}
+              total={topics.length}
             >
-              <TopicList items={items} />
+              <div className="space-y-8">
+                {groups.map((group) => (
+                  <section
+                    key={group.group}
+                    aria-label={group.group || undefined}
+                  >
+                    {group.group && (
+                      <h3 className="font-mono text-xs uppercase tracking-widest text-ink-faint">
+                        {group.group} &middot; {group.topics.length}
+                      </h3>
+                    )}
+                    <TopicList
+                      items={group.topics.map((topic) => ({
+                        href: `/system-design/${track}/${topic.slug}`,
+                        title: topic.title,
+                        summary: topic.summary,
+                        available: topicHasContent(track, topic.slug),
+                      }))}
+                    />
+                  </section>
+                ))}
+              </div>
             </RoadmapSection>
           );
         })}

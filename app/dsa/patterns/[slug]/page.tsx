@@ -8,7 +8,7 @@ import { Container } from "@/components/container";
 import { ArrowRightIcon } from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
 import { dsaPatterns, dsaPhaseTitles } from "@/lib/catalog/dsa";
-import { getPatternOverview } from "@/lib/content/dsa";
+import { getPatternOverview, patternHasContent } from "@/lib/content/dsa";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -25,10 +25,16 @@ export async function generateMetadata({
   const pattern = dsaPatterns.find((p) => p.slug === slug);
   if (!pattern) return {};
 
-  return {
+  const metadata: Metadata = {
     title: pattern.title,
     description: pattern.summary,
   };
+
+  if (!patternHasContent(slug)) {
+    metadata.robots = { index: false, follow: true };
+  }
+
+  return metadata;
 }
 
 export default async function PatternPage({ params }: PageProps) {
@@ -37,17 +43,6 @@ export default async function PatternPage({ params }: PageProps) {
   if (!page) notFound();
 
   const { meta, hasContent, problems, content, headings } = page;
-
-  if (!hasContent) {
-    return (
-      <ComingSoon
-        title={meta.title}
-        summary={meta.summary}
-        backHref="/dsa"
-        backLabel="DSA roadmap"
-      />
-    );
-  }
 
   const problemList =
     problems.length > 0 ? (
@@ -83,6 +78,18 @@ export default async function PatternPage({ params }: PageProps) {
         </ul>
       </section>
     ) : null;
+
+  if (!hasContent) {
+    return (
+      <ComingSoon
+        title={meta.title}
+        summary={meta.summary}
+        backHref="/dsa"
+        backLabel="DSA roadmap"
+        extra={problemList}
+      />
+    );
+  }
 
   return (
     <Container>

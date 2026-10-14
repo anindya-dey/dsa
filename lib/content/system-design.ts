@@ -1,4 +1,5 @@
 import path from "node:path";
+import fs from "node:fs";
 import { CONTENT_ROOT, compileContentFile, contentFileExists } from "@/lib/mdx";
 import { getSystemDesignTopic } from "@/lib/catalog/system-design";
 import type { SystemDesignTrack } from "@/lib/catalog/types";
@@ -11,6 +12,14 @@ function topicPath(track: SystemDesignTrack, slug: string): string {
 
 export function topicHasContent(track: SystemDesignTrack, slug: string): boolean {
   return contentFileExists(topicPath(track, slug));
+}
+
+export function topicMtime(
+  track: SystemDesignTrack,
+  slug: string,
+): Date | undefined {
+  const filePath = topicPath(track, slug);
+  return contentFileExists(filePath) ? fs.statSync(filePath).mtime : undefined;
 }
 
 export async function getTopic(track: SystemDesignTrack, slug: string) {

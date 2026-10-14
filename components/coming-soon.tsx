@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { Badge } from "@/components/badge";
 import { Container } from "@/components/container";
 import { PageHeader } from "@/components/page-header";
@@ -8,9 +9,16 @@ interface ComingSoonProps {
   summary: string;
   backHref: string;
   backLabel: string;
+  extra?: ReactNode;
 }
 
-export function ComingSoon({ title, summary, backHref, backLabel }: ComingSoonProps) {
+export function ComingSoon({
+  title,
+  summary,
+  backHref,
+  backLabel,
+  extra,
+}: ComingSoonProps) {
   return (
     <Container>
       <PageHeader
@@ -34,6 +42,8 @@ export function ComingSoon({ title, summary, backHref, backLabel }: ComingSoonPr
           Browse what&apos;s ready
         </Link>
       </div>
+
+      {extra}
     </Container>
   );
 }

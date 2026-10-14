@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { ComponentProps } from "react";
+import Link from "next/link";
 import { compileMDX } from "next-mdx-remote/rsc";
 import remarkGfm from "remark-gfm";
 import rehypeSlug from "rehype-slug";
@@ -8,6 +9,7 @@ import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypePrettyCode from "rehype-pretty-code";
 import { createHighlighter, type Highlighter } from "shiki";
 import { paperCodeTheme } from "@/lib/code-theme";
+import { Mermaid } from "@/components/mermaid";
 
 export const CONTENT_ROOT = path.join(process.cwd(), "content");
 
@@ -64,12 +66,57 @@ function rehypeCollectHeadings(headings: Heading[]) {
   };
 }
 
+interface MdastNode {
+  type: string;
+  lang?: string;
+  value?: string;
+  name?: string;
+  attributes?: unknown[];
+  children?: MdastNode[];
+}
+
+function remarkMermaid() {
+  return (tree: MdastNode) => {
+    const walk = (node: MdastNode) => {
+      if (!node.children) return;
+      node.children = node.children.flatMap((child) => {
+        if (child.type === "code" && child.lang === "mermaid") {
+          return [
+            {
+              type: "mdxJsxFlowElement",
+              name: "Mermaid",
+              attributes: [
+                {
+                  type: "mdxJsxAttribute",
+                  name: "chart",
+                  value: child.value ?? "",
+                },
+              ],
+              children: [],
+            },
+          ];
+        }
+        walk(child);
+        return [child];
+      });
+    };
+    walk(tree);
+  };
+}
+
 const mdxComponents = {
   table: (props: ComponentProps<"table">) => (
     <div className="table-scroll">
       <table {...props} />
     </div>
   ),
+  a: ({ href = "", ...props }: ComponentProps<"a">) => {
+    if (href.startsWith("/") || href.startsWith("#")) {
+      return <Link href={href} {...props} />;
+    }
+    return <a href={href} rel="noopener noreferrer" {...props} />;
+  },
+  Mermaid,
 };
 
 export function contentFileExists(absolutePath: string): boolean {
@@ -88,7 +135,7 @@ export async function compileContentFile<
     options: {
       parseFrontmatter: true,
       mdxOptions: {
-        remarkPlugins: [remarkGfm],
+        remarkPlugins: [remarkGfm, remarkMermaid],
         rehypePlugins: [
           rehypeSlug,
           rehypeCollectHeadings(headings),

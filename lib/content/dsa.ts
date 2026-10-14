@@ -45,6 +45,19 @@ export function patternHasContent(slug: string): boolean {
   return contentFileExists(patternOverviewPath(slug));
 }
 
+export function patternOverviewMtime(slug: string): Date | undefined {
+  const filePath = patternOverviewPath(slug);
+  return contentFileExists(filePath) ? fs.statSync(filePath).mtime : undefined;
+}
+
+export function problemMtime(
+  patternSlug: string,
+  problemSlug: string,
+): Date | undefined {
+  const filePath = problemFilePath(patternSlug, problemSlug);
+  return contentFileExists(filePath) ? fs.statSync(filePath).mtime : undefined;
+}
+
 export function listProblemsForPattern(slug: string): ProblemSummary[] {
   const dir = problemsDir(slug);
   if (!fs.existsSync(dir)) return [];
