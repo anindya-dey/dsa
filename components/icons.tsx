@@ -34,14 +34,6 @@ export function ArrowLeftIcon(props: IconProps) {
   );
 }
 
-export function ChevronDownIcon(props: IconProps) {
-  return (
-    <Svg {...props}>
-      <path d="m6 9 6 6 6-6" />
-    </Svg>
-  );
-}
-
 const NAV_ICON_PATHS: Record<NavIcon, string> = {
   home: "M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z",
   dsa: "M8 7 3 12l5 5M16 7l5 5-5 5M13.5 5l-3 14",
