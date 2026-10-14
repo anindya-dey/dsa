@@ -14,7 +14,7 @@ export function PracticeLinks({ links }: { links?: PracticeLink[] }) {
           href={link.href}
           target="_blank"
           rel="noopener noreferrer"
-          className="rounded-full border border-line px-4 py-1.5 font-mono text-xs text-ink-soft transition-colors hover:border-accent hover:bg-accent-wash hover:text-accent-deep"
+          className="rounded-full border border-line px-4 py-1.5 font-display text-sm font-semibold text-ink-soft transition-colors hover:border-accent hover:bg-accent-wash hover:text-accent-deep"
         >
           {link.label} &nearr;
         </a>

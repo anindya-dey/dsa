@@ -26,7 +26,7 @@ export function TopicList({ items }: { items: TopicListItem[] }) {
             <span className="min-w-0">
               <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span
-                  className={`text-[0.95rem] font-medium leading-snug transition-colors group-hover:text-accent-deep sm:text-base ${
+                  className={`font-display text-base font-semibold leading-snug transition-colors group-hover:text-accent-deep ${
                     item.available ? "text-ink" : "text-ink-soft"
                   }`}
                 >

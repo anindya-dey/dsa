@@ -57,14 +57,14 @@ export default function Home() {
           <div className="mt-8 grid gap-3 sm:flex sm:gap-4">
             <Link
               href="/dsa"
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-ink px-6 font-mono text-sm text-paper transition-colors hover:bg-accent-deep"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-ink px-6 font-display text-[0.95rem] font-semibold text-paper transition-colors hover:bg-accent-deep"
             >
               Start with DSA
               <ArrowRightIcon className="size-4" />
             </Link>
             <Link
               href="/system-design"
-              className="inline-flex h-12 items-center justify-center rounded-full border border-ink/15 px-6 font-mono text-sm text-ink transition-colors hover:border-accent hover:bg-accent-wash hover:text-accent-deep"
+              className="inline-flex h-12 items-center justify-center rounded-full border border-ink/15 px-6 font-display text-[0.95rem] font-semibold text-ink transition-colors hover:border-accent hover:bg-accent-wash hover:text-accent-deep"
             >
               System Design
             </Link>
@@ -90,7 +90,7 @@ export default function Home() {
               </li>
             ))}
           </ul>
-          <span className="mt-6 inline-flex items-center gap-2 font-mono text-xs text-ink transition-colors group-hover:text-accent-deep">
+          <span className="mt-6 inline-flex items-center gap-2 font-display text-sm font-semibold text-ink transition-colors group-hover:text-accent-deep">
             Open the diagnostic matrix
             <ArrowRightIcon className="size-3.5 transition-transform group-hover:translate-x-0.5" />
           </span>
@@ -116,7 +116,7 @@ export default function Home() {
             <p className="mt-2 text-sm leading-relaxed text-ink-soft sm:text-base">
               {vertical.description}
             </p>
-            <span className="mt-4 inline-flex items-center gap-2 font-mono text-sm text-accent-deep">
+            <span className="mt-4 inline-flex items-center gap-2 font-display text-[0.95rem] font-semibold text-accent-deep">
               {vertical.cta}
               <ArrowRightIcon className="size-4 transition-transform group-hover:translate-x-0.5" />
             </span>

@@ -16,7 +16,7 @@ export function DesktopNav() {
             key={item.href}
             href={item.href}
             aria-current={active ? "page" : undefined}
-            className={`rounded-full px-3.5 py-2 font-mono text-xs transition-colors ${
+            className={`rounded-full px-3.5 py-2 font-display text-sm font-semibold transition-colors ${
               active
                 ? "bg-accent-wash text-accent-deep"
                 : "text-ink-soft hover:bg-accent-wash/60 hover:text-accent-deep"

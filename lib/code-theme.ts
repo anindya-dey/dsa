@@ -23,7 +23,7 @@ export const paperCodeTheme: ThemeRegistration = {
     { settings: { foreground: palette.foreground, background: palette.background } },
     {
       scope: ["comment", "punctuation.definition.comment"],
-      settings: { foreground: palette.comment, fontStyle: "italic" },
+      settings: { foreground: palette.comment, fontStyle: "" },
     },
     {
       scope: [

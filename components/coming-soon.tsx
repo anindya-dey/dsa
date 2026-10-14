@@ -29,7 +29,7 @@ export function ComingSoon({ title, summary, backHref, backLabel }: ComingSoonPr
         </p>
         <Link
           href={backHref}
-          className="mt-4 inline-flex items-center rounded-full bg-ink px-4 py-2.5 font-mono text-xs text-paper transition-colors hover:bg-accent-deep"
+          className="mt-4 inline-flex items-center rounded-full bg-ink px-4 py-2.5 font-display text-sm font-semibold text-paper transition-colors hover:bg-accent-deep"
         >
           Browse what&apos;s ready
         </Link>

@@ -66,7 +66,7 @@ export default async function PatternPage({ params }: PageProps) {
                 className="group flex items-center gap-3 rounded-2xl px-3 py-4 transition-colors hover:bg-accent-wash active:bg-accent-wash sm:px-4"
               >
                 <span className="min-w-0 flex-1">
-                  <span className="block font-medium text-ink transition-colors group-hover:text-accent-deep">
+                  <span className="block font-display text-base font-semibold text-ink transition-colors group-hover:text-accent-deep">
                     {problem.title}
                   </span>
                   <span className="mt-1.5 flex flex-wrap gap-2">

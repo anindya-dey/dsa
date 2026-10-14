@@ -34,7 +34,7 @@ export default function DsaRoadmapPage() {
           <span className="block font-mono text-[11px] uppercase tracking-widest text-accent-deep">
             Diagnostic matrix
           </span>
-          <span className="mt-1 block text-sm text-ink sm:text-base">
+          <span className="mt-1 block font-display text-sm font-semibold text-ink sm:text-base">
             Not sure which pattern a problem needs? Start from its clues.
           </span>
         </span>
