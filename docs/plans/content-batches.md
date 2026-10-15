@@ -56,6 +56,8 @@ requirements and templates) and `2026-10-14-roadmap-review-decisions.md`
 | 3 | Trees, heaps, graphs; HLD infrastructure depth | Phase 3: Binary Trees & BSTs, Heaps / Priority Queues, Trie, Graph Traversals, Graph Specializations, Advanced Graphs (18 problems) | HLD: News Feed, Notification System, Search Autocomplete, Distributed Cache, Key-Value Store. LLD: Elevator System, Vending Machine, Chess Game. | **done** |
 | 4 | Dynamic programming; the big product case studies | Phase 4: Dynamic Programming, Backtracking & Pruning, Greedy Algorithms, String Algorithms, Range-Query Structures, Number Theory & Combinatorics, Design Data Structures | HLD: Payment System, Ride-Sharing App, Video Streaming Service, Distributed Job Scheduler, E-commerce / Flash Sale. LLD: Movie Ticket Booking, Task Scheduler, Bank / Ledger. | **next** |
 | 5 | Long tail; principal-level breadth | Remaining Phase 1/2/4: Linear Structures, Recursion & Math, Sorting & Selection, Bit Manipulation, Divide & Conquer, Intervals remainder | Remaining HLD infrastructure and case studies. Principal-level Fundamentals: Multi-Region & Active-Active, Consensus & Leader Election, Clock Synchronization, Reliability Engineering, Concurrency & Parallelism, Event Sourcing & CQRS, Backpressure, Stream vs Batch, and the rest. Remaining LLD. | not started |
+| 6 | AI/ML Systems vertical | See `docs/plans/ai-ml-vertical.md` (71 topics, six tracks, systems-side scope) | — | not started |
+| 7 | C++ Toolkit reference track | See `docs/plans/cpp-toolkit.md` (14 entries; reference pages, "Related C++ tools" end sections, no inline links) | — | not started |
 
 ## Sequencing rules
 

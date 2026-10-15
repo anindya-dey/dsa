@@ -70,3 +70,13 @@ All published content follows one voice, established in the
 - Em-dashes kept to a minimum (target: zero in new content).
 - Length targets: pattern overview ~500–650 words, problem page
   ~350–500, fundamentals topic ~700–1000.
+
+## Naming: "Cheat Sheet", not "Diagnostic Matrix"
+
+The clue-to-pattern page had mixed naming: route `/dsa/cheat-sheet`, nav
+label "Cheat Sheet", nav short label "Matrix", page title "Diagnostic
+Matrix", home CTA "Open the diagnostic matrix". Decision: standardize on
+**Cheat Sheet** as the name everywhere (route, nav, page title, home and
+roadmap CTAs) and demote "diagnostic matrix" to the descriptive subtitle,
+since the distinctive concept is worth keeping as a description. The route
+stays `/dsa/cheat-sheet` so no links break.

@@ -91,7 +91,7 @@ export default function Home() {
             ))}
           </ul>
           <span className="mt-6 inline-flex items-center gap-2 font-display text-sm font-semibold text-ink transition-colors group-hover:text-accent-deep">
-            Open the diagnostic matrix
+            Open the cheat sheet
             <ArrowRightIcon className="size-3.5 transition-transform group-hover:translate-x-0.5" />
           </span>
         </Link>

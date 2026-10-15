@@ -32,10 +32,10 @@ export default function DsaRoadmapPage() {
       >
         <span>
           <span className="block font-mono text-[11px] uppercase tracking-widest text-accent-deep">
-            Diagnostic matrix
+            Cheat sheet
           </span>
           <span className="mt-1 block font-display text-sm font-semibold text-ink sm:text-base">
-            Not sure which pattern a problem needs? Start from its clues.
+            Not sure which pattern a problem needs? A diagnostic matrix of clues to patterns.
           </span>
         </span>
         <ArrowRightIcon className="size-4 shrink-0 text-accent-deep transition-transform group-hover:translate-x-0.5" />

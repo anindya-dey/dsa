@@ -19,7 +19,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     href: "/dsa/cheat-sheet",
     label: "Cheat Sheet",
-    shortLabel: "Matrix",
+    shortLabel: "Cheat Sheet",
     icon: "matrix",
   },
 ];

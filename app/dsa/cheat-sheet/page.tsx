@@ -7,9 +7,9 @@ import { PageHeader } from "@/components/page-header";
 import { patternHasContent } from "@/lib/content/dsa";
 
 export const metadata: Metadata = {
-  title: "Diagnostic Matrix",
+  title: "Cheat Sheet",
   description:
-    "A cheat sheet mapping problem clues to the algorithmic pattern they most likely require.",
+    "A diagnostic matrix mapping problem clues to the algorithmic pattern they most likely require.",
 };
 
 interface PatternLink {
@@ -123,8 +123,8 @@ export default function CheatSheetPage() {
     <Container>
       <PageHeader
         back={{ href: "/dsa", label: "DSA roadmap" }}
-        title="Diagnostic Matrix"
-        description="Translate a problem statement’s clues into the pattern it most likely needs."
+        title="Cheat Sheet"
+        description="A diagnostic matrix: translate a problem statement’s clues into the pattern it most likely needs."
       />
 
       <ol className="-mx-3 sm:hidden">
