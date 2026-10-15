@@ -8,7 +8,7 @@ export interface DsaPatternMeta {
   variants?: string[];
 }
 
-export type SystemDesignTrack = "fundamentals" | "lld" | "hld";
+export type SystemDesignTrack = "fundamentals" | "lld" | "hld" | "ai-ml";
 
 export type SystemDesignTrackGroup = string;
 

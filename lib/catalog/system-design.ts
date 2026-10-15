@@ -4,6 +4,7 @@ export const systemDesignTrackTitles: Record<SystemDesignTrack, string> = {
   fundamentals: "Fundamentals",
   lld: "Low-Level Design",
   hld: "High-Level Design",
+  "ai-ml": "AI/ML Systems",
 };
 
 export const systemDesignTrackDescriptions: Record<SystemDesignTrack, string> = {
@@ -11,6 +12,8 @@ export const systemDesignTrackDescriptions: Record<SystemDesignTrack, string> = 
     "The building blocks every distributed system is made of — scalability, caching, consistency, and the vocabulary you need before designing anything bigger.",
   lld: "Object-oriented, code-level design for self-contained systems — class diagrams, design patterns, and a working sketch.",
   hld: "Build the components distributed systems are made of, then apply them in full case studies with trade-offs and capacity estimates.",
+  "ai-ml":
+    "The systems side of machine learning — data pipelines, features, serving, evaluation, and the GenAI-era machinery that turns models into products. Engineering, not theory.",
 };
 
 export const systemDesignTopics: SystemDesignTopicMeta[] = [
@@ -639,6 +642,96 @@ export const systemDesignTopics: SystemDesignTopicMeta[] = [
     track: "hld",
     group: "Product Case Studies",
     summary: "Moving a live monolith to new services, piece by piece, without downtime.",
+  },
+
+  // AI/ML — The Learning Problem
+  {
+    slug: "ml-system-design-basics",
+    title: "ML System Design Basics",
+    track: "ai-ml",
+    group: "The Learning Problem",
+    summary: "The train → deploy → monitor lifecycle, and where systems engineering enters machine learning.",
+  },
+  {
+    slug: "supervised-unsupervised-rl",
+    title: "Supervised, Unsupervised & Reinforcement Learning",
+    track: "ai-ml",
+    group: "The Learning Problem",
+    summary: "The three learning families and what each asks of the data and the system.",
+  },
+  {
+    slug: "offline-vs-online-inference",
+    title: "Offline vs Online Inference",
+    track: "ai-ml",
+    group: "The Learning Problem",
+    summary: "Batch scoring of everything versus millisecond scoring of one request, and their opposite infrastructures.",
+  },
+  {
+    slug: "batch-vs-real-time-prediction",
+    title: "Batch vs Real-Time Prediction",
+    track: "ai-ml",
+    group: "The Learning Problem",
+    summary: "Scoring on a schedule versus scoring in the request path, and the feature freshness each implies.",
+  },
+
+  // AI/ML — Data
+  {
+    slug: "training-data-pipelines",
+    title: "Training Data Pipelines",
+    track: "ai-ml",
+    group: "Data",
+    summary: "The ETL-for-ML: collecting, joining, and curating the examples a model learns from.",
+  },
+  {
+    slug: "data-labeling-annotation",
+    title: "Data Labeling & Annotation",
+    track: "ai-ml",
+    group: "Data",
+    summary: "Where ground truth comes from: humans, heuristics, and the weak-supervision machinery.",
+  },
+  {
+    slug: "data-versioning-lineage",
+    title: "Data Versioning & Lineage",
+    track: "ai-ml",
+    group: "Data",
+    summary: "Which data trained which model, reproducible after the fact.",
+  },
+  {
+    slug: "feature-engineering-basics",
+    title: "Feature Engineering Basics",
+    track: "ai-ml",
+    group: "Data",
+    summary: "Turning raw events into model inputs, and the leakage traps that corrupt evaluation.",
+  },
+
+  // AI/ML — Serving State
+  {
+    slug: "feature-stores",
+    title: "Feature Stores",
+    track: "ai-ml",
+    group: "Serving State",
+    summary: "Precomputed model inputs, shared between training and serving, with the freshness contract.",
+  },
+  {
+    slug: "embeddings-vector-representations",
+    title: "Embeddings & Vector Representations",
+    track: "ai-ml",
+    group: "Serving State",
+    summary: "Meaning as geometry: representing items as vectors so similarity becomes distance.",
+  },
+  {
+    slug: "similarity-search-ann",
+    title: "Similarity Search & ANN",
+    track: "ai-ml",
+    group: "Serving State",
+    summary: "HNSW, IVF, and product quantization: finding nearest neighbors without comparing to all of them.",
+  },
+  {
+    slug: "vector-databases",
+    title: "Vector Databases",
+    track: "ai-ml",
+    group: "Serving State",
+    summary: "The store built for embeddings: ANN indexes, hybrid search, and filtered queries.",
   },
 ];
 

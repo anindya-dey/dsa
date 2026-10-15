@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     "Fundamentals, low-level design, and high-level design case studies for building systems that scale.",
 };
 
-const TRACKS: SystemDesignTrack[] = ["fundamentals", "lld", "hld"];
+const TRACKS: SystemDesignTrack[] = ["fundamentals", "lld", "hld", "ai-ml"];
 
 export default function SystemDesignRoadmapPage() {
   return (

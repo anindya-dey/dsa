@@ -1,0 +1,141 @@
+---
+title: "Feature Engineering Basics"
+summary: "Turning raw events into model inputs: the transforms, the leakage traps, and the training/serving consistency that makes features real."
+---
+
+A model cannot learn from an event log; it learns from **features** —
+the numeric summaries, the categorical encodings, the derived
+signals that a human (or a pipeline) decided were *informative*.
+Feature engineering is that transformation, and it is the part of ML
+where human judgment survives the deepest into production: a good
+feature (7-day spend, distinct merchant count,
+[text-embedded](/system-design/ai-ml/embeddings-vector-representations)
+title) is worth more than a modeling breakthrough, and a bad one
+(a leak, a skew) poisons everything downstream
+([the training pipeline](/system-design/ai-ml/training-data-pipelines)'s
+central hazard). This page is the engineering of features: the
+transform families, the two deadly traps, and the consistency
+discipline that makes a feature *deployable*.
+
+## The transform families
+
+The vocabulary, worth having because each family answers a different
+data shape:
+
+- **Aggregations over time** (the workhorse:
+  [windowed](/system-design/fundamentals/stream-vs-batch-processing)
+  counts and sums per entity: "7-day spend", "logins per hour",
+  "distinct merchants in 24h" — the
+  [fraud features](/system-design/hld/fraud-detection) verbatim).
+  The design decisions: window size (too short: noisy; too long:
+  stale), and **point-in-time** (the window computed *as of the
+  event*, not as of now: the training/serving contract).
+- **Counts and ratios** (frequency signals: "how often does this
+  user do X", normalized by their own baseline: ratios beat raw
+  counts, because users have different volumes — the same
+  [per-tenant](/system-design/fundamentals/multi-tenancy-and-data-residency)
+  normalization that rate limiting uses).
+- **Categorical encodings** (turning "merchant = Uber" into
+  numbers): one-hot (fine for few values),
+  [target/statistics encodings](https://en.wikipedia.org/wiki/Target_encoding)
+  (the category's historical outcome rate: powerful, and a leakage
+  trap if computed including the current example — the encoding
+  must be fit on *past* data only), and
+  [embeddings](/system-design/ai-ml/embeddings-vector-representations)
+  (learned dense vectors: the modern answer for high-cardinality
+  categories).
+- **Text → vectors** (the
+  [embedding](/system-design/ai-ml/embeddings-vector-representations)
+  family: titles, descriptions, and queries become geometry), and
+  **geospatial** ([cells](/system-design/fundamentals/geospatial-indexing)
+  and distances as features).
+- **Cross features** (combinations: "this user's *category*
+  engagement rate" — the personalization signal, and the
+  [interaction features](/system-design/hld/recommendation-system)
+  the ranker consumes).
+
+## Trap one: leakage, the complete listing
+
+[A training example](/system-design/ai-ml/training-data-pipelines)
+must look exactly like a request will look at prediction time, and
+every feature that violates this is **leakage** (the model learns
+from information it will not have, evaluates perfectly, and fails
+in production). The complete family, because each is a classic:
+
+- **Label leakage** (the feature *is* the answer, or encodes it:
+  "days since last chargeback" predicting chargebacks).
+- **Future leakage** (the feature computed over data that includes
+  the prediction's future: aggregates "as of now" instead of "as of
+  the event").
+- **Encoding leakage** ([target encodings](#the-transform-families)
+  fit on the full dataset: the current example's label inside its
+  own category's average — the fix is *out-of-fold* computation,
+  the same discipline as the held-out split).
+- **Serving leakage** (a feature that *cannot exist* online: a
+  "full-dataset" statistic, a join that requires the outcome, a
+  computation over more data than the
+  [latency budget](/system-design/fundamentals/latency-vs-throughput)
+  allows — the model trains on it, the serving path cannot compute
+  it, and the feature silently degrades to garbage at deploy).
+
+The detector, worth drilling: **suspiciously good offline metrics**
+are leakage until proven otherwise (a 99.9%-accurate fraud model is
+not a discovery), and the systematic check is the
+*point-in-time replay*: recompute the feature pipeline "as of a past
+date" and confirm the metrics match what the training set claimed.
+
+## Trap two: training/serving skew
+
+The second deadly trap, and the quiet one: **the same feature, two
+implementations** — the batch pipeline computes "7-day spend" one
+way (calendar days, warehouse joins, midnight-clocked), the serving
+path computes it another (trailing hours,
+[feature-store](/system-design/ai-ml/feature-stores) lookups,
+request-time-clocked), and the model's inputs at serving are
+*different data* than it trained on. The model is then
+[drifting](/system-design/ai-ml/ml-system-design-basics) not
+because the world changed, but because *the code did*.
+
+The discipline: **one definition, two executions** (the feature
+defined once — a versioned definition, the same
+[lineage](/system-design/ai-ml/data-versioning-lineage) treatment
+as data — and executed by the batch trainer and the online server
+from the same source), which is exactly what a
+[feature store](/system-design/ai-ml/feature-stores) exists to
+enforce (one computation, materialized offline for training and
+served online for prediction: the *store* as the consistency
+guarantee), and the honest admission that the *store* is the
+standard answer because the *alternative* (discipline alone)
+fails at scale.
+
+## The craft, briefly
+
+The judgment half (what makes a *good* feature), in the
+engineering-usable form:
+
+- **Domain knowledge beats volume** (the fraud signal "payment
+  two hours after card added" is worth a hundred generic
+  aggregates: features encode hypotheses, and the hypothesis
+  quality is the ceiling).
+- **The model is free to ignore features** (adding candidates is
+  cheap; the pipeline's job is computing them consistently, the
+  model's job is weighting them — so generate generously, and let
+  [evaluation](/system-design/ai-ml/ml-system-design-basics)
+  prune).
+- **Stability over cleverness** (a feature that behaves the same
+  way across [data eras](/system-design/ai-ml/data-labeling-annotation)
+  and traffic shapes is worth more than a sharper one that
+  doesn't: the [drift](/system-design/ai-ml/ml-system-design-basics)
+  surface area scales with feature count, which is the real cost
+  of "generate generously").
+
+## Related concepts
+
+- [Feature Stores](/system-design/ai-ml/feature-stores): the
+  consistency machinery, next page.
+- [Training Data Pipelines](/system-design/ai-ml/training-data-pipelines):
+  the point-in-time contract, formalized.
+- [Embeddings & Vector Representations](/system-design/ai-ml/embeddings-vector-representations):
+  the learned-encoding family.
+- [Stream vs. Batch](/system-design/fundamentals/stream-vs-batch-processing):
+  the windowing machinery underneath the aggregates.

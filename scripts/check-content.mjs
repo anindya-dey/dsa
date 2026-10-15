@@ -10,7 +10,7 @@ const DSA_PATTERNS_DIR = path.join(contentRoot, "dsa", "patterns");
 const SD_ROOT = path.join(contentRoot, "system-design");
 
 const DSA_PHASES = [1, 2, 3, 4];
-const SD_TRACKS = ["fundamentals", "lld", "hld"];
+const SD_TRACKS = ["fundamentals", "lld", "hld", "ai-ml"];
 const DIFFICULTIES = ["Easy", "Medium", "Hard"];
 
 const errors = [];
