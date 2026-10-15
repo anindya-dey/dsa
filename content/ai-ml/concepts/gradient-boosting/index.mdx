@@ -1,0 +1,88 @@
+---
+title: "Gradient Boosting"
+summary: "Building an ensemble one corrective tree at a time: the tabular-data workhorse."
+---
+
+Gradient boosting is the model that wins most tabular-data
+competitions and powers a huge fraction of real-world prediction
+(ranking, fraud, risk, recommendations). It is a
+[decision-tree](/ai-ml/concepts/decision-trees-and-ensembles) ensemble
+like the random forest, but built *sequentially* instead of in
+parallel — and that single change (each tree *corrects* the previous
+ones) is why it is usually more accurate.
+
+## The idea: learn from mistakes, repeatedly
+
+Where a random forest trains many independent trees and averages
+them, gradient boosting trains trees *one at a time*, each fitted to
+the **residual errors** of the ensemble so far:
+
+1. Start with a trivial prediction (say, the average).
+2. Compute the errors (the [loss](/ai-ml/concepts/loss-functions-and-risk)
+   gradient) for every example.
+3. Train a small tree to *predict those errors*.
+4. Add it to the ensemble (scaled by a small *learning rate*), so the
+   combined prediction is a little less wrong.
+5. Repeat hundreds or thousands of times.
+
+Each tree is *weak* (shallow — a few splits), and the ensemble is
+*strong*: the sequence of corrections drives the loss down, and the
+[learning rate](/ai-ml/concepts/gradient-descent) controls how much
+each tree contributes (small rate = slower but more accurate, the
+standard trade). It is, literally, **gradient descent in the space of
+functions** — each tree is a step, and "boosting" is the name for
+building a strong model from weak ones.
+
+## Why it beats a random forest (usually)
+
+- **Sequential correction** focuses each new tree on the examples the
+  ensemble is still getting wrong, whereas bagging treats every tree
+  equally and hopes averaging suffices.
+- **A flexible loss** (gradient boosting is defined by the loss's
+  gradient, so it works with *any* differentiable loss —
+  classification, ranking, custom business losses — the reason it
+  dominates ranking and risk models).
+- **Strong regularization built in** (shallow trees, a small learning
+  rate, row/feature subsampling, and early stopping — the modern
+  implementations (XGBoost, LightGBM, CatBoost) are *regularization
+  engineering* as much as boosting).
+
+The cost: it is **harder to train** than a random forest (more
+hyperparameters, more sensitive — a too-high learning rate or too
+many trees [overfits](/ai-ml/concepts/overfitting-and-bias-variance)),
+and it is *sequential* (less parallelizable than bagging, though
+modern implementations parallelize within and across trees).
+
+## The families worth naming
+
+- **XGBoost / LightGBM / CatBoost**: the production implementations,
+  each an engineering advance (LightGBM's histogram splits and leaf
+  growth for speed; CatBoost's native categorical handling; XGBoost's
+  ubiquity). Knowing they exist and roughly why is enough; the
+  concept is the boosting loop.
+- **Feature importances and SHAP** (which features the ensemble
+  relies on, and per-prediction attributions): the
+  [interpretability](/ai-ml/concepts/interpretability) surface, and
+  a real reason the family is used in regulated settings despite
+  being an ensemble.
+
+## The verdict
+
+Gradient boosting is the **default strong model for tabular data**:
+almost always competitive, often the winner, and hard to beat with a
+neural network on tables. It is also the model behind a lot of
+[CTR/ranking](/ai-ml/systems/ctr-ad-ranking) and
+[fraud detection](/system-design/hld/fraud-detection) systems. If you learn one
+classical model deeply, learn this family — it is the one that
+actually ships.
+
+## Related concepts
+
+- [Decision Trees, Bagging & Random Forests](/ai-ml/concepts/decision-trees-and-ensembles):
+  the ensemble family, and the parallel alternative.
+- [Gradient Descent](/ai-ml/concepts/gradient-descent): boosting is
+  descent in function space.
+- [Loss Functions & Empirical Risk](/ai-ml/concepts/loss-functions-and-risk):
+  the loss the boosting follows.
+- [Design a CTR / Ad Ranking System](/ai-ml/systems/ctr-ad-ranking):
+  where it is the workhorse.

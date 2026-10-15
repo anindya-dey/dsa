@@ -1,0 +1,115 @@
+---
+title: "Cloud Cost & FinOps"
+summary: "The cloud bill as an engineering constraint: where it goes and how to reduce it."
+---
+
+The cloud turned infrastructure into an *operating expense*, which
+sounds like an improvement and introduces a new engineering problem:
+**the bill is proportional to how you use the system, and nothing in
+the code tells you the cost.** A design that is elegant and correct
+can be ten times more expensive than an equally correct one, and the
+difference is invisible until the invoice arrives. **FinOps** is the
+discipline of making cost *visible and engineerable*: measuring it,
+attributing it, and reducing it — the
+[capacity-planning](/system-design/fundamentals/capacity-planning-and-estimation)
+mindset applied to money.
+
+## Where the money goes
+
+The cloud bill decomposes into a few large buckets, and knowing which
+one dominates a system is the first step:
+
+- **Compute** (VMs, containers, serverless invocations: the largest
+  line for most systems — and the one where *utilization* is the
+  lever: an idle instance is pure waste, the
+  [utilization](/ai-ml/systems/gpu-accelerator-management)
+  argument).
+- **Storage** (object storage, disks, databases: usually cheap per
+  GB but grows forever — the [retention](/system-design/fundamentals/object-storage)
+  policy is a *cost* decision).
+- **Network/egress** (data leaving the cloud, and *cross-region*
+  traffic: the surprising one — egress is often far pricier than
+  people expect, and a chatty multi-region design pays for every
+  byte crossing a boundary: the [multi-region](/system-design/fundamentals/multi-region-and-active-active)
+  cost dimension).
+- **Managed services** (databases, queues, caches, and per-request
+  pricing: convenient, and priced at a premium — the
+  [build-vs-buy](/system-design/fundamentals/microservices-vs-monolith)
+  decision, in dollars).
+
+## The levers
+
+The cost levers, in the order to reach for them:
+
+- **Right-size** (the most common waste: instances bigger than the
+  workload needs. The [capacity-planning](/system-design/fundamentals/capacity-planning-and-estimation)
+  arithmetic tells you what you *need*, and the gap to what you
+  *bought* is the waste).
+- **Improve utilization** (batch jobs on
+  [spot/preemptible](https://en.wikipedia.org/wiki/Preemptible_virtual_machine)
+  instances (50-70% cheaper, at the fault-tolerance cost — the
+  [distributed-training](/ai-ml/systems/distributed-training)
+  checkpoint discipline), autoscaling to match demand (the
+  [autoscaling](/system-design/fundamentals/scalability) discipline),
+  and packing workloads onto fewer, fuller machines).
+- **Cache and absorb** (the [CDN](/system-design/fundamentals/cdn)
+  and [cache](/system-design/fundamentals/caching) layers reduce
+  *both* latency and compute/egress: the rare lever that improves
+  everything).
+- **Delete** (the cheapest optimization: unused resources,
+  forgotten instances, orphaned volumes, over-long
+  [retention](/system-design/fundamentals/object-storage) — the
+  "just turn it off" that is embarrassingly often the biggest win).
+- **Choose the tier** (serverless for spiky/low-traffic (the
+  [serverless](/ai-ml/systems/serverless-inference) economics),
+  reserved/committed capacity for steady-state, spot for
+  interruptible — matching the pricing model to the workload shape).
+
+## The discipline: make cost visible
+
+The organizational half, and the reason FinOps is a *practice*: **cost
+must be a metric, on a dashboard, attributed to a team/service.** The
+machinery: **tagging** (every resource tagged with its owner/service,
+so the bill is *attributable*), **showback/chargeback** (teams see —
+and ideally pay — their share: the incentive that changes behavior,
+the [multi-tenant](/system-design/fundamentals/multi-tenant-ml-platforms)
+cost-attribution idea), **unit economics** (cost per request, per
+user, per prediction: the [capacity-planning](/system-design/fundamentals/capacity-planning-and-estimation)
+metric that makes cost *comparable to value*), and **budgets and
+alerts** (a spend anomaly pages, like any
+[SLO](/system-design/fundamentals/reliability-engineering) — the
+"why did the bill triple overnight" catch).
+
+The engineering payoff: **the same visibility that finds waste also
+makes cost a *design input*** — "this design costs 3x that one" is a
+trade-off the team can *see*, and a change that adds cost is a
+decision, not a surprise. Cost becomes another dimension of the
+[capacity-planning](/system-design/fundamentals/capacity-planning-and-estimation)
+conversation, alongside latency and throughput.
+
+## The honest trade
+
+The counterweight worth stating: **premature cost optimization is as
+bad as premature performance optimization.** Over-engineering for
+cost (spot instances for a critical service, aggressive downsizing
+that hurts reliability, hand-rolled infrastructure to avoid a managed
+fee) trades a *small, predictable* bill for *large, unpredictable*
+risk — and the mature answer is the
+[capacity-planning](/system-design/fundamentals/capacity-planning-and-estimation)
+one: *measure first*, find the dominant cost, optimize *that*, and
+accept the rest as the price of the design. The bill is a signal, not
+a mandate.
+
+## Related concepts
+
+- [Capacity Planning & Estimation](/system-design/fundamentals/capacity-planning-and-estimation):
+  the sizing arithmetic the cost derives from.
+- [Scalability](/system-design/fundamentals/scalability): the
+  utilization and autoscaling levers.
+- [Container Orchestration](/system-design/fundamentals/container-orchestration):
+  the cluster's resource efficiency.
+- [Caching](/system-design/fundamentals/caching) and
+  [CDNs](/system-design/fundamentals/cdn): the levers that reduce
+  compute and egress together.
+- [Multi-Region & Active-Active](/system-design/fundamentals/multi-region-and-active-active):
+  the egress and cross-region cost dimension.

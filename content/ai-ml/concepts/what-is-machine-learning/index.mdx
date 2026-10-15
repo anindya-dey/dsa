@@ -1,0 +1,84 @@
+---
+title: "What Machine Learning Is"
+summary: "Learning a function from examples, and how it differs from writing rules."
+---
+
+Traditional software is *rules written by a person*: you specify the
+steps, and the program follows them. Machine learning inverts it: you
+give the program *examples* (inputs paired with the right outputs),
+and it *derives the rules* — a **function** that maps inputs to
+outputs — by finding the pattern that fits the examples. That single
+inversion is the whole field, and everything else (models,
+architectures, training) is machinery for doing it well.
+
+The reason it matters: some tasks have no writable rules. You cannot
+write the rule for "is this a cat" or "is this email spam" as a
+sequence of `if` statements — but you *can* show a system thousands
+of examples and let it find the boundary. That is the problem machine
+learning solves.
+
+## The shape of the problem
+
+Every supervised ML problem has the same three parts:
+
+- **Inputs (features)**: what the model sees. For spam, features
+  might be the words, the sender's reputation, the link count.
+- **Outputs (labels)**: what it should predict. For spam, "spam" or
+  "not spam".
+- **A dataset of examples**: many `(features, label)` pairs — the
+  *training data*, the raw material.
+
+Training is the search: find a function `f` such that `f(features)`
+is close to the true label, for the examples, *and* — the hard part —
+for examples it has *never seen*. That second requirement is
+**generalization**, and it is why machine learning is not
+memorization: a model that fits the training data but fails on new
+data has learned nothing useful.
+
+## The three families
+
+- **Supervised** (the dominant kind): examples have labels, and the
+  model learns the input → output mapping. Spam detection, price
+  prediction, image classification.
+- **Unsupervised**: no labels; the model finds structure (clusters,
+  density, compression). Customer segmentation, anomaly detection.
+- **Reinforcement**: an agent acts, receives rewards, and learns
+  which actions earn them. Game-playing, robotics, and the
+  RLHF that aligns language models.
+
+## How the learning actually works (conceptually)
+
+Almost all modern ML is **optimization**: define a *loss* (a number
+measuring how wrong the model is), and adjust the model's parameters
+to make the loss small. The adjustment is **gradient descent**:
+compute which direction makes the loss worse, and step the other
+way, repeatedly. The model *is* its parameters (millions to billions
+of numbers), training is the search for good ones, and inference is
+just running the trained function.
+
+The key idea that makes it powerful: the model has a **fixed
+structure** (the architecture) with **adjustable parameters**, and
+learning is *finding the parameter values* — so the human designs the
+*shape* (a neural network, a tree ensemble) and the data fills in the
+*content*.
+
+## Why it is a systems problem
+
+Because the model is *derived from data*, everything about a
+production ML system is a data and pipeline problem: which data,
+how fresh, how labeled, how it drifts (the
+[systems track](/ai-ml/systems/ml-system-design-basics) covers this),
+and where the model runs and how fast (the
+[serving track](/ai-ml/systems/model-serving-architectures)). The
+*math* is the fitting; the *system* is everything around it.
+
+## Related concepts
+
+- [Loss Functions & Empirical Risk](/ai-ml/concepts/loss-functions-and-risk):
+  the "how wrong" the learning minimizes.
+- [Gradient Descent](/ai-ml/concepts/gradient-descent): the search
+  algorithm.
+- [Overfitting, Underfitting & Bias-Variance](/ai-ml/concepts/overfitting-and-bias-variance):
+  the generalization problem.
+- [ML System Design Basics](/ai-ml/systems/ml-system-design-basics):
+  the engineering half.

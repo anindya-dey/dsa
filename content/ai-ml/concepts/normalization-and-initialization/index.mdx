@@ -1,0 +1,95 @@
+---
+title: "Normalization & Initialization"
+summary: "BatchNorm, LayerNorm, and weight init: keeping deep networks trainable."
+---
+
+Deep networks are hard to train, and two unglamorous techniques are
+most of the reason they now work: **normalization** (rescaling the
+activations inside the network) and **initialization** (choosing the
+starting weights carefully). Neither is conceptually deep, and both
+were essential to making networks with dozens or hundreds of layers
+trainable — they are the plumbing that keeps gradients healthy and
+training stable.
+
+## The problem: unstable training
+
+Two failure modes, both about *scale*:
+
+- **Exploding/vanishing activations** (as data flows through many
+  layers, the outputs can grow huge or shrink to nothing — the
+  gradients follow, and training stalls or diverges).
+- **Bad initialization** (if weights start too large, activations
+  explode; too small, they vanish; and either way the network starts
+  in a bad region and struggles to recover).
+
+The fix is to *control the scale* of activations and weights at every
+step, which is what normalization and initialization do.
+
+## Initialization: start in a good place
+
+The old default (small random weights) does not scale to depth. The
+principled approaches set the initial weight *variance* so that the
+activations' variance stays roughly constant through the layers —
+**Xavier/Glorot** (for tanh/sigmoid-like activations) and **He**
+(for ReLU) initialization. The idea: choose the starting scale so
+signal neither amplifies nor attenuates as it passes through the
+network, giving gradients a healthy starting point. It is a
+one-line detail with a real effect on whether training converges.
+
+## Normalization: keep activations stable
+
+**Normalization layers** rescale activations *during* training, so
+each layer sees inputs with a stable distribution (roughly
+zero-mean, unit-variance) regardless of how the previous layer's
+scale drifted:
+
+- **BatchNorm** (normalize across the *batch*: each feature is
+  rescaled using the mean/variance over the examples in the batch).
+  It stabilizes and accelerates training dramatically, and its
+  batch statistics add a little noise (a mild
+  [regularizer](/ai-ml/concepts/regularization)). Its catch: it
+  depends on the *batch*, so it behaves awkwardly with small batches
+  or variable-length sequences.
+- **LayerNorm** (normalize across the *features* of a single example:
+  no dependence on the batch). This is what
+  [transformers](/ai-ml/concepts/transformers) use, because sequence
+  models have variable batch structure and cannot rely on batch
+  statistics — the reason LayerNorm is the default in modern
+  architectures.
+- **RMSNorm** (a simplified LayerNorm): cheaper, and now common in
+  large language models.
+
+The intuition: normalization keeps every layer in the "well-behaved"
+regime (activations neither exploding nor vanishing), so gradients
+flow and training is stable — the reason it became standard.
+
+## Residual connections (the third stabilizer)
+
+Worth naming alongside: **residual connections** ("skip connections":
+a layer's output is *added* to its input rather than replacing it)
+give gradients a direct path backward, which is what makes *very*
+deep networks (ResNets, transformers, hundreds of layers) trainable.
+Where normalization keeps activations scaled, residuals keep the
+gradient path short — together they are why "deep" stopped being a
+barrier.
+
+## Why it matters
+
+These are the techniques that turned "deep networks are hard to
+train" into "deep networks train reliably", and they are why the
+architectures that dominate today (transformers, ResNets) use them by
+default. The lesson: **architecture alone is not enough; training
+stability is engineered** — through initialization, normalization,
+and skip connections, the unglamorous engineering that makes the
+glamorous models work.
+
+## Related concepts
+
+- [Activation Functions](/ai-ml/concepts/activation-functions): the
+  non-linearities whose scale these stabilize.
+- [Optimizers](/ai-ml/concepts/optimizers): the update step that
+  benefits from stable gradients.
+- [Transformers](/ai-ml/concepts/transformers): LayerNorm and
+  residuals are core to them.
+- [Backpropagation](/ai-ml/concepts/backpropagation): the gradient
+  flow these techniques protect.

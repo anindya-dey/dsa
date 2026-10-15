@@ -7,6 +7,7 @@ import { RoadmapSection } from "@/components/roadmap-section";
 import { TopicList } from "@/components/topic-list";
 import { dsaPhaseTitles, getDsaPatternsByPhase } from "@/lib/catalog/dsa";
 import { patternHasContent } from "@/lib/content/dsa";
+import { tierOf } from "@/lib/catalog/tiers";
 import type { DsaPhaseNumber } from "@/lib/catalog/types";
 
 export const metadata: Metadata = {
@@ -50,6 +51,7 @@ export default function DsaRoadmapPage() {
             summary: pattern.summary,
             available: patternHasContent(pattern.slug),
             meta: pattern.variants?.join(" · "),
+            tier: tierOf(pattern.slug),
           }));
 
           return (

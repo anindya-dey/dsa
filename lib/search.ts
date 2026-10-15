@@ -7,6 +7,7 @@ import {
   systemDesignTopics,
   systemDesignTrackTitles,
 } from "@/lib/catalog/system-design";
+import { aiMlTopics, aiMlTrackTitles } from "@/lib/catalog/ai-ml";
 import { cppEntries } from "@/lib/catalog/cpp";
 import { listProblemsForPattern, patternHasContent } from "@/lib/content/dsa";
 import { topicHasContent } from "@/lib/content/system-design";
@@ -98,6 +99,26 @@ export function buildSearchIndex(): SearchEntry[] {
       summary: topic.summary,
       body: readBody(file),
       section: `System Design · ${systemDesignTrackTitles[topic.track]}${topic.group ? ` · ${topic.group}` : ""}`,
+    });
+  }
+
+  for (const topic of aiMlTopics) {
+    const file = path.join(
+      CONTENT_ROOT,
+      "ai-ml",
+      topic.track,
+      topic.slug,
+      "index.mdx",
+    );
+    if (!fs.existsSync(file)) {
+      continue;
+    }
+    entries.push({
+      url: `/ai-ml/${topic.track}/${topic.slug}`,
+      title: topic.title,
+      summary: topic.summary,
+      body: readBody(file),
+      section: `AI/ML · ${aiMlTrackTitles[topic.track]}${topic.group ? ` · ${topic.group}` : ""}`,
     });
   }
 

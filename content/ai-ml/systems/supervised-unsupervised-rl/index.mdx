@@ -1,0 +1,133 @@
+---
+title: "Supervised, Unsupervised & Reinforcement Learning"
+summary: "The three learning families, what each asks of the data and the system, and why the difference shows up in architecture."
+---
+
+Machine learning's three families are usually taught as algorithm
+taxonomies, but for the systems designer they are something more
+useful: **three different contracts between the system and the
+data**, each of which implies a different pipeline, a different
+feedback loop, and a different set of things that can go wrong. The
+one-sentence version of each, stated the way an engineer needs it:
+
+- **Supervised**: we have examples *with the right answers*
+  (labeled data), and the model learns the mapping. The bottleneck
+  is the labels.
+- **Unsupervised**: we have examples with no answers, and the model
+  finds structure (clusters, dimensions, density). The bottleneck
+  is knowing whether the structure is *useful*.
+- **Reinforcement**: the model acts, receives rewards, and learns
+  which actions earn them. The bottleneck is that learning happens
+  *inside* the product, from live interaction.
+
+## Supervised: the label economy
+
+Most industrial ML is supervised (spam/not-spam, fraud/not-fraud
+([fraud detection](/system-design/hld/fraud-detection)), predicted
+delivery time, [this user clicks this ad](/system-design/hld/recommendation-system))
+because labeled answers are what makes the "right behavior"
+teachable. The contract: **every training example needs a
+` (input, label)` pair**, which means the entire systems problem is
+manufacturing labels at scale.
+
+The label sources, in rising cost: **logged outcomes** (the user
+*did* click: the event log is a free label factory, biased by what
+the system already showed), **heuristics/weak supervision**
+(programmatic rules, "a comment with 3+ spam reports is spam": cheap,
+noisy, [Snorkel](https://en.wikipedia.org/wiki/Snorkel_(software))-shaped),
+and **human annotation** (the accurate, expensive, slow option with
+its own pipeline: guidelines, inter-annotator agreement, and the
+[quality control](/system-design/fundamentals/observability) of the
+annotators themselves — see
+[data labeling](/ai-ml/systems/data-labeling-annotation)).
+
+The supervised systems design consequences: a
+[label pipeline](/system-design/fundamentals/stream-vs-batch-processing)
+(delayed labels joining events, exactly the
+[weeks-late chargeback](/system-design/hld/fraud-detection) problem),
+an [evaluation](/system-design/fundamentals/reliability-engineering)
+discipline (held-out data, metrics, and the honest **leakage**
+traps — a feature computed *using* the answer is the classic
+corruption), and the bias in **logged-outcome labels** (you only
+have labels for what the system *did* show: the
+[feedback loop](/system-design/hld/recommendation-system) problem,
+which is a *data* problem before it is a model problem).
+
+## Unsupervised: structure without a referee
+
+Unsupervised learning (clustering users, finding topics, anomaly
+detection, the representation work that produces
+[embeddings](/ai-ml/systems/embeddings-vector-representations))
+answers a different need: *describe this data*, when nobody can
+afford to label it. The contract: the model organizes, but nothing
+tells it whether its organization matches anything real.
+
+The systems consequences are quieter but real: **evaluation is
+subjective** (no ground truth: the metrics are internal coherence
+and downstream usefulness, so the "is this model good" question
+moves entirely to the [downstream
+test](/system-design/fundamentals/reliability-engineering)),
+**anomaly detection** (the practical unsupervised product: model
+the normal, alert on the weird) carries a [false-positive
+budget](/system-design/fundamentals/rate-limiting) exactly like a
+fraud system, and **clustering for product** (user segments) means
+the *clusters* become features that other systems consume: an
+unsupervised model's output feeding a supervised model's input, a
+very common and very fragile composition (the cluster boundaries
+drift, and everything downstream drifts with them
+[undetected](/system-design/fundamentals/observability)).
+
+## Reinforcement: learning inside the product
+
+Reinforcement learning (RL: recommend, observe the reward, update
+the policy — the [bandit](https://en.wikipedia.org/wiki/Multi-armed_bandit)
+family is the industrial subset) reverses the direction: instead of
+learning from a fixed dataset, the *system interacts* to generate
+its own data. The contract: actions, rewards, and the exploration
+that produces them, all inside production traffic.
+
+The systems consequences are the deepest of the three:
+
+- **Exploration is a product decision** (serving the
+  *worse-but-informative* action costs revenue *now* for knowledge
+  *later*: the [bandit](https://en.wikipedia.org/wiki/Multi-armed_bandit)
+  regret math, which is an honest
+  [capacity-planning](/system-design/fundamentals/capacity-planning-and-estimation)-style
+  budget conversation).
+- **Logging the counterfactual** (the reward *received* for the
+  action *taken*: the [propensity](https://en.wikipedia.org/wiki/Importance_sampling)
+  machinery that makes the biased interaction log usable for
+  learning — the
+  [A/B](/system-design/fundamentals/reliability-engineering)
+  infrastructure is the *same* infrastructure, which is why every
+  serious experimentation platform is also an RL platform).
+- **The policy is stateful** (the learner *is* the serving path, or
+  feeds it directly: no offline/serving split, so the
+  [deployment](/system-design/fundamentals/reliability-engineering)
+  story for "the new policy" is the same as any canary, with the
+  added honesty that you *cannot* fully evaluate it offline, which
+  is the entire RL trade).
+
+## Which family, asked as an architecture question
+
+The diagnostic, per product problem: *"what would a labeled example
+look like?"* If you can write it down and it exists in volume,
+supervised (and the label pipeline). If you can write it down and
+it does *not* exist, the labeling pipeline *is* the project (see
+[data labeling](/ai-ml/systems/data-labeling-annotation)). If no label
+can exist ("what *is* the right assortment?"), unsupervised or RL,
+and the *evaluation* problem (how do you know it is working) is
+your real design problem. That question — answerable in five
+minutes, architectural in its consequences — is the single most
+useful thing this page teaches.
+
+## Related concepts
+
+- [ML System Design Basics](/ai-ml/systems/ml-system-design-basics):
+  the lifecycle these families fit into.
+- [Design a Recommendation System](/system-design/hld/recommendation-system):
+  the exploration/feedback-loop machinery in production.
+- [Design a Fraud Detection System](/system-design/hld/fraud-detection):
+  supervised learning with the weeks-late label pipeline.
+- [Stream vs. Batch Processing](/system-design/fundamentals/stream-vs-batch-processing):
+  the label-joining machinery.

@@ -1,0 +1,115 @@
+---
+title: "Evaluation Metrics for ML"
+summary: "Precision, recall, ROC-AUC, NDCG, calibration: what each metric measures and when it lies."
+---
+
+A metric is a **choice about what "good" means**, made explicit, and
+every serious ML incident traces back to a metric that measured the
+wrong thing confidently. This page is the metric vocabulary and —
+more importantly — the *failure mode of each*, because the systems
+designer's job is to pick the metric whose failure mode the product
+can survive.
+
+## The confusion matrix, the root of everything
+
+Binary classification's four outcomes: true positive, true negative,
+false positive, false negative. Every threshold-based metric is a
+function of these four numbers, and the first design decision is
+*which error is worse* — the question no metric answers for you.
+
+- **Precision** = TP / (TP + FP): of the things we flagged, how many
+  were right. The metric of *false-alarm cost* (a spam filter
+  blocking a real email: precision).
+- **Recall** = TP / (TP + FN): of the things that mattered, how many
+  we caught. The metric of *missed-cost* (a fraud system letting a
+  charge through: recall).
+- **F1** = the harmonic mean: one number for "both matter," which is
+  a *choice* to weight them equally, worth stating as one (the
+  product rarely weights them equally: the
+  [fraud design](/system-design/hld/fraud-detection)'s dollar
+  arithmetic is the honest version).
+
+The precision/recall *trade* is a **threshold** (lower the bar:
+more flags, higher recall, lower precision), which is why "we
+improved the model" must say *at which operating point*: a model
+can dominate another at every threshold (a better
+[ROC](/ai-ml/systems/evaluation-metrics) curve) or only win
+at one.
+
+## Ranking and probability metrics
+
+- **ROC-AUC** (the area under the true-positive-vs-false-positive
+  curve): the probability a random positive ranks above a random
+  negative, **threshold-independent** — good for model *comparison*,
+  and the classic trap on **imbalanced data** (a fraud rate of
+  0.1%: a huge ROC-AUC can hide a useless model, because the vast
+  negative class dominates the curve: the fix is
+  **precision-recall AUC**, which the imbalanced cases actually
+  care about).
+- **NDCG** (normalized discounted cumulative gain, the *ranking*
+  metric): the [feed](/system-design/hld/recommendation-system) and
+  [search](/system-design/fundamentals/search-and-inverted-index)
+  family's measure (relevance graded, position discounted: item 1
+  counts more than item 10, normalized against the ideal order),
+  which is why ranking products are evaluated with NDCG and not
+  accuracy.
+- **Calibration** (does a 0.7 mean a 70% chance?): the metric
+  *nobody* checks and *everyone* needs when scores feed decisions
+  (a [bid](/system-design/hld/ad-click-aggregator) priced by the
+  model's probability: miscalibration is a money bug), measured by
+  reliability diagrams and fixed by
+  [Platt scaling](https://en.wikipedia.org/wiki/Platt_scaling) /
+  [isotonic regression](https://en.wikipedia.org/wiki/Isotonic_regression).
+- **Regression's metrics** (MAE, RMSE, MAPE, quantile loss): RMSE
+  punishes large errors (the outlier-sensitive choice), MAE the
+  average (robust), and the choice is a *product* statement about
+  whether big misses matter disproportionately.
+
+## The system-level metrics (the ones that actually ship)
+
+The offline metric is a proxy; the product cares about **business
+outcomes**, and the [two-tier evaluation](/ai-ml/systems/offline-vs-online-evaluation)
+exists because the two diverge:
+
+- **Engagement** (clicks, watch time, session length): the
+  [feed](/system-design/hld/recommendation-system) metrics, and the
+  ones [A/B tests](/ai-ml/systems/ab-testing-experimentation)
+  measure directly.
+- **Cost/latency** (the model's own serving bill and p99: a metric
+  the ML team often forgets, and the
+  [serving pages](/ai-ml/systems/model-serving-architectures)
+  make first-class).
+- **Guardrails** (the metrics that must *not* regress: diversity,
+  safety, latency: the [A/B](/ai-ml/systems/ab-testing-experimentation)
+  discipline's "guardrail metrics," which turn a metric suite into
+  a *contract*).
+
+## The traps, collected
+
+- **Class imbalance** (accuracy is a lie on imbalanced data: "99%
+  accurate" on a 1% fraud rate is the all-negative predictor —
+  the first thing to check, always).
+- **The wrong split** (a metric measured on leaked or
+  non-temporal data: the [training pipeline's](/ai-ml/systems/training-data-pipelines)
+  leakage family, which produces *excellent* metrics and worthless
+  models).
+- **Aggregate hiding a segment** (95% overall accuracy, 60% on the
+  minority class: the [fairness](/ai-ml/systems/bias-fairness-explainability)
+  page's whole subject, and the reason "break the metric down by
+  segment" is the first diagnostic).
+- **Optimizing the metric, not the goal** (Goodhart's law, ML
+  edition: a model trained hard on NDCG games the ranking; the
+  product wanted *retention*, and the
+  [feedback loop](/system-design/hld/recommendation-system) drifted
+  the system toward the metric's shape).
+
+## Related concepts
+
+- [Offline vs Online Evaluation](/ai-ml/systems/offline-vs-online-evaluation):
+  the proxy-vs-reality gap this page's metrics create.
+- [A/B Testing & Experimentation](/ai-ml/systems/ab-testing-experimentation):
+  how the business metrics are actually measured.
+- [Bias, Fairness & Explainability](/ai-ml/systems/bias-fairness-explainability):
+  the segment-level metric breakdown.
+- [Model Monitoring & Data Drift](/ai-ml/systems/model-monitoring-drift):
+  watching these metrics in production.

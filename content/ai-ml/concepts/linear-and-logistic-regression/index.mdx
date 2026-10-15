@@ -1,0 +1,82 @@
+---
+title: "Linear & Logistic Regression"
+summary: "The two simplest models, and why they remain baselines worth knowing."
+---
+
+Before neural networks, there were two models so simple they are
+almost embarrassing — and so useful they remain the first thing to
+try and the baseline to beat. **Linear regression** predicts a
+*number* as a weighted sum of the inputs; **logistic regression**
+predicts a *probability* (and thus a class) by squashing that sum
+through a curve. Together they are the foundation every other model
+is measured against, and understanding them makes the rest of ML
+legible.
+
+## Linear regression: a weighted sum
+
+The model: `prediction = w₁·x₁ + w₂·x₂ + ... + b` — multiply each
+feature by a learned weight, add them up, add a bias. Training finds
+the weights that minimize the
+[squared error](/ai-ml/concepts/loss-functions-and-risk). It is the
+"fit a line (or hyperplane) through the data" idea.
+
+Why it matters beyond its simplicity: **it is interpretable** (each
+weight says how much that feature moves the prediction, holding the
+others fixed — the reason it is used in domains that require
+explanation, like credit scoring), **it is fast** (training is a
+closed-form or convex optimization — no local minima, no tuning), and
+**it is the baseline** (if a fancy model does not beat linear
+regression, the fancy model is not earning its complexity). Its
+limitation is obvious: it can only capture *linear* relationships,
+and real data is usually not linear.
+
+## Logistic regression: a probability, then a class
+
+For classification, the same weighted sum is passed through a
+**sigmoid** (a curve that squashes any number into `(0, 1)`), giving
+a *probability*: `p = sigmoid(w·x + b)`. Predict "class 1" if `p >
+0.5`, and you have a classifier. Training minimizes
+[cross-entropy](/ai-ml/concepts/loss-functions-and-risk) (the loss
+that punishes confident wrong answers), and the result is a *linear
+decision boundary* with *calibrated-ish* probabilities.
+
+Two things make it more than a toy: **the output is a probability**
+(so it feeds decisions — the [calibration](/ai-ml/systems/evaluation-metrics)
+that CTR models need, and the reason logistic regression was the ad
+industry's workhorse for years), and **the coefficients are
+odds-ratios** (interpretable as "each unit of feature x multiplies the
+odds by e^w", the language of risk models). It is the default
+*baseline classifier*, and for many problems it is *enough*.
+
+## The shared lesson: linear models and feature engineering
+
+Both models are *linear in the features* — which means their power
+depends entirely on *which features you give them*. A logistic
+regression on raw pixels cannot recognize a digit; the same model on
+*engineered* features (or on [learned
+embeddings](/ai-ml/concepts/word-embeddings)) can. This is the
+central lesson the linear models teach: **the model finds the
+weights; you (or a deeper model) must supply the representation.**
+Deep learning is, in one framing, the automation of that feature
+engineering — the network *learns* the nonlinear features that a
+linear model on top can use.
+
+## Where they fit today
+
+Linear and logistic regression are not obsolete: they are the *first
+baseline* (fast, interpretable, hard to beat on small or tabular
+data), the *final layer* of many deep models (a neural network often
+ends in a logistic regression), and the *interpretable* option where
+explanation is required. Knowing them is knowing what "simple" means
+in ML — the yardstick.
+
+## Related concepts
+
+- [Loss Functions & Empirical Risk](/ai-ml/concepts/loss-functions-and-risk):
+  squared error and cross-entropy.
+- [Perceptrons & Multilayer Perceptrons](/ai-ml/concepts/perceptrons-and-mlps):
+  the nonlinear generalization.
+- [Gradient Boosting](/ai-ml/concepts/gradient-boosting): the
+  tabular model that usually beats them.
+- [Interpretability](/ai-ml/concepts/interpretability): why these
+  models are used where explanation matters.

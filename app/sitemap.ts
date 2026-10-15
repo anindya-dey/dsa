@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { siteUrl } from "@/lib/site";
 import { dsaPatterns } from "@/lib/catalog/dsa";
 import { systemDesignTopics } from "@/lib/catalog/system-design";
+import { aiMlTopics } from "@/lib/catalog/ai-ml";
 import { cppEntries } from "@/lib/catalog/cpp";
 import {
   listProblemsForPattern,
@@ -10,6 +11,7 @@ import {
   problemMtime,
 } from "@/lib/content/dsa";
 import { topicHasContent, topicMtime } from "@/lib/content/system-design";
+import { topicHasContent as aiTopicHasContent, topicMtime as aiTopicMtime } from "@/lib/content/ai-ml";
 
 interface SitemapEntry {
   url: string;
@@ -22,6 +24,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/dsa",
     "/dsa/cheat-sheet",
     "/system-design",
+    "/ai-ml",
     "/cpp",
   ].map((route) => ({ url: `${siteUrl}${route}` }));
 
@@ -46,6 +49,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: topicMtime(topic.track, topic.slug),
     }));
 
+  const aiMlRoutes: SitemapEntry[] = aiMlTopics
+    .filter((topic) => aiTopicHasContent(topic.track, topic.slug))
+    .map((topic) => ({
+      url: `${siteUrl}/ai-ml/${topic.track}/${topic.slug}`,
+      lastModified: aiTopicMtime(topic.track, topic.slug),
+    }));
+
   const cppRoutes: SitemapEntry[] = cppEntries.map((entry) => ({
     url: `${siteUrl}/cpp/${entry.slug}`,
   }));
@@ -55,6 +65,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...patternRoutes,
     ...problemRoutes,
     ...topicRoutes,
+    ...aiMlRoutes,
     ...cppRoutes,
   ];
 }

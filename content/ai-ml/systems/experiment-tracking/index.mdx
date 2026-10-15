@@ -1,0 +1,103 @@
+---
+title: "Experiment Tracking"
+summary: "Recording every training run's inputs, parameters, and results so they can be compared."
+---
+
+Experiment tracking is the **lab notebook for training runs**: for
+every run, record the inputs (data version, code version),
+the configuration (hyperparameters, architecture), and the results
+(metrics, artifacts, plots) — so that the runs can be *compared*
+("which configuration was best?"), *reproduced* ("rerun the one
+that won"), and *not repeated* ("we already tried that"). It is the
+discipline that turns model development from a memory game into a
+query, and its absence is the single most common reason a team
+"loses" a good result and cannot recover it.
+
+## What a run record holds
+
+- **Identity and provenance** (the run id, who ran it, when, the
+  git sha, the dataset version: the
+  [lineage](/ai-ml/systems/data-versioning-lineage) — the
+  same triple the [registry](/ai-ml/systems/model-registry)
+  needs, recorded *per run*, not just for the winner).
+- **Configuration** (the hyperparameters (learning rate, batch
+  size, layers), the architecture choices, the seeds: everything
+  that, if changed, changes the model — the
+  [reproducibility](/ai-ml/systems/reproducibility-metadata)
+  input).
+- **Metrics over time** (the *training curve*: loss/accuracy per
+  step, plus the final eval metrics: the tracking is *time-series*,
+  not a single number, because *how* a run trained (converged
+  fast? diverged? plateaued?) is part of understanding it — the
+  [metrics-monitoring](/system-design/hld/metrics-monitoring-system)
+  machinery, per run).
+- **Artifacts** (checkpoints, plots, the model: the outputs, linked
+  (not necessarily stored in the tracker: the
+  [object storage](/system-design/fundamentals/object-storage) +
+  reference discipline).
+
+## The comparison discipline
+
+The tracker's value is the *query*, and the queries are the science:
+
+- **"Which run was best, by which metric?"** (the leaderboard: sort
+  runs by the primary eval metric, filtered by dataset/architecture
+  — the [leaderboard](/system-design/hld/leaderboard) shape, for
+  experiments).
+- **"What was different about the winning run?"** (the *diff* of
+  two runs' configs: the tracker makes the hyperparameter diff a
+  query, which is how a team *learns* what mattered — the
+  [hyperparameter-tuning](/ai-ml/systems/hyperparameter-tuning)
+  loop, made observable).
+- **"Did we already try this?"** (search the runs for the config:
+  the anti-repetition query, and a real saving of GPU-hours).
+- **"Rerun the winner"** (the reproduction: the recorded
+  config + the recorded data version → the same model, the
+  [reproducibility](/ai-ml/systems/reproducibility-metadata)
+  promise *delivered*).
+
+## The systems shape
+
+The tracker is a **metadata + time-series store** (the runs, their
+configs, their metric streams: a small relational store plus a
+time-series store, or a purpose-built tracker (MLflow, Weights &
+Biases, Neptune) — the [metrics-monitoring](/system-design/hld/metrics-monitoring-system)
+architecture, scoped per run), with the *training job* as its
+writer (the [pipeline](/ai-ml/systems/mlops-cicd) logging as
+it trains) and the *data scientist* as its reader (the UI: compare,
+plot, query). The scale is modest (thousands of runs, not billions
+of requests), which is why trackers are *off-the-shelf tools* far
+more than they are builds — and why the design conversation is
+about *what to log* and *the discipline*, not the infrastructure.
+
+## The discipline (what makes it work)
+
+- **Log everything, automatically** (the trap is *manual* tracking
+  (a human writes down the hyperparameters): it is incomplete and
+  stops under pressure — the tracker must be *instrumented into the
+  training code*, so every run is recorded whether or not anyone
+  remembers — the [observability](/system-design/fundamentals/observability)
+  "instrument, don't remember" rule).
+- **Log the *inputs*, not just the outputs** (a run that recorded
+  "accuracy 0.94" but not the data version or the seed is
+  *unreproducible* — the [reproducibility](/ai-ml/systems/reproducibility-metadata)
+  requirement: the config *is* the run).
+- **The tracker is not the registry** (the tracker holds *all*
+  runs (the exploration: hundreds, including failures); the
+  [registry](/ai-ml/systems/model-registry) holds the
+  *promoted* models (the curated: the ones in a lifecycle). The two
+  are related (a registered model links to its winning run) but
+  distinct: the tracker is *research*, the registry is *production*).
+
+## Related concepts
+
+- [Reproducibility & Metadata](/ai-ml/systems/reproducibility-metadata):
+  what the run record must contain to be reusable.
+- [Hyperparameter Tuning at Scale](/ai-ml/systems/hyperparameter-tuning):
+  the loop the tracker makes observable.
+- [Model Registry & Versioning](/ai-ml/systems/model-registry):
+  the promoted-run destination.
+- [MLOps & CI/CD for Models](/ai-ml/systems/mlops-cicd): the
+  pipeline that logs runs.
+- [Metrics & Monitoring](/system-design/hld/metrics-monitoring-system):
+  the time-series architecture, per run.

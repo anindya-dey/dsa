@@ -1,0 +1,122 @@
+---
+title: "Testing at Scale (Load & Chaos)"
+summary: "Load, stress, and chaos testing: proving a system survives the load it was built for."
+---
+
+A system that has never been tested *at load* has an opinion about
+its capacity, not a fact. Unit and integration tests prove
+*correctness* (does it do the right thing?); they say nothing about
+*behavior under stress* (does it stay correct and available when the
+load, the data, or a dependency misbehaves?). This page is the
+*fleet-scale* testing discipline: load and stress testing (does it
+survive the traffic?), and chaos testing (does it survive the
+failures?) — the practices that turn "we think it scales" into "we
+know how it fails."
+
+## The testing pyramid, extended
+
+The classic pyramid (unit → integration → end-to-end) covers
+*correctness*. The scale tier adds, on top:
+
+- **Load testing** (drive *expected peak* traffic and measure:
+  latency percentiles, throughput, error rate — the
+  [latency-vs-throughput](/system-design/fundamentals/latency-vs-throughput)
+  metrics, at load. The question: does it meet the
+  [SLO](/system-design/fundamentals/reliability-engineering) at the
+  load we *designed* for?).
+- **Stress testing** (drive *beyond* peak, to *find the breaking
+  point* and the *failure mode*: does it degrade gracefully (shed
+  load, slow down) or collapse (thundering herd, cascade)? The
+  [backpressure](/system-design/fundamentals/backpressure-and-flow-control)
+  behavior, tested).
+- **Soak testing** (run *sustained* load for hours/days: find the
+  *slow leaks* — memory growth, connection leaks, log-disk fill,
+  cache degradation — the failures that only appear over time).
+- **Chaos testing** (inject *failures*: kill a node, add latency to
+  a dependency, partition a network — the
+  [availability](/system-design/fundamentals/availability-and-reliability)
+  machinery, exercised. The question: does the system *survive
+  component failure* as designed, or does the redundancy only exist
+  on paper?).
+
+## Load testing: measure, don't guess
+
+The discipline, and the traps:
+
+- **Model realistic traffic** (a synthetic load that hits one
+  endpoint with no cache misses is not your traffic: model the
+  *mix*, the *read:write ratio*, the *cache behavior*, the *data
+  sizes* — a load test that misrepresents the workload produces a
+  confident, wrong answer).
+- **Measure the *tail*** (average latency is useless under load:
+  the [p99/p99.9](/system-design/fundamentals/latency-vs-throughput)
+  is what breaks, and the *shape* of the curve as load rises (where
+  does the knee happen?) is the finding — the
+  [queueing](/system-design/fundamentals/latency-vs-throughput)
+  behavior, measured).
+- **The bottleneck moves** (you fix the app tier, and the *database*
+  becomes the limit; the load test must be re-run after each fix,
+  because the binding constraint *changes* — the
+  [scalability](/system-design/fundamentals/scalability) ladder, one
+  rung at a time).
+- **Test against production-like data volumes** (a query that is
+  fast on a thousand rows and slow on a billion is a *data-volume*
+  failure, not a *traffic* failure: the
+  [capacity-planning](/system-design/fundamentals/capacity-planning-and-estimation)
+  distinction, and the reason staging with toy data lies).
+
+## Chaos testing: prove the redundancy
+
+The practice, from Netflix's
+[Chaos Monkey](https://en.wikipedia.org/wiki/Chaos_engineering) and
+formalized in the [chaos-engineering](https://principlesofchaos.org/)
+discipline: **deliberately inject failures in production (or a
+production-like environment) to verify the system's failure handling
+actually works.** The principle: *redundancy that has never been
+exercised is a hypothesis*, and the honest way to test a failover is
+to *fail* something.
+
+The methods, in rising aggressiveness: **fault injection** (kill a
+pod, add latency to a dependency, return errors from a mock),
+**network chaos** (partition, drop packets, add jitter — the
+[partition](/system-design/fundamentals/cap-theorem-and-consistency-models)
+that tests the consistency design), **resource stress** (fill the
+disk, exhaust memory, saturate the CPU), and **game days** (a
+scheduled, team-run failure exercise, with a hypothesis and a
+review — the [incident-response](/system-design/fundamentals/reliability-engineering)
+drill). The output is not "it passed" but *confidence* (the failover
+works) and *findings* (it did not — a bug found by chaos is a bug
+found *before* the real outage).
+
+The discipline that makes it safe: **start small** (one failure at a
+time), **have a hypothesis** ("killing one node should not affect
+p99"), **blast-radius control** (chaos experiments are themselves
+gated and reversible — the [canary](/system-design/fundamentals/reliability-engineering)
+discipline, for experiments), and **run in production** (staging
+never matches production's scale and complexity, so the *most
+honest* chaos is in production, carefully — the mature practice, and
+a cultural one as much as a technical one).
+
+## The systems view
+
+Both load and chaos testing are *experiments*: a hypothesis about the
+system's behavior, an injected condition, a measured outcome — the
+[scientific method](/ai-ml/systems/ab-testing-experimentation),
+applied to reliability. And both share the honest limitation: they
+test the *conditions you thought of*, which is why they *complement*
+(in not replace) the [observability](/system-design/fundamentals/observability)
+that catches the failures you *did not* — the tests are the
+*rehearsal*, production monitoring is the *performance*.
+
+## Related concepts
+
+- [Reliability Engineering](/system-design/fundamentals/reliability-engineering):
+  the SLOs the tests measure against.
+- [Availability & Reliability](/system-design/fundamentals/availability-and-reliability):
+  the redundancy the chaos tests verify.
+- [Latency vs. Throughput](/system-design/fundamentals/latency-vs-throughput):
+  the metrics load testing produces.
+- [Capacity Planning & Estimation](/system-design/fundamentals/capacity-planning-and-estimation):
+  the peak the load test drives to.
+- [Backpressure & Flow Control](/system-design/fundamentals/backpressure-and-flow-control):
+  the graceful-degradation behavior stress testing checks.

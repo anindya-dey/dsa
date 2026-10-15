@@ -3,15 +3,18 @@ import path from "node:path";
 import matter from "gray-matter";
 import { dsaPatterns } from "../lib/catalog/dsa.ts";
 import { systemDesignTopics } from "../lib/catalog/system-design.ts";
+import { aiMlTopics } from "../lib/catalog/ai-ml.ts";
 import { cppEntries } from "../lib/catalog/cpp.ts";
 
 const root = process.cwd();
 const contentRoot = path.join(root, "content");
 const DSA_PATTERNS_DIR = path.join(contentRoot, "dsa", "patterns");
 const SD_ROOT = path.join(contentRoot, "system-design");
+const AI_ML_ROOT = path.join(contentRoot, "ai-ml");
 
 const DSA_PHASES = [1, 2, 3, 4];
-const SD_TRACKS = ["fundamentals", "lld", "hld", "ai-ml"];
+const SD_TRACKS = ["fundamentals", "lld", "hld"];
+const AI_ML_TRACKS = ["concepts", "systems"];
 const DIFFICULTIES = ["Easy", "Medium", "Hard"];
 
 const errors = [];
@@ -73,6 +76,30 @@ for (const track of SD_TRACKS) {
   }
 }
 
+const aiMlBySlug = new Map();
+for (const topic of aiMlTopics) {
+  if (aiMlBySlug.has(topic.slug)) {
+    errors.push(
+      `Duplicate AI/ML slug "${topic.slug}" (tracks "${aiMlBySlug.get(topic.slug).track}" and "${topic.track}")`,
+    );
+  }
+  aiMlBySlug.set(topic.slug, topic);
+
+  if (!AI_ML_TRACKS.includes(topic.track)) {
+    errors.push(`AI/ML topic "${topic.slug}" has invalid track "${topic.track}"`);
+  }
+  if (!topic.title) errors.push(`AI/ML topic "${topic.slug}" is missing a title`);
+  if (!topic.summary) errors.push(`AI/ML topic "${topic.slug}" is missing a summary`);
+}
+
+for (const track of AI_ML_TRACKS) {
+  for (const slug of listDirs(path.join(AI_ML_ROOT, track))) {
+    if (!aiMlBySlug.has(slug) || aiMlBySlug.get(slug).track !== track) {
+      errors.push(`content/ai-ml/${track}/${slug} has no catalog entry`);
+    }
+  }
+}
+
 for (const pattern of dsaPatterns) {
   const dir = path.join(DSA_PATTERNS_DIR, pattern.slug);
   const overview = path.join(dir, "index.mdx");
@@ -125,6 +152,17 @@ for (const topic of systemDesignTopics) {
   }
 }
 
+for (const topic of aiMlTopics) {
+  const file = path.join(AI_ML_ROOT, topic.track, topic.slug, "index.mdx");
+  if (!fs.existsSync(file)) continue;
+  const data = readFrontmatter(file);
+  if (!data.title) {
+    errors.push(
+      `Missing title in content/ai-ml/${topic.track}/${topic.slug}/index.mdx`,
+    );
+  }
+}
+
 const CPP_ROOT = path.join(root, "content", "cpp");
 for (const entry of cppEntries) {
   const file = path.join(CPP_ROOT, `${entry.slug}.mdx`);
@@ -156,5 +194,5 @@ if (errors.length > 0) {
 }
 
 console.log(
-  `Content check passed (${dsaPatterns.length} DSA patterns, ${systemDesignTopics.length} system design topics, ${cppEntries.length} C++ entries).`,
+  `Content check passed (${dsaPatterns.length} DSA patterns, ${systemDesignTopics.length} system design topics, ${aiMlTopics.length} AI/ML topics, ${cppEntries.length} C++ entries).`,
 );

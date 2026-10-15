@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Badge } from "@/components/badge";
+import { TierBadge } from "@/components/tier-badge";
 import { ArrowRightIcon } from "@/components/icons";
+import type { Tier } from "@/lib/catalog/types";
 
 export interface TopicListItem {
   href: string;
@@ -8,6 +10,7 @@ export interface TopicListItem {
   summary: string;
   available: boolean;
   meta?: string;
+  tier?: Tier;
 }
 
 export function TopicList({ items }: { items: TopicListItem[] }) {
@@ -32,6 +35,7 @@ export function TopicList({ items }: { items: TopicListItem[] }) {
                 >
                   {item.title}
                 </span>
+                {item.tier && <TierBadge tier={item.tier} />}
                 {!item.available && <Badge>soon</Badge>}
               </span>
               <span className="mt-1 block text-sm leading-relaxed text-ink-soft">

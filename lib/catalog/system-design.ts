@@ -4,7 +4,6 @@ export const systemDesignTrackTitles: Record<SystemDesignTrack, string> = {
   fundamentals: "Fundamentals",
   lld: "Low-Level Design",
   hld: "High-Level Design",
-  "ai-ml": "AI/ML Systems",
 };
 
 export const systemDesignTrackDescriptions: Record<SystemDesignTrack, string> = {
@@ -12,8 +11,6 @@ export const systemDesignTrackDescriptions: Record<SystemDesignTrack, string> = 
     "The building blocks every distributed system is made of — scalability, caching, consistency, and the vocabulary you need before designing anything bigger.",
   lld: "Object-oriented, code-level design for self-contained systems — class diagrams, design patterns, and a working sketch.",
   hld: "Build the components distributed systems are made of, then apply them in full case studies with trade-offs and capacity estimates.",
-  "ai-ml":
-    "The systems side of machine learning — data pipelines, features, serving, evaluation, and the GenAI-era machinery that turns models into products. Engineering, not theory.",
 };
 
 export const systemDesignTopics: SystemDesignTopicMeta[] = [
@@ -279,6 +276,40 @@ export const systemDesignTopics: SystemDesignTopicMeta[] = [
     track: "fundamentals",
     group: "Security",
     summary: "Isolating tenant data and meeting rules about where it may physically live.",
+  },
+
+  // Fundamentals — Platform Engineering
+  {
+    slug: "container-orchestration",
+    title: "Container Orchestration & Kubernetes",
+    track: "fundamentals",
+    group: "Platform Engineering",
+    summary: "Scheduling containers across a fleet: the deployment substrate under modern systems.",
+  },
+  {
+    slug: "cloud-cost-finops",
+    title: "Cloud Cost & FinOps",
+    track: "fundamentals",
+    group: "Platform Engineering",
+    summary: "The cloud bill as an engineering constraint: where it goes and how to reduce it.",
+  },
+
+  // Fundamentals — Reliability & Operations
+  {
+    slug: "testing-at-scale",
+    title: "Testing at Scale (Load & Chaos)",
+    track: "fundamentals",
+    group: "Reliability & Operations",
+    summary: "Load, stress, and chaos testing: proving a system survives the load it was built for.",
+  },
+
+  // Fundamentals — Security
+  {
+    slug: "zero-trust-supply-chain",
+    title: "Zero Trust & Supply Chain Security",
+    track: "fundamentals",
+    group: "Security",
+    summary: "Assume-breach networking and securing the software you depend on.",
   },
 
   // Low-Level Design
@@ -644,499 +675,6 @@ export const systemDesignTopics: SystemDesignTopicMeta[] = [
     summary: "Moving a live monolith to new services, piece by piece, without downtime.",
   },
 
-  // AI/ML — The Learning Problem
-  {
-    slug: "ml-system-design-basics",
-    title: "ML System Design Basics",
-    track: "ai-ml",
-    group: "The Learning Problem",
-    summary: "The train → deploy → monitor lifecycle, and where systems engineering enters machine learning.",
-  },
-  {
-    slug: "supervised-unsupervised-rl",
-    title: "Supervised, Unsupervised & Reinforcement Learning",
-    track: "ai-ml",
-    group: "The Learning Problem",
-    summary: "The three learning families and what each asks of the data and the system.",
-  },
-  {
-    slug: "offline-vs-online-inference",
-    title: "Offline vs Online Inference",
-    track: "ai-ml",
-    group: "The Learning Problem",
-    summary: "Batch scoring of everything versus millisecond scoring of one request, and their opposite infrastructures.",
-  },
-  {
-    slug: "batch-vs-real-time-prediction",
-    title: "Batch vs Real-Time Prediction",
-    track: "ai-ml",
-    group: "The Learning Problem",
-    summary: "Scoring on a schedule versus scoring in the request path, and the feature freshness each implies.",
-  },
-
-  // AI/ML — Data
-  {
-    slug: "training-data-pipelines",
-    title: "Training Data Pipelines",
-    track: "ai-ml",
-    group: "Data",
-    summary: "The ETL-for-ML: collecting, joining, and curating the examples a model learns from.",
-  },
-  {
-    slug: "data-labeling-annotation",
-    title: "Data Labeling & Annotation",
-    track: "ai-ml",
-    group: "Data",
-    summary: "Where ground truth comes from: humans, heuristics, and the weak-supervision machinery.",
-  },
-  {
-    slug: "data-versioning-lineage",
-    title: "Data Versioning & Lineage",
-    track: "ai-ml",
-    group: "Data",
-    summary: "Which data trained which model, reproducible after the fact.",
-  },
-  {
-    slug: "feature-engineering-basics",
-    title: "Feature Engineering Basics",
-    track: "ai-ml",
-    group: "Data",
-    summary: "Turning raw events into model inputs, and the leakage traps that corrupt evaluation.",
-  },
-
-  // AI/ML — Serving State
-  {
-    slug: "feature-stores",
-    title: "Feature Stores",
-    track: "ai-ml",
-    group: "Serving State",
-    summary: "Precomputed model inputs, shared between training and serving, with the freshness contract.",
-  },
-  {
-    slug: "embeddings-vector-representations",
-    title: "Embeddings & Vector Representations",
-    track: "ai-ml",
-    group: "Serving State",
-    summary: "Meaning as geometry: representing items as vectors so similarity becomes distance.",
-  },
-  {
-    slug: "similarity-search-ann",
-    title: "Similarity Search & ANN",
-    track: "ai-ml",
-    group: "Serving State",
-    summary: "HNSW, IVF, and product quantization: finding nearest neighbors without comparing to all of them.",
-  },
-  {
-    slug: "vector-databases",
-    title: "Vector Databases",
-    track: "ai-ml",
-    group: "Serving State",
-    summary: "The store built for embeddings: ANN indexes, hybrid search, and filtered queries.",
-  },
-
-  // AI/ML — Evaluation & Operations
-  {
-    slug: "evaluation-metrics",
-    title: "Evaluation Metrics for ML",
-    track: "ai-ml",
-    group: "Evaluation & Operations",
-    summary: "Precision, recall, ROC-AUC, NDCG, calibration: what each metric measures and when it lies.",
-  },
-  {
-    slug: "offline-vs-online-evaluation",
-    title: "Offline vs Online Evaluation",
-    track: "ai-ml",
-    group: "Evaluation & Operations",
-    summary: "Why a good offline metric does not guarantee a good product, and how the gap is measured.",
-  },
-  {
-    slug: "ab-testing-experimentation",
-    title: "A/B Testing & Experimentation",
-    track: "ai-ml",
-    group: "Evaluation & Operations",
-    summary: "Randomized experiments for models: assignment, guardrail metrics, and the traps that invalidate results.",
-  },
-  {
-    slug: "model-monitoring-drift",
-    title: "Model Monitoring & Data Drift",
-    track: "ai-ml",
-    group: "Evaluation & Operations",
-    summary: "Watching inputs and outputs for the shift that precedes every model regression.",
-  },
-  {
-    slug: "concept-drift-retraining",
-    title: "Concept Drift & Retraining",
-    track: "ai-ml",
-    group: "Evaluation & Operations",
-    summary: "When the relationship itself changes, and how fast the model must be replaced.",
-  },
-  {
-    slug: "bias-fairness-explainability",
-    title: "Bias, Fairness & Explainability",
-    track: "ai-ml",
-    group: "Evaluation & Operations",
-    summary: "Measuring disparate impact, and making a model's decisions legible to the people they affect.",
-  },
-  {
-    slug: "privacy-preserving-ml",
-    title: "Privacy-Preserving ML & Federated Learning",
-    track: "ai-ml",
-    group: "Evaluation & Operations",
-    summary: "Training and serving without centralizing raw data: differential privacy and federated learning.",
-  },
-  {
-    slug: "responsible-ai-safety",
-    title: "Responsible AI & Safety",
-    track: "ai-ml",
-    group: "Evaluation & Operations",
-    summary: "The engineering practices that keep a deployed model within acceptable behavior.",
-  },
-
-  // AI/ML — Serving & Inference
-  {
-    slug: "model-serving-architectures",
-    title: "Model Serving Architectures",
-    track: "ai-ml",
-    group: "Serving & Inference",
-    summary: "How a trained model becomes an endpoint: the serving tier, its shapes, and its contracts.",
-  },
-  {
-    slug: "inference-optimization",
-    title: "Inference Optimization",
-    track: "ai-ml",
-    group: "Serving & Inference",
-    summary: "Quantization, pruning, and distillation: making a model cheaper without retraining from scratch.",
-  },
-  {
-    slug: "batching-and-latency",
-    title: "Batching & Latency",
-    track: "ai-ml",
-    group: "Serving & Inference",
-    summary: "Dynamic batching, the throughput/latency trade, and tail latency under a queue.",
-  },
-  {
-    slug: "gpu-accelerator-management",
-    title: "GPU & Accelerator Management",
-    track: "ai-ml",
-    group: "Serving & Inference",
-    summary: "Sharing scarce accelerators: scheduling, memory, and the utilization problem.",
-  },
-  {
-    slug: "model-runtimes-compilation",
-    title: "Model Runtimes & Compilation",
-    track: "ai-ml",
-    group: "Serving & Inference",
-    summary: "ONNX, TensorRT, and ahead-of-time compilation: turning a graph into fast kernels.",
-  },
-  {
-    slug: "multi-model-serving-routing",
-    title: "Multi-Model Serving & Routing",
-    track: "ai-ml",
-    group: "Serving & Inference",
-    summary: "Serving many models (or many versions) from one fleet, and routing each request to the right one.",
-  },
-  {
-    slug: "edge-on-device-inference",
-    title: "Edge / On-Device Inference",
-    track: "ai-ml",
-    group: "Serving & Inference",
-    summary: "Running the model on the phone: privacy, offline tolerance, and tiny footprints.",
-  },
-  {
-    slug: "serverless-inference",
-    title: "Serverless Inference & Cold Starts",
-    track: "ai-ml",
-    group: "Serving & Inference",
-    summary: "Scale-to-zero for models, and the multi-gigabyte cold start that fights it.",
-  },
-  {
-    slug: "model-caching-warm-pools",
-    title: "Model Caching & Warm Pools",
-    track: "ai-ml",
-    group: "Serving & Inference",
-    summary: "Keeping the right model loaded where it is needed, so no request pays the load cost.",
-  },
-  {
-    slug: "autoscaling-inference",
-    title: "Autoscaling for Inference",
-    track: "ai-ml",
-    group: "Serving & Inference",
-    summary: "Scaling a serving fleet on the right signal, when the unit of work is a slow, expensive request.",
-  },
-
-  // AI/ML — GenAI / LLM Systems
-  {
-    slug: "llm-serving",
-    title: "LLM Serving Basics",
-    track: "ai-ml",
-    group: "GenAI / LLM Systems",
-    summary: "Tokens, the KV cache, and context windows: what makes serving an LLM different from serving a classifier.",
-  },
-  {
-    slug: "prompt-engineering-systems",
-    title: "Prompt Engineering as a System Concern",
-    track: "ai-ml",
-    group: "GenAI / LLM Systems",
-    summary: "Prompts as versioned artifacts: templates, evaluation, and the discipline of changing them safely.",
-  },
-  {
-    slug: "rag",
-    title: "Retrieval-Augmented Generation (RAG)",
-    track: "ai-ml",
-    group: "GenAI / LLM Systems",
-    summary: "Grounding generation in retrieved context: the retrieval/generation pipeline and where it fails.",
-  },
-  {
-    slug: "chunking-indexing-strategies",
-    title: "Chunking & Indexing Strategies",
-    track: "ai-ml",
-    group: "GenAI / LLM Systems",
-    summary: "How documents become retrievable chunks, and why chunking decides RAG's quality.",
-  },
-  {
-    slug: "fine-tuning-vs-prompting-vs-rag",
-    title: "Fine-Tuning vs Prompting vs RAG",
-    track: "ai-ml",
-    group: "GenAI / LLM Systems",
-    summary: "The three ways to change a model's behavior, their costs, and how to choose.",
-  },
-  {
-    slug: "lora-peft",
-    title: "Parameter-Efficient Fine-Tuning (LoRA)",
-    track: "ai-ml",
-    group: "GenAI / LLM Systems",
-    summary: "Adapting large models cheaply: adapters, LoRA, and serving many fine-tunes from one base.",
-  },
-  {
-    slug: "agents-and-tool-use",
-    title: "Agents & Tool Use",
-    track: "ai-ml",
-    group: "GenAI / LLM Systems",
-    summary: "Models that call tools and take multi-step actions: the loop, the sandbox, and the failure modes.",
-  },
-  {
-    slug: "llm-guardrails-validation",
-    title: "Guardrails & Output Validation",
-    track: "ai-ml",
-    group: "GenAI / LLM Systems",
-    summary: "Constrain and verify model outputs: schema enforcement, injection defense, and the refusal path.",
-  },
-  {
-    slug: "evaluating-llm-systems",
-    title: "Evaluating LLM Systems",
-    track: "ai-ml",
-    group: "GenAI / LLM Systems",
-    summary: "LLM-as-judge, groundedness checks, and the honest measurement of open-ended generation.",
-  },
-  {
-    slug: "cost-token-budgets",
-    title: "Cost & Token Budget Management",
-    track: "ai-ml",
-    group: "GenAI / LLM Systems",
-    summary: "Tokens are money: budgeting, routing, and the economics of context and generation.",
-  },
-  {
-    slug: "llm-caching",
-    title: "Caching for LLMs",
-    track: "ai-ml",
-    group: "GenAI / LLM Systems",
-    summary: "Prompt caching and semantic caching: reusing computation across requests.",
-  },
-  {
-    slug: "llm-gateways",
-    title: "LLM Gateways & Routing",
-    track: "ai-ml",
-    group: "GenAI / LLM Systems",
-    summary: "One front door for many models: routing, fallback, quotas, and observability.",
-  },
-
-  // AI/ML — MLOps & Platform
-  {
-    slug: "mlops-cicd",
-    title: "MLOps & CI/CD for Models",
-    track: "ai-ml",
-    group: "MLOps & Platform",
-    summary: "The pipeline that takes a training run to production, and keeps it reproducible.",
-  },
-  {
-    slug: "model-registry",
-    title: "Model Registry & Versioning",
-    track: "ai-ml",
-    group: "MLOps & Platform",
-    summary: "The catalog of models: versions, stages, metadata, and provenance.",
-  },
-  {
-    slug: "experiment-tracking",
-    title: "Experiment Tracking",
-    track: "ai-ml",
-    group: "MLOps & Platform",
-    summary: "Recording every training run's inputs, parameters, and results so they can be compared.",
-  },
-  {
-    slug: "reproducibility-metadata",
-    title: "Reproducibility & Metadata",
-    track: "ai-ml",
-    group: "MLOps & Platform",
-    summary: "Making a model rebuildable months later: seeds, environments, and the metadata that pins them.",
-  },
-  {
-    slug: "distributed-training",
-    title: "Distributed Training",
-    track: "ai-ml",
-    group: "MLOps & Platform",
-    summary: "Data, model, and pipeline parallelism: training a model that does not fit one machine.",
-  },
-  {
-    slug: "hyperparameter-tuning",
-    title: "Hyperparameter Tuning at Scale",
-    track: "ai-ml",
-    group: "MLOps & Platform",
-    summary: "Searching the training configuration space without wasting the compute budget.",
-  },
-  {
-    slug: "automl",
-    title: "AutoML",
-    track: "ai-ml",
-    group: "MLOps & Platform",
-    summary: "Automating model and pipeline selection, and where it actually helps.",
-  },
-  {
-    slug: "model-governance-compliance",
-    title: "Model Governance & Compliance",
-    track: "ai-ml",
-    group: "MLOps & Platform",
-    summary: "Audit trails, approval workflows, and the records regulators and reviewers ask for.",
-  },
-  {
-    slug: "cost-optimization-ml",
-    title: "Cost Optimization for ML",
-    track: "ai-ml",
-    group: "MLOps & Platform",
-    summary: "The training and serving bill: where it goes and how to spend less.",
-  },
-  {
-    slug: "multi-tenant-ml-platforms",
-    title: "Multi-Tenant ML Platforms",
-    track: "ai-ml",
-    group: "MLOps & Platform",
-    summary: "Sharing training and serving infrastructure across teams and customers, safely.",
-  },
-  {
-    slug: "feature-model-backfills",
-    title: "Feature/Model Backfills & Migrations",
-    track: "ai-ml",
-    group: "MLOps & Platform",
-    summary: "Recomputing history and migrating models without breaking production.",
-  },
-
-  // AI/ML — Case Studies
-  {
-    slug: "rag-chat-system",
-    title: "Design a RAG / Chat-With-Your-Docs System",
-    track: "ai-ml",
-    group: "Case Studies",
-    summary: "A full retrieval-augmented assistant: ingestion, retrieval, generation, and evaluation.",
-  },
-  {
-    slug: "semantic-vector-search",
-    title: "Design a Semantic / Vector Search",
-    track: "ai-ml",
-    group: "Case Studies",
-    summary: "Meaning-based search at scale: embedding, indexing, hybrid ranking, and latency.",
-  },
-  {
-    slug: "model-serving-platform",
-    title: "Design a Model Serving Platform",
-    track: "ai-ml",
-    group: "Case Studies",
-    summary: "A multi-tenant platform that serves many models and versions reliably.",
-  },
-  {
-    slug: "feature-platform",
-    title: "Design a Feature Platform",
-    track: "ai-ml",
-    group: "Case Studies",
-    summary: "A feature store as a platform: ingestion, online/offline consistency, and governance.",
-  },
-  {
-    slug: "ctr-ad-ranking",
-    title: "Design a CTR / Ad Ranking System",
-    track: "ai-ml",
-    group: "Case Studies",
-    summary: "Predicting click-through at bidding time: features, latency, and calibration.",
-  },
-  {
-    slug: "content-moderation",
-    title: "Design a Content Moderation System",
-    track: "ai-ml",
-    group: "Case Studies",
-    summary: "Classifying user content at scale, with human review and appeal in the loop.",
-  },
-  {
-    slug: "llm-gateway-system",
-    title: "Design an LLM Gateway",
-    track: "ai-ml",
-    group: "Case Studies",
-    summary: "A production gateway in front of many models: routing, caching, quotas, and safety.",
-  },
-  {
-    slug: "anomaly-detection-system",
-    title: "Design a Real-Time Anomaly Detection System",
-    track: "ai-ml",
-    group: "Case Studies",
-    summary: "Spotting the unusual in a firehose, with low latency and a bounded false-positive budget.",
-  },
-  {
-    slug: "ml-training-platform",
-    title: "Design an ML Training Platform",
-    track: "ai-ml",
-    group: "Case Studies",
-    summary: "Orchestrating distributed training jobs, data, and GPUs for many teams.",
-  },
-
-  // AI/ML — Low-Level Design
-  {
-    slug: "feature-store-lld",
-    title: "Design a Feature Store (Code-Level)",
-    track: "ai-ml",
-    group: "Low-Level Design",
-    summary: "The online/offline feature store as a library: interfaces, consistency, and lookups.",
-  },
-  {
-    slug: "model-registry-lld",
-    title: "Design a Model Registry (Code-Level)",
-    track: "ai-ml",
-    group: "Low-Level Design",
-    summary: "Versioning, metadata, and stage transitions as a code-level design.",
-  },
-  {
-    slug: "tokenizer-lld",
-    title: "Design a Tokenizer (BPE)",
-    track: "ai-ml",
-    group: "Low-Level Design",
-    summary: "Byte-pair encoding from scratch: vocabulary construction and encoding.",
-  },
-  {
-    slug: "embedding-cache-lld",
-    title: "Design an Embedding Cache",
-    track: "ai-ml",
-    group: "Low-Level Design",
-    summary: "Caching embeddings by content: keys, invalidation, and the model-era problem.",
-  },
-  {
-    slug: "vector-index-lld",
-    title: "Design a Vector Index (Code-Level)",
-    track: "ai-ml",
-    group: "Low-Level Design",
-    summary: "A minimal ANN index from scratch: build, search, and the recall/speed dial.",
-  },
-  {
-    slug: "feature-transform-pipeline",
-    title: "Design a Feature Transform Pipeline",
-    track: "ai-ml",
-    group: "Low-Level Design",
-    summary: "Composable feature transforms as code: definitions, execution, and consistency.",
-  },
 ];
 
 export function getSystemDesignTopic(

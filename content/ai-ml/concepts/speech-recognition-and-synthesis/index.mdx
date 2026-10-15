@@ -1,0 +1,77 @@
+---
+title: "Speech Recognition & Synthesis"
+summary: "Turning audio into text and text into audio: ASR and TTS, conceptually."
+---
+
+Speech is a *sequence* problem with a twist: the input (audio) and the
+output (text) are different lengths with no clean alignment ("hello"
+might span half a second of sound, and one phoneme spans many audio
+frames). Two mirrored tasks: **automatic speech recognition (ASR)**
+— audio in, text out (dictation, voice assistants, transcription) —
+and **text-to-speech (TTS)** — text in, audio out (reading aloud,
+voice interfaces). Both have been transformed by deep learning, and
+both illustrate the sequence and multimodal ideas from this track.
+
+## The audio representation
+
+Audio is a waveform (pressure over time), but models rarely work on
+the raw waveform — they use a **spectrogram** (a picture of which
+frequencies are present over time, computed via the Fourier transform)
+or **learned audio features** (neural audio codecs that compress
+speech into discrete tokens, much like a
+[tokenizer](/ai-ml/systems/tokenizer-lld) for text). The spectrogram
+is essentially an *image*, which is why vision architectures (CNNs,
+then transformers) transfer naturally to audio.
+
+## ASR: audio to text
+
+The challenge: the alignment problem above, plus noise, accents, and
+homophones. The classic architecture combined an **acoustic model**
+(sounds → phonemes) with a **language model** (which word sequences
+are likely — "recognize speech" vs "wreck a nice beach"). Modern
+systems are **end-to-end**: a
+[transformer](/ai-ml/concepts/transformers) (or a
+[CNN/RNN](/ai-ml/concepts/recurrent-neural-networks) hybrid, or a
+[CTC](https://en.wikipedia.org/wiki/Connectionist_temporal_classification)-based
+model) maps audio directly to text, learning the alignment implicitly.
+The trend mirrors NLP: hand-designed pipelines (acoustic + language
+model) → end-to-end neural models → large pre-trained models
+(Whisper-style) that handle many languages and noisy conditions.
+
+## TTS: text to audio
+
+The reverse, and historically harder to make *natural*. The stages:
+text → **linguistic features** (pronunciation, prosody — where the
+stress goes) → **acoustic features** (the spectrogram) → **waveform**
+(the actual sound). Classic systems used concatenative synthesis
+(stitch together recorded snippets) or parametric models (statistical
+models of the features). Modern neural TTS is **end-to-end**:
+sequence-to-sequence or [diffusion](/ai-ml/concepts/diffusion-models)
+models generate the spectrogram, and a **neural vocoder** (a network
+that turns spectrograms into waveforms) produces the audio. This is
+what makes modern voices natural — and what enables **voice cloning**
+and **zero-shot TTS** (synthesizing a new speaker's voice from a few
+seconds of audio).
+
+## The unifying view
+
+Both tasks are **sequence transduction** — transform one sequence into
+another — which is exactly the
+[seq2seq](/ai-ml/concepts/sequence-to-sequence) pattern, with audio on
+one side. And the modern "speech language model" trend fuses them:
+tokenize audio, treat it like text, and train one
+[transformer](/ai-ml/concepts/transformers) to handle speech, text,
+and translation — the reason today's voice assistants are converging
+with large language models. The concept ties the sequence track and
+the multimodal track together: **speech is just another modality to
+tokenize and model**.
+
+## Related concepts
+
+- [Sequence-to-Sequence Models](/ai-ml/concepts/sequence-to-sequence):
+  the transduction pattern both tasks follow.
+- [Transformers](/ai-ml/concepts/transformers): the modern backbone.
+- [Vision–Language Models](/ai-ml/concepts/vision-language-models):
+  the analogous cross-modal idea.
+- [Design a Tokenizer](/ai-ml/systems/tokenizer-lld): the text-side
+  analogue of turning audio into tokens.

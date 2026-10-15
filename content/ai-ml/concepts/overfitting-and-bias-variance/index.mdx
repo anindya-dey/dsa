@@ -1,0 +1,92 @@
+---
+title: "Overfitting, Underfitting & Bias-Variance"
+summary: "Memorizing vs. generalizing, and the trade-off at the heart of model choice."
+---
+
+The central tension of machine learning: a model must do well on data
+it has *never seen*, but it only *learns* from data it *has* seen.
+Get the balance wrong in one direction and the model **memorizes**
+the training examples without learning the pattern
+(**overfitting**); wrong in the other and it is too simple to capture
+the pattern at all (**underfitting**). The **bias-variance tradeoff**
+is the framework for that balance, and it is the single most useful
+mental model for diagnosing why a model is not working.
+
+## The two failure modes
+
+- **Underfitting** (high bias): the model is too simple — a straight
+  line through a curve, or too few parameters. It does *badly on the
+  training data too*, because it cannot represent the pattern. The
+  symptom: training error is high. The fix: a more expressive model,
+  better features, or less regularization.
+- **Overfitting** (high variance): the model is too flexible — it
+  fits the *noise* in the training data, not just the signal. It does
+  *great on training data and poorly on new data*. The symptom: a
+  large gap between training and validation error. The fix: more
+  data, regularization, a simpler model, or early stopping.
+
+The diagnostic, stated once: **look at both training error and
+validation error.** High training error → underfitting. Low training
+but high validation → overfitting. Both low → good. Both high with a
+gap → overfitting that also needs more capacity.
+
+## The bias-variance decomposition (the framework)
+
+The expected error of a model decomposes into three parts:
+
+- **Bias** (error from wrong assumptions: a too-simple model is
+  *biased* toward simple answers, and misses the pattern).
+- **Variance** (error from sensitivity to the training data: a
+  too-flexible model *varies* wildly with which examples it saw).
+- **Irreducible error** (noise in the data itself: no model can
+  beat it — the floor).
+
+The **tradeoff**: increasing model complexity *lowers bias and raises
+variance*; decreasing it does the opposite. There is a sweet spot in
+between, and finding it — via validation, regularization, and data
+size — is the core of model selection. The picture is a U-shaped
+total-error curve: high at both extremes (underfit on the left,
+overfit on the right), lowest in the middle.
+
+## What moves each side
+
+**Toward overfitting** (more variance): a more complex model, more
+features, less data, training too long, no regularization. **Toward
+underfitting** (more bias): a simpler model, fewer features, too much
+regularization, training too little.
+
+The levers that reduce variance *without* adding bias — the most
+valuable ones: **more data** (the single best fix: variance shrinks
+as the model sees more examples), **regularization** (the
+[penalty](/ai-ml/concepts/regularization) that constrains
+complexity), **ensembling** (averaging many models cancels their
+independent errors — the
+[random-forest](/ai-ml/concepts/decision-trees-and-ensembles) idea),
+and **early stopping** (stop before the model starts fitting noise).
+
+## Why it is the master diagnostic
+
+Almost every "the model does not work" conversation reduces to this
+framework: is it *underfitting* (needs more capacity) or *overfitting*
+(needs more data or constraint)? The reason it is so useful is that
+the *symptom* (the train/validation gap) *names the fix*. And it is
+why the [train/validation/test split](/ai-ml/concepts/train-validation-test)
+exists at all: you cannot see overfitting without data the model was
+not trained on.
+
+The production echo: an overfit model *passes the offline
+evaluation* and *fails in production* — the
+[offline/online gap](/ai-ml/systems/offline-vs-online-evaluation), and
+the reason generalization, not training accuracy, is the thing to
+measure.
+
+## Related concepts
+
+- [Regularization](/ai-ml/concepts/regularization): the main
+  variance-reduction lever.
+- [Train, Validation & Test](/ai-ml/concepts/train-validation-test):
+  how the failure modes are detected.
+- [The Curse of Dimensionality](/ai-ml/concepts/curse-of-dimensionality):
+  why more features can worsen overfitting.
+- [Evaluation Metrics for ML](/ai-ml/systems/evaluation-metrics): the
+  metrics that reveal the gap.

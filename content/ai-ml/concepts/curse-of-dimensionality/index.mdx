@@ -1,0 +1,82 @@
+---
+title: "The Curse of Dimensionality"
+summary: "Why high-dimensional space behaves strangely, and what it means for models."
+---
+
+Machine learning lives in *high-dimensional* space: a model with a
+thousand features operates in a thousand-dimensional space, and that
+space does not behave like the two or three dimensions human intuition
+is built for. The **curse of dimensionality** is the collection of
+ways high-dimensional space is *counterintuitive* — and it explains
+several ML behaviors that otherwise seem mysterious (why more
+features can hurt, why nearest-neighbor methods degrade, why
+dimensionality reduction helps).
+
+## The strange geometry
+
+The surprises, each with a consequence:
+
+- **Volume concentrates at the edges** (in a high-dimensional cube,
+  almost all the volume is near the surface, and almost none near the
+  center — a ball inscribed in the cube occupies a vanishing fraction
+  of it. The consequence: "the middle" is nearly empty, so data
+  points are *all* on the periphery).
+- **Everything is roughly equidistant** (as dimensions grow, the
+  distances between random points *converge* — the farthest point and
+  the nearest point become almost the same distance away. The
+  consequence: "nearest neighbor" loses meaning, which is why
+  [k-NN](/ai-ml/concepts/clustering-and-knn) and raw
+  [similarity search](/ai-ml/systems/similarity-search-ann) struggle
+  in very high dimensions, and why [embeddings](/ai-ml/systems/embeddings-vector-representations)
+  use *learned* spaces where the geometry is meaningful).
+- **You need exponentially more data** (to cover a space at a fixed
+  density, the required examples grow *exponentially* with the
+  dimensions. The consequence: with a thousand features, no realistic
+  dataset densely covers the space, so models *must* make assumptions
+  (inductive biases) to generalize — they cannot just interpolate
+  between seen examples).
+
+## What it means for models
+
+- **More features is not more information** (adding irrelevant
+  features *hurts*: the model has more dimensions to overfit in, the
+  [bias-variance](/ai-ml/concepts/overfitting-and-bias-variance)
+  trade worsens, and distance-based methods degrade. This is why
+  *feature selection* and *dimensionality reduction* are core tools,
+  not luxuries).
+- **Dimensionality reduction** (techniques like
+  [PCA](https://en.wikipedia.org/wiki/Principal_component_analysis)
+  and autoencoders project high-dimensional data to a lower
+  dimension, keeping the structure and discarding noise — the
+  [autoencoder](/ai-ml/concepts/autoencoders) idea, and a standard
+  preprocessing step).
+- **The manifold hypothesis** (the modern saving grace: real-world
+  high-dimensional data is not *uniformly* spread — it lies on a
+  *low-dimensional structure* (a manifold) embedded in the high
+  dimension. Images have millions of pixels but far fewer *degrees of
+  freedom*; language has vast vocabularies but lower intrinsic
+  structure. Deep learning works *because* it learns that structure —
+  which is why [embeddings](/ai-ml/concepts/word-embeddings) can
+  compress meaning into a few hundred dimensions, and why the
+  curse is *tamed* rather than *suffered* in practice).
+
+## Why it is worth knowing
+
+The curse explains a set of practical behaviors: why nearest-neighbor
+search needs [approximate indexes](/ai-ml/systems/similarity-search-ann)
+in high dimensions, why adding features without adding data can
+*worsen* a model, why dimensionality reduction helps, and why deep
+learning's learned representations are so valuable (they *find* the
+low-dimensional structure that makes the data tractable). It is the
+geometric intuition behind a lot of ML practice.
+
+## Related concepts
+
+- [Overfitting, Underfitting & Bias-Variance](/ai-ml/concepts/overfitting-and-bias-variance):
+  why more dimensions worsen overfitting.
+- [Clustering & k-Nearest Neighbors](/ai-ml/concepts/clustering-and-knn):
+  the methods the curse degrades.
+- [Embeddings & Vector Representations](/ai-ml/systems/embeddings-vector-representations):
+  the learned low-dimensional structure that tames it.
+- [Autoencoders](/ai-ml/concepts/autoencoders): the reduction
+  technique.

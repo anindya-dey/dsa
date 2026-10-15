@@ -1,0 +1,115 @@
+---
+title: "Cost & Token Budget Management"
+summary: "Tokens are money: budgeting, routing, and the economics of context and generation."
+---
+
+LLM inference is billed **per token** (input and output), which makes
+cost a *first-class design constraint* rather than an afterthought:
+a chat feature that looks cheap per request is expensive at scale, a
+RAG system that "just includes everything" pays for every token of
+context on *every* request, and an [agent](/ai-ml/systems/agents-and-tool-use)
+in a loop multiplies its own bill. The design discipline: **treat
+tokens as a budget**, decide *how many* each request may spend,
+and engineer to that number — the
+[capacity-planning](/system-design/fundamentals/capacity-planning-and-estimation)
+instinct, denominated in tokens.
+
+## The cost model
+
+The arithmetic every LLM system should be able to recite:
+
+- **Input tokens** (the prompt: instructions + context + history):
+  cheaper per token, but *large* (a RAG prompt with 8 retrieved
+  chunks is thousands of tokens), and paid on *every* request.
+- **Output tokens** (the generation): *more expensive* per token
+  (often several times input), and *unbounded* unless capped
+  (`max_tokens`).
+- **The multiplication** (cost = requests × (input tokens × input
+  price + output tokens × output price): the two levers are
+  *token count* (context size, output length) and *model choice*
+  (price per token varies 10-100x across model sizes), and the
+  design's job is spending the *minimum* tokens on the *cheapest
+  adequate* model, per request).
+
+## The levers, in the order to apply them
+
+- **Cap the output** (`max_tokens`: an uncapped generation is a
+  budget leak, and the cap is a [guardrail](/ai-ml/systems/llm-guardrails-validation)
+  *and* a cost control: the model does not need 4000 tokens to
+  answer a yes/no).
+- **Shrink the input** (the *biggest* lever for RAG: retrieve
+  *fewer, better* chunks (the [rerank](/ai-ml/systems/rag)
+  step), summarize the history (the conversation's old turns
+  *compressed*, not carried verbatim), and *don't* include what the
+  model does not need — "put it all in the context" is the most
+  expensive default in the field, and the
+  [chunking](/ai-ml/systems/chunking-indexing-strategies)
+  quality *is* a cost optimization).
+- **Route by difficulty** (the *biggest* lever for heterogeneous
+  workloads: a *small, cheap model* handles the easy requests
+  (classification, simple extraction, FAQ), a *large, expensive*
+  one handles the hard ones (complex reasoning) — the
+  [LLM-gateway's](/ai-ml/systems/llm-gateways) routing
+  decision, and the reason "which model" is a *per-request* choice,
+  not a system-wide one).
+- **Cache** (identical or semantically-similar requests served
+  without a call: the [LLM caching](/ai-ml/systems/llm-caching)
+  page — the *zero-token* request, and the biggest win where the
+  cache hits).
+- **Batch** (non-interactive workloads (bulk classification,
+  nightly enrichment) go through the *batch API* (asynchronous,
+  discounted): the [batch-vs-realtime](/ai-ml/systems/batch-vs-real-time-prediction)
+  decision, at the pricing layer — an easy 50% off for anything that
+  can wait).
+
+## The budget as a design artifact
+
+The mature practice: **a per-request token budget**, defined and
+*enforced*, like a [rate limit](/system-design/fundamentals/rate-limiting)
+for tokens:
+
+- **The budget** (e.g., "this endpoint may spend 2000 input + 500
+  output tokens"): a *product* number derived from the price target
+  and the value of the request, and it *constrains* the retrieval
+  (how many chunks), the history (how much), and the model (which
+  tier fits).
+- **The enforcement** (the [gateway](/ai-ml/systems/llm-gateways)
+  counts tokens (a pre-count via the [tokenizer](/ai-ml/systems/llm-serving))
+  and *rejects or truncates* over-budget requests: the
+  [backpressure](/system-design/fundamentals/backpressure-and-flow-control)
+  discipline, at the token layer — the request that would blow the
+  budget is *shed* or *shrunk*, not silently served at 10x cost).
+- **The observability** (cost per request, per user, per feature —
+  a *dashboard metric*, the [unit-economics](/system-design/fundamentals/capacity-planning-and-estimation)
+  number the business watches: "cost per resolved ticket" is the
+  LLM-era equivalent of "cost per query," and it is a *design*
+  target).
+
+## The economics that shape the architecture
+
+The numbers that make architecture decisions: **output tokens cost
+several times input** (so a chatty feature is expensive: cap and
+stream), **long context is quadratic-ish in latency and linear in
+cost** (so the [RAG](/ai-ml/systems/rag) retrieval precision
+*is* the cost story), **model tiers differ 10-100x in price** (so
+*routing* is the biggest single lever), and **the [prompt
+cache](/ai-ml/systems/llm-caching) makes a stable prefix
+cheap** (so a *stable* system prompt is a real saving, and a
+*changing* one is a real cost). The design that internalizes these
+serves the same feature at a fraction of the naive cost — and the
+naive design, which includes everything and always calls the biggest
+model, is the one that surprises everyone at the end of the month.
+
+## Related concepts
+
+- [LLM Serving Basics](/ai-ml/systems/llm-serving): the token
+  and context mechanics the cost denominates in.
+- [LLM Gateways & Routing](/ai-ml/systems/llm-gateways): the
+  model-tier routing lever.
+- [Caching for LLMs](/ai-ml/systems/llm-caching): the
+  zero-token lever.
+- [Retrieval-Augmented Generation](/ai-ml/systems/rag) and
+  [Chunking & Indexing](/ai-ml/systems/chunking-indexing-strategies):
+  the context-size lever.
+- [Capacity Planning & Estimation](/system-design/fundamentals/capacity-planning-and-estimation):
+  the unit-economics discipline.

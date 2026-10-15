@@ -8,7 +8,7 @@ export interface DsaPatternMeta {
   variants?: string[];
 }
 
-export type SystemDesignTrack = "fundamentals" | "lld" | "hld" | "ai-ml";
+export type SystemDesignTrack = "fundamentals" | "lld" | "hld";
 
 export type SystemDesignTrackGroup = string;
 
@@ -19,3 +19,23 @@ export interface SystemDesignTopicMeta {
   summary: string;
   group?: SystemDesignTrackGroup;
 }
+
+export type AiMlTrack = "concepts" | "systems";
+
+export type AiMlTrackGroup = string;
+
+export interface AiMlTopicMeta {
+  slug: string;
+  title: string;
+  track: AiMlTrack;
+  summary: string;
+  group?: AiMlTrackGroup;
+}
+
+export interface CppEntryMeta {
+  slug: string;
+  title: string;
+  summary: string;
+}
+
+export type Tier = "foundational" | "intermediate" | "advanced";

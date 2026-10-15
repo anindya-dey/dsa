@@ -3,8 +3,10 @@ import { ArticleLayout } from "@/components/article-layout";
 import { ComingSoon } from "@/components/coming-soon";
 import { Container } from "@/components/container";
 import { PageHeader } from "@/components/page-header";
+import { TierBadge } from "@/components/tier-badge";
 import { systemDesignTrackTitles } from "@/lib/catalog/system-design";
 import { getTopic } from "@/lib/content/system-design";
+import { tierOf } from "@/lib/catalog/tiers";
 import type { SystemDesignTrack } from "@/lib/catalog/types";
 
 export async function SystemDesignTopicView({
@@ -37,7 +39,9 @@ export async function SystemDesignTopicView({
         eyebrow={systemDesignTrackTitles[track]}
         title={meta.title}
         description={meta.summary}
-      />
+      >
+        <TierBadge tier={tierOf(slug)} />
+      </PageHeader>
 
       <ArticleLayout headings={headings}>{content}</ArticleLayout>
     </Container>

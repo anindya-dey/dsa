@@ -1,0 +1,85 @@
+---
+title: "Train, Validation & Test"
+summary: "The three splits, why they must be separate, and cross-validation."
+---
+
+A model is judged by its performance on data it has *not* seen, which
+means the data must be *divided*: some to learn from, some to tune
+against, some to judge with — and each split plays a different role.
+Getting the split wrong is the most common way an ML result is
+secretly meaningless, because a model evaluated on data it trained on
+(or tuned against) always looks better than it is.
+
+## The three roles
+
+- **Training set** (what the model learns from): the examples the
+  optimizer fits.
+- **Validation set** (what you *tune* against): used to choose
+  hyperparameters, regularization strength, model architecture, and
+  *when to stop* — every decision *you* make by comparing models. The
+  validation set is the model's *rehearsal audience*.
+- **Test set** (the *final* judgment): used *once*, at the end, to
+  report the model's performance. It must never influence any
+  decision, or it stops being a test and becomes another validation
+  set (the "you tuned on your test set" failure — the result is
+  optimistic and unreproducible).
+
+The reason for three, not two: **you will make many decisions by
+comparing validation scores**, and each comparison leaks a little
+information about the validation set into the model. The test set is
+the *holdout* that has never been touched, so it is the only honest
+estimate of real-world performance. This is
+[Goodhart's law](/ai-ml/systems/evaluation-metrics) at the data
+level: optimize against a set too much, and it stops measuring
+anything.
+
+## The splits that are easy to get wrong
+
+- **Never shuffle time-series data randomly**: if you split future
+  rows into training and past rows into validation, the model trains
+  on the future and "predicts" the past — the
+  [temporal-leakage](/ai-ml/systems/training-data-pipelines) failure.
+  Time-based splits (train on the past, validate/test on the future)
+  are mandatory whenever order matters, which is almost always in
+  production.
+- **Group splits**: if examples are correlated (multiple rows per
+  user, per patient), a random split puts the same user in both
+  training and validation — the model *memorizes the user* and the
+  evaluation measures memorization, not generalization. The fix:
+  split by *group* (all of a user's rows on one side).
+- **Stratification**: for imbalanced classes, a random split can put
+  almost no positive examples in validation; stratified splitting
+  preserves the class proportions in each split.
+
+## Cross-validation (when data is scarce)
+
+A single split wastes data and gives a noisy estimate. **k-fold
+cross-validation** splits the data into k parts, trains k models (each
+holding out a different part for validation), and averages the
+results — every example is validated exactly once, and the estimate
+is more stable. It is the standard for small datasets and for
+hyperparameter search, at the cost of training k models. The variants
+worth knowing: **stratified** k-fold (preserve class balance),
+**grouped** k-fold (respect group boundaries), and **time-series**
+cross-validation (always train on the past, validate on the future).
+
+## The production echo
+
+The split discipline is the *offline* half of a bigger problem: even a
+perfect test set does not guarantee production performance, because
+production data differs from the test set (drift, bias, the
+[offline/online gap](/ai-ml/systems/offline-vs-online-evaluation)).
+The splits make the offline estimate *honest*; the
+[A/B test](/ai-ml/systems/ab-testing-experimentation) is what confirms
+it *online*.
+
+## Related concepts
+
+- [Overfitting, Underfitting & Bias-Variance](/ai-ml/concepts/overfitting-and-bias-variance):
+  what the splits reveal.
+- [Regularization](/ai-ml/concepts/regularization): tuned on the
+  validation set.
+- [Training Data Pipelines](/ai-ml/systems/training-data-pipelines):
+  where the leakage traps live.
+- [Offline vs Online Evaluation](/ai-ml/systems/offline-vs-online-evaluation):
+  the gap beyond the test set.

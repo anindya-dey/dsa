@@ -17,6 +17,12 @@ export const NAV_ITEMS: NavItem[] = [
     icon: "system",
   },
   {
+    href: "/ai-ml",
+    label: "AI/ML",
+    shortLabel: "AI/ML",
+    icon: "system",
+  },
+  {
     href: "/dsa/cheat-sheet",
     label: "Cheat Sheet",
     shortLabel: "Cheat Sheet",

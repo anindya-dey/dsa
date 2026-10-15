@@ -1,0 +1,88 @@
+---
+title: "Clustering & k-Nearest Neighbors"
+summary: "Grouping by similarity, and predicting from the nearest examples."
+---
+
+Two of the most intuitive ideas in machine learning, and both built
+on **similarity**: **clustering** groups data points that are close
+together (unsupervised — no labels), and **k-nearest neighbors
+(k-NN)** predicts a point's label from the labels of its nearest
+neighbors (supervised). They are simple enough to explain to a
+non-engineer, and they teach the core notion of *distance as
+meaning* that underlies embeddings, retrieval, and vector search.
+
+## Clustering: finding groups without labels
+
+The task: given unlabeled data, find natural groups. The canonical
+algorithm, **k-means**:
+
+1. Choose `k` cluster centers (randomly, or smartly).
+2. Assign each point to its nearest center.
+3. Move each center to the average of its assigned points.
+4. Repeat until the centers stop moving.
+
+It is the [expectation-maximization](https://en.wikipedia.org/wiki/Expectation%E2%80%93maximization_algorithm)
+idea in its simplest form — alternate "assign" and "update" — and it
+converges to a local optimum. The decisions: **how many clusters**
+(`k`, chosen by inspecting the data or a heuristic like the "elbow"
+method), **the distance metric** (Euclidean usually), and the
+limitations (**k-means assumes roughly spherical, similar-sized
+clusters** and is sensitive to initialization — the reason
+[k-means++](https://en.wikipedia.org/wiki/K-means%2B%2B) exists).
+Other families (hierarchical, density-based (DBSCAN), spectral)
+handle shapes k-means cannot.
+
+Where clustering is used: customer segmentation, document grouping,
+[anomaly detection](/ai-ml/systems/anomaly-detection-system) (points
+far from any cluster are suspicious), and as a *feature* (cluster id
+as an input to a downstream model). The honest caveat: clusters are
+*descriptive*, not *predictive* — there is no "right" answer, only
+useful ones, which is why clustering is
+[evaluated subjectively](/ai-ml/systems/supervised-unsupervised-rl)
+and pairs badly with a single metric.
+
+## k-Nearest Neighbors: predict from the neighbors
+
+The simplest supervised model: to predict a new point's label, find
+its `k` nearest training points and take a majority vote (or average,
+for regression). There is **no training** — the model *is* the
+training data, and prediction is a lookup. That "lazy learning"
+property is both its charm (dead simple, no fitting) and its cost
+(prediction is expensive: you compare against every training point,
+and you store all of them).
+
+The decisions: **k** (small = sensitive to noise, large = overly
+smooth — a [bias-variance](/ai-ml/concepts/overfitting-and-bias-variance)
+knob), **the distance metric** (the notion of "near" *is* the model),
+and **weighting** (closer neighbors count more). Its strengths: it
+captures arbitrarily complex boundaries and needs no assumptions about
+the data's shape. Its weaknesses: **slow at prediction time**
+(unless you index it — the
+[ANN](/ai-ml/systems/similarity-search-ann) machinery, which is k-NN's
+scalable form), **sensitive to irrelevant features and scale** (which
+is why feature scaling is mandatory), and it degrades in high
+dimensions (the [curse of dimensionality](/ai-ml/concepts/curse-of-dimensionality)).
+
+## The shared foundation: similarity as meaning
+
+Both models rest on a **distance metric**, and that is the deep
+lesson: *choosing what "close" means is choosing what the model
+considers similar* — the same idea that makes
+[embeddings](/ai-ml/concepts/word-embeddings) and
+[vector search](/ai-ml/systems/semantic-vector-search) work. A
+k-NN's metric, a clustering's metric, and an embedding's geometry are
+the same concept: **the space encodes the meaning**, and getting the
+space right (via features or a learned embedding) matters more than
+the algorithm.
+
+## Related concepts
+
+- [The Curse of Dimensionality](/ai-ml/concepts/curse-of-dimensionality):
+  why these degrade in high dimensions.
+- [Word Embeddings](/ai-ml/concepts/word-embeddings) and
+  [Similarity Search & ANN](/ai-ml/systems/similarity-search-ann):
+  the learned-space, scalable versions.
+- [Supervised, Unsupervised & RL](/ai-ml/systems/supervised-unsupervised-rl):
+  the clustering-vs-classification framing.
+- [Design a Real-Time Anomaly Detection System](/ai-ml/systems/anomaly-detection-system):
+  a clustering-adjacent application.

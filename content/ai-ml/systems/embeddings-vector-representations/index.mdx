@@ -1,0 +1,144 @@
+---
+title: "Embeddings & Vector Representations"
+summary: "Meaning as geometry: representing items as dense vectors so similarity becomes distance, and the systems that store and compare them."
+---
+
+An embedding is a **vector that represents the meaning of a thing**:
+a word, a product, a user, a sentence, an image — mapped to a point
+in a high-dimensional space (say, 384 to 3000 dimensions) such that
+**the geometry encodes semantics**: things that are *similar* land
+*near* each other, and "near" is measured with a distance metric
+(cosine similarity or dot product, almost always). This single
+trick — meaning as position — is the foundation of the modern era:
+[semantic search](/system-design/fundamentals/search-and-inverted-index),
+[RAG](/system-design/hld/recommendation-system), the
+[recommendation](/system-design/hld/recommendation-system)'s
+candidate retrieval, "more like this", clustering, and the entire
+vector-database industry. And it is a *systems* topic because the
+representation creates a specific infrastructure: **billions of
+points, compared by distance, in milliseconds.**
+
+## What the vector is, and how it's made
+
+The embedding is *learned*: a model (a
+[transformer](https://en.wikipedia.org/wiki/Transformer_(deep_learning_architecture))
+text encoder, a
+[word2vec](https://en.wikipedia.org/wiki/Word2vec)-class model, a
+two-tower retrieval model, a
+[contrastive](https://en.wikipedia.org/wiki/Contrastive_learning)
+scorer) trained so that "similar-in-training" things map to
+near-in-space points: trained on co-occurrence ("these words appear
+in similar contexts"), on co-engagement ("users who clicked both"),
+on labels ("these images were tagged alike"). What comes out is a
+*function*: thing → vector, and the function's training data
+decides what "similarity" *means* (an embedding trained on
+encyclopedic text makes "bank" similar to "finance"; trained on
+fishing forums, similar to "river": **there is no neutral
+embedding** — the space encodes its training corpus's semantics,
+which is a design decision, not a library import).
+
+The engineering surface: the **embedding model is deployed
+infrastructure** (the encoder itself runs as a
+[serving](/ai-ml/systems/batch-vs-real-time-prediction) path:
+documents embedded at ingest, queries embedded at search), the
+**vectors are precomputed artifacts** (the items' embeddings
+computed once at ingest, stored: the
+[feature store](/ai-ml/systems/feature-stores)'s offline
+tier, the same pattern), and the **query-side embedding is the
+latency budget** (encode the query — 10-50ms with a small
+[model](/ai-ml/systems/ml-system-design-basics) — then
+compare against precomputed vectors: the
+[autocomplete](/system-design/hld/search-autocomplete) design's
+shape, with meaning instead of prefixes).
+
+## The distance metrics
+
+How "near" is measured, and why the choice matters:
+
+- **Cosine similarity** (the default for text embeddings: the
+  *angle* between vectors, ignoring magnitude): robust to scale
+  differences, and what most
+  [embedding models](https://en.wikipedia.org/wiki/Sentence_embedding)
+  are trained to optimize, so "use cosine unless the model says
+  otherwise" is the standing rule.
+- **Dot product** (the fast cousin: unnormalized vectors, magnitude
+  matters): what the ANN indexes *actually compute* when the
+  vectors are normalized (the two are *identical* on unit vectors,
+  so "cosine similarity, implemented as dot product over
+  normalized vectors" is the standard stack, and the
+  normalization is a real design step, not a detail).
+- **Euclidean (L2)** (straight distance): the default for
+  [image](https://en.wikipedia.org/wiki/Image_retrieval) and
+  [tabular](https://en.wikipedia.org/wiki/Feature_vector) spaces,
+  and the metric the [geospatial](/system-design/fundamentals/geospatial-indexing)
+  family uses (the nearest-neighbor question, worn by different
+  data).
+
+The design conversation the metric creates: *what is the model's
+similarity trained to be* (semantic equivalence? engagement
+overlap? visual nearness?), and the metric must match the training
+(the model trained on cosine but queried with L2 produces
+nonsense rankings: the classic silent bug, and the reason
+"normalized + dot product" is the safe default).
+
+## The scale problem, stated
+
+A billion items as vectors: **a billion points in
+300-dimensional space, compared by distance.** The naive
+comparison (every query vs every item) is a billion dot products
+per query (a 300-billion-FLOP scan: seconds, unusable), and the
+entire [ANN](/ai-ml/systems/similarity-search-ann) family
+(the next page) exists to answer "the nearest k of a billion" in
+milliseconds, trading exactness for speed — the same
+[trade](/dsa/patterns/greedy-algorithms) every index makes
+([the inverted index](/system-design/fundamentals/search-and-inverted-index)
+for terms, the [geo index](/system-design/fundamentals/geospatial-indexing)
+for cells, the ANN index for vectors: three instances of one
+idea, "organize so you don't compare everything").
+
+## Where embeddings sit in the systems on this site
+
+The embedding is the *representation layer* of the
+[recommendation](/system-design/hld/recommendation-system)'s
+candidate stage (the two-tower model: user-history embedding,
+item embeddings, the ANN index between them), the semantic
+half of [hybrid search](/system-design/fundamentals/search-and-inverted-index)
+(the term-based inverted index and the vector index, merged:
+the modern search stack), the core of every RAG system (the
+[LLM-era](/ai-ml/systems/ml-system-design-basics) retrieval:
+documents embedded, queries embedded, the nearest chunks as
+context), and the [feature](/ai-ml/systems/feature-engineering-basics)
+family for high-cardinality categories (the "merchant" as a vector
+instead of a one-hot: the encoding that scales).
+
+## The honest costs
+
+- **The vector's dimensionality is a storage bill** (a billion
+  items * 300 dims * 4 bytes = 1.2 TB of vectors, and the
+  [quantization](/ai-ml/systems/similarity-search-ann) family
+  exists to pay less).
+- **The model's era**: embeddings are artifacts (the
+  [versioning](/ai-ml/systems/data-versioning-lineage)
+  discipline: a new embedding model means *re-embedding
+  everything*, which is a migration-scale job, and the reason
+  the model choice is made slowly and kept long).
+- **The bias of the space**: the embedding encodes its corpus
+  (the [fairness](/ai-ml/systems/supervised-unsupervised-rl)
+  surface: "similar" inherits the training data's notion of
+  similar, and the downstream products
+  [drift](/ai-ml/systems/ml-system-design-basics) with it),
+  which is the honest reason the vector is a *system component*
+  (versioned, monitored, owned) rather than a library call.
+
+## Related concepts
+
+- [Similarity Search & ANN](/ai-ml/systems/similarity-search-ann):
+  the index machinery, next page.
+- [Vector Databases](/ai-ml/systems/vector-databases): the
+  store built for this representation.
+- [Search & Inverted Index](/system-design/fundamentals/search-and-inverted-index):
+  the term-based sibling, and the hybrid merge.
+- [Design a Recommendation System](/system-design/hld/recommendation-system):
+  the two-tower consumer.
+- [Feature Stores](/ai-ml/systems/feature-stores): the
+  precomputed-embedding tier's home.

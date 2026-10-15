@@ -10,6 +10,7 @@ import {
   systemDesignTrackTitles,
 } from "@/lib/catalog/system-design";
 import { topicHasContent } from "@/lib/content/system-design";
+import { tierOf } from "@/lib/catalog/tiers";
 import type { SystemDesignTrack } from "@/lib/catalog/types";
 
 export const metadata: Metadata = {
@@ -64,6 +65,7 @@ export default function SystemDesignRoadmapPage() {
                         title: topic.title,
                         summary: topic.summary,
                         available: topicHasContent(track, topic.slug),
+                        tier: tierOf(topic.slug),
                       }))}
                     />
                   </section>

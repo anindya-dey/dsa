@@ -1,0 +1,83 @@
+---
+title: "Regularization"
+summary: "Penalizing complexity to generalize better: L1, L2, dropout, and early stopping."
+---
+
+A model that fits the training data *too* well
+[overfits](/ai-ml/concepts/overfitting-and-bias-variance): it learns
+the noise, not the pattern. **Regularization** is the family of
+techniques that deliberately make fitting *harder* — constraining the
+model so it prefers simpler explanations — which, counterintuitively,
+makes it *better* on new data. It is the main lever against
+overfitting, and it appears everywhere: as a penalty term, as a
+training procedure, and as an architectural choice.
+
+## Penalty-based: L1 and L2
+
+The classic form adds a penalty to the [loss](/ai-ml/concepts/loss-functions-and-risk)
+that grows with the size of the model's weights, so the optimizer
+must balance "fit the data" against "keep weights small":
+
+- **L2 (ridge)**: penalize the *sum of squared weights*. It shrinks
+  all weights toward zero, gently — no weight gets very large, so the
+  model is less sensitive to any single input. The default, and the
+  reason "weight decay" appears in every optimizer's settings.
+- **L1 (lasso)**: penalize the *sum of absolute weights*. It drives
+  some weights *exactly to zero*, which removes those features
+  entirely — so L1 doubles as **feature selection** (the model
+  decides which inputs matter by zeroing the rest).
+
+The distinction worth remembering: **L2 shrinks, L1 deletes.** Use L2
+when all features are somewhat useful and you want stability; L1 when
+many features are noise and you want sparsity.
+
+## Procedure-based: dropout and early stopping
+
+- **Dropout** (for neural networks): during training, randomly *turn
+  off* a fraction of neurons on each step, so the network cannot rely
+  on any single neuron and must learn redundant, robust
+  representations. At inference, all neurons are used (with scaled
+  weights). It is a training-time trick that acts like training many
+  sub-networks and averaging them — a form of ensembling, and the
+  most common neural regularization.
+- **Early stopping**: stop training when *validation* error starts
+  rising, before the model has fit the training noise. The
+  [validation split](/ai-ml/concepts/train-validation-test) is the
+  signal, and it is the cheapest regularizer there is (no change to
+  the model, just stop at the right time).
+- **Data augmentation** (for images/text): generate modified copies
+  of training examples (flipped images, paraphrased text), so the
+  model sees more variety and cannot memorize exact examples. It
+  *manufactures* the "more data" that reduces
+  [variance](/ai-ml/concepts/overfitting-and-bias-variance).
+
+## Architectural and other forms
+
+- **Simpler architectures** (fewer layers, fewer parameters) are
+  implicit regularization: less capacity, less ability to overfit.
+- **Batch normalization** ([normalization](/ai-ml/concepts/normalization-and-initialization))
+  has a regularizing side effect (the per-batch statistics add noise).
+- **Ensembling** (averaging many models) is regularization by
+  aggregation: independent errors cancel.
+
+## The trade, stated honestly
+
+Regularization is not free: **too much causes underfitting** — the
+model is so constrained it cannot learn the pattern. The dial (the
+penalty strength, the dropout rate) is tuned on
+[validation data](/ai-ml/concepts/train-validation-test), and it is a
+classic [bias-variance](/ai-ml/concepts/overfitting-and-bias-variance)
+knob: more regularization, less variance and more bias. The skill is
+finding the point where the total error is lowest — which is a
+*measurement*, not a guess.
+
+## Related concepts
+
+- [Overfitting, Underfitting & Bias-Variance](/ai-ml/concepts/overfitting-and-bias-variance):
+  what regularization trades.
+- [Loss Functions & Empirical Risk](/ai-ml/concepts/loss-functions-and-risk):
+  the penalty is added to the loss.
+- [Train, Validation & Test](/ai-ml/concepts/train-validation-test):
+  where the regularization strength is tuned.
+- [Normalization & Initialization](/ai-ml/concepts/normalization-and-initialization):
+  the related training-stability techniques.

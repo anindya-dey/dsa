@@ -3,8 +3,10 @@ import { notFound } from "next/navigation";
 import { ArticleLayout } from "@/components/article-layout";
 import { Container } from "@/components/container";
 import { PageHeader } from "@/components/page-header";
+import { TierBadge } from "@/components/tier-badge";
 import { cppEntries } from "@/lib/catalog/cpp";
 import { getCppEntryContent } from "@/lib/content/cpp";
+import { tierOf } from "@/lib/catalog/tiers";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -35,7 +37,9 @@ export default async function CppEntryPage({ params }: PageProps) {
         eyebrow="C++ Toolkit"
         title={page.meta.title}
         description={page.meta.summary}
-      />
+      >
+        <TierBadge tier={tierOf(slug)} />
+      </PageHeader>
       <ArticleLayout headings={page.headings}>{page.content}</ArticleLayout>
     </Container>
   );

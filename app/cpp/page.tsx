@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Container } from "@/components/container";
 import { PageHeader } from "@/components/page-header";
+import { TierBadge } from "@/components/tier-badge";
 import { cppEntries } from "@/lib/catalog/cpp";
 import { cppEntryHasContent } from "@/lib/content/cpp";
+import { tierOf } from "@/lib/catalog/tiers";
 
 export const metadata: Metadata = {
   title: "C++ Toolkit",
@@ -34,6 +36,7 @@ export default function CppPage() {
                   <span className="font-mono text-base font-semibold leading-snug transition-colors group-hover:text-accent-deep">
                     {entry.title}
                   </span>
+                  <TierBadge tier={tierOf(entry.slug)} />
                   {!cppEntryHasContent(entry.slug) && (
                     <span className="inline-flex items-center rounded-full border border-line bg-paper px-2.5 py-0.5 font-mono text-[11px] uppercase tracking-wide text-ink-faint">
                       soon

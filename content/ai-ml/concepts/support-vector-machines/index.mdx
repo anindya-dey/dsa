@@ -1,0 +1,82 @@
+---
+title: "Support Vector Machines"
+summary: "Finding the widest separating margin, and the kernel trick, conceptually."
+---
+
+A support vector machine (SVM) is a classifier with one elegant idea:
+among all the boundaries that separate two classes, choose the one
+with the **widest margin** — the most clearance on either side. That
+single choice (maximize the gap) makes the classifier robust, and the
+SVM's second idea — the **kernel trick** — lets it draw *non-linear*
+boundaries while staying computationally linear. It was the dominant
+classifier before deep learning, and it is still a sharp tool for
+small, high-dimensional datasets.
+
+## The margin idea
+
+Picture two classes of points and a line separating them. Many lines
+work; the SVM picks the one *farthest from the nearest points of
+either class* — the maximum-margin boundary. The reasoning: a
+boundary with more clearance is less sensitive to noise and
+generalizes better (a small shift in a point does not flip its
+classification). The points *closest* to the boundary — the ones that
+pin it down — are the **support vectors**, and they alone determine
+the boundary (the rest of the data could move and nothing changes,
+which is a striking property).
+
+The margin is the [bias-variance](/ai-ml/concepts/overfitting-and-bias-variance)
+control: a *wider* margin (a simpler, more constrained boundary) means
+*lower variance*. The **soft margin** extension allows some points to
+violate the margin (the "slack" that trades a few misclassifications
+for robustness — the same [regularization](/ai-ml/concepts/regularization)
+trade as everywhere).
+
+## The kernel trick (the clever part)
+
+The margin idea only makes a *linear* boundary. The kernel trick
+extends it to non-linear boundaries without explicitly transforming
+the data: you replace the *dot product* between points with a
+**kernel function** that computes the dot product *as if* the points
+had been mapped into a much higher-dimensional space — but without
+ever doing that mapping. The effect: a *linear* boundary in a
+high-dimensional feature space becomes a *non-linear* boundary in the
+original space (a circle, a curve), while the computation stays
+cheap.
+
+The intuition: mapping data to a higher dimension can make it
+*linearly separable* (the classic example: two concentric rings are
+not linearly separable in 2-D, but a third dimension — the squared
+radius — makes them separable by a plane). The kernel computes the
+"similarity" in that higher space directly, so you get the
+separability without the cost.
+
+Common kernels: **linear** (no mapping — a plain max-margin linear
+classifier), **polynomial**, and the **RBF/Gaussian** (the default
+non-linear kernel: it measures similarity by distance, creating
+flexible curved boundaries).
+
+## Where SVMs fit today
+
+- **Strong on small, high-dimensional data** (text classification,
+  genomics: many features, few examples — where the margin idea
+  shines and deep learning overfits).
+- **Superseded on large datasets** by deep learning and gradient
+  boosting (SVMs do not scale as gracefully to millions of examples,
+  and the kernel choice/tuning is fiddly).
+- **Conceptually foundational** (the margin, the support vectors, and
+  the kernel trick are ideas that recur across ML — max-margin
+  thinking and kernel methods appear in modern models too).
+
+The honest verdict: know it for the *ideas* (margin maximization, the
+kernel trick) and for the small-high-dimensional niche; reach for
+gradient boosting or neural networks on the big problems.
+
+## Related concepts
+
+- [Linear & Logistic Regression](/ai-ml/concepts/linear-and-logistic-regression):
+  the linear classifiers the SVM improves on.
+- [Overfitting, Underfitting & Bias-Variance](/ai-ml/concepts/overfitting-and-bias-variance):
+  the margin as a variance control.
+- [Regularization](/ai-ml/concepts/regularization): the soft margin.
+- [Gradient Boosting](/ai-ml/concepts/gradient-boosting): the model
+  that usually beats it on tabular data.

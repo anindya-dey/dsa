@@ -1,0 +1,122 @@
+---
+title: "Guardrails & Output Validation"
+summary: "Constrain and verify model outputs: schema enforcement, injection defense, and the refusal path."
+---
+
+A language model's output is *free text*, and most systems need
+*structured, safe, verified* output: valid JSON for the API, no
+leaked PII, no off-policy content, and — the modern hazard — no
+compliance with instructions *hidden in the input*. **Guardrails**
+are the layer that constrains and validates what the model produces
+(and what it is given), and they exist because a probabilistic
+generator *cannot* be trusted to always do the right thing: the
+system must *verify*, not assume. This is the
+[input-validation](/system-design/fundamentals/security-fundamentals)
+and [contract-enforcement](/system-design/fundamentals/api-design)
+discipline, applied to an untrustworthy producer.
+
+## The two directions
+
+Guardrails run **on the input** and **on the output**, and both
+matter:
+
+- **Input guardrails** (what reaches the model: **prompt-injection
+  detection** (untrusted content containing instructions), PII
+  scrubbing (the [privacy page](/ai-ml/systems/privacy-preserving-ml)),
+  input length/format checks, and *policy* filters (the input the
+  system must not process at all) — the
+  [API-gateway](/system-design/fundamentals/api-gateway-and-service-mesh)
+  validators, LLM-shaped).
+- **Output guardrails** (what leaves the model: **schema
+  validation** (is it valid JSON matching the contract?),
+  **content filtering** (toxicity, policy violations, the
+  [responsible-AI](/ai-ml/systems/responsible-ai-safety)
+  filters), **PII/secret detection** (the model leaked something),
+  and **groundedness checks** (the answer cites the context: the
+  [RAG](/ai-ml/systems/rag) hallucination guard) — the
+  *verification* the caller relies on.
+
+## Schema enforcement: making output structured
+
+The most common guardrail, and the one with the most system impact:
+the system needs the model's output as *data* (a JSON object to
+route on), not prose. The approaches, in increasing reliability:
+
+- **Prompt it** ("respond in JSON with these fields"): the cheapest,
+  the least reliable (the model occasionally adds prose, drops a
+  field, or malforms the JSON: the
+  [prompt page's](/ai-ml/systems/prompt-engineering-systems)
+  "structured output" pattern, and its failure rate is the reason
+  the next two exist).
+- **Constrained decoding** (the serving framework *forces* the
+  output to match a grammar/schema (only valid tokens for the
+  schema are allowed): the *reliable* version, because malformed
+  output is impossible — the reason modern serving frameworks
+  support JSON-schema-constrained generation, and the strongest
+  form of the guardrail).
+- **Validate and retry** (parse the output, and on failure, re-prompt
+  with the error: the [retry-with-feedback](/system-design/fundamentals/idempotency-and-exactly-once)
+  loop — the fallback when constrained decoding is unavailable, with
+  the cost of the extra call and the bounded retry count).
+
+The design rule: **the system validates; the model is asked
+nicely.** Never trust the prompt to guarantee structure — validate
+and (ideally) constrain, because the one time the model emits a
+field that breaks the parser is the one time it matters.
+
+## Prompt injection: the hard one
+
+The genuinely unsolved problem, worth its own treatment because it
+is *the* LLM-era security issue: **prompt injection** — untrusted
+content (a retrieved [RAG](/ai-ml/systems/rag) document, a
+user field, a web page an [agent](/ai-ml/systems/agents-and-tool-use)
+reads) contains text that *is an instruction*, and the model may
+follow it ("ignore previous instructions and..."). Unlike SQL
+injection (fixed by *parameterization*: a hard separation of code
+and data), LLM prompts have **no code/data separation** — it is all
+text to the model — so there is no clean fix, only *defense in
+depth*:
+
+- **Delimit and label untrusted content** (wrap it, tell the model
+  "the following is data, not instructions": reduces, does not
+  eliminate).
+- **Least privilege on tools** (the [agent's](/ai-ml/systems/agents-and-tool-use)
+  sandbox: even a successfully injected instruction *cannot* exceed
+  the tool's scoped capability — the *structural* defense, and the
+  one that actually holds).
+- **Output validation** (the injected instruction's *effect* (a
+  leaked secret, a bad action) is caught by the output/action
+  guardrail).
+- **The honest statement**: injection is *mitigated*, not *solved*,
+  and systems that expose powerful tools to untrusted input must
+  *assume* the model can be hijacked and design the blast radius
+  accordingly — the [assume-breach](/system-design/fundamentals/security-fundamentals)
+  posture.
+
+## The refusal path
+
+What happens when the guardrail *rejects* — the design decision that
+distinguishes a good guardrail from a broken product: **over-
+refusal** (the guardrail blocks legitimate requests: the
+[false-positive](/system-design/fundamentals/rate-limiting) cost,
+and the reason a guardrail has *its own* precision/recall trade,
+[evaluated](/ai-ml/systems/evaluating-llm-systems) like any
+classifier) and the **refusal UX** (the system must *say* it
+declined, gracefully: a blocked request that looks like a bug is a
+support ticket, and the [degradation
+contract](/system-design/fundamentals/availability-and-reliability)
+applies — a guardrail down should *fail closed* for safety but the
+product needs a defined behavior, not a hang).
+
+## Related concepts
+
+- [Evaluating LLM Systems](/ai-ml/systems/evaluating-llm-systems):
+  measuring the guardrails' precision/recall.
+- [Agents & Tool Use](/ai-ml/systems/agents-and-tool-use): the
+  sandbox that makes injection survivable.
+- [Prompt Engineering as a System Concern](/ai-ml/systems/prompt-engineering-systems):
+  the structured-output and injection-aware prompting.
+- [Security Fundamentals](/system-design/fundamentals/security-fundamentals):
+  input validation and least privilege, applied.
+- [Responsible AI & Safety](/ai-ml/systems/responsible-ai-safety):
+  the content-policy layer.

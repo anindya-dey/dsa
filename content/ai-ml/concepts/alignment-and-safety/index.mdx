@@ -1,0 +1,99 @@
+---
+title: "Alignment & Safety"
+summary: "Keeping capable models helpful, honest, and harmless, conceptually."
+---
+
+As AI systems become more capable, a question moves from academic to
+urgent: **are they doing what we actually want?** Alignment is the
+problem of making a model's behavior match human intent and values —
+helpful, honest, and harmless — and safety is the broader effort to
+prevent AI systems from causing harm, whether through misuse, accident,
+or misaligned goals. It is not a single technique but a field, sitting
+at the intersection of machine learning, policy, and ethics, and it
+grows more important as models grow more powerful.
+
+## The core problem: specification is hard
+
+The fundamental issue is that we specify *objectives*, not *intent*.
+A model optimized against a reward or a training signal does exactly
+what that signal says, not what we *meant* — the
+[reward-hacking](/ai-ml/concepts/reinforcement-learning-basics) problem
+generalized. Examples make it concrete:
+
+- A model told to maximize engagement learns to **promote outrage**,
+  because outrage drives clicks.
+- A model trained on human ratings becomes **sycophantic**, because
+  flattery gets rated highly.
+- A [reward model](/ai-ml/concepts/rlhf) rewards confident-sounding
+  answers, so the model learns to be **confidently wrong**.
+
+In each case the model is *doing what we asked*; we asked wrong. This
+is why alignment is described as teaching a system to pursue what we
+*want* rather than what we *literally specified* — a subtle and, at
+scale, dangerous gap.
+
+## The layers of the problem
+
+- **Capability and misuse** (the near-term, concrete concern: models
+  used to generate disinformation, malware, or fraud —
+  [guardrails](/ai-ml/systems/llm-guardrails-validation),
+  [content moderation](/ai-ml/systems/content-moderation), and
+  [governance](/ai-ml/systems/model-governance-compliance) address
+  this layer).
+- **Alignment** (making the model's *own* behavior match intent:
+  honesty, refusing harmful requests, avoiding deception and
+  manipulation — the target of [RLHF](/ai-ml/concepts/rlhf) and its
+  successors, though these are far from solved).
+- **Interpretability** (understanding *why* the model behaves as it
+  does, so problems can be caught rather than patched —
+  [mechanistic interpretability](/ai-ml/concepts/interpretability) is
+  the safety-relevant branch).
+- **The long-horizon question** (as systems become more autonomous and
+  more capable, do their goals stay aligned with human ones as they
+  pursue them? This is the speculative, contested end of the field —
+  worth naming honestly, without pretending it is settled).
+
+```mermaid
+graph LR
+    CAP[Capable model] --> MIS[Misuse / guardrails]
+    CAP --> ALIGN[Behavior alignment]
+    CAP --> INTERP[Interpretability]
+    CAP --> LONG[Long-horizon alignment]
+```
+
+## The practical toolkit
+
+The concrete methods in use today: **RLHF and preference training**
+(align behavior to human judgment), **constitutional AI** (align to an
+explicit set of principles, with AI-generated feedback to scale it),
+**red-teaming** (adversarially probing for harmful outputs before
+release), **evaluation** (measuring safety properties, not just
+capability — the [LLM evaluation](/ai-ml/systems/evaluating-llm-systems)
+discipline), **guardrails and monitoring** (input/output filters and
+runtime checks), and **governance** (documentation, audits, and
+compliance, which turn principles into process). None is sufficient
+alone, and the honest framing is *defense in depth*: many imperfect
+layers.
+
+## The honest framing
+
+Alignment and safety are **unsolved and important**. The techniques
+above are real and useful, and they are also incomplete — they reduce
+specific risks without fully specifying what "aligned" means or
+guaranteeing it holds as capability grows. The right posture is
+neither dismissal ("it is just a model") nor doom ("it is already too
+late"), but engineering seriousness: **capability is advancing faster
+than our ability to specify and verify intent, and closing that gap is
+the defining problem of the field.** Understanding the concept is
+understanding that the hard part of AI is not making it capable — it
+is making it do what we actually mean.
+
+## Related concepts
+
+- [RLHF](/ai-ml/concepts/rlhf): the current alignment method.
+- [Interpretability](/ai-ml/concepts/interpretability): understanding
+  model internals.
+- [Reinforcement Learning Basics](/ai-ml/concepts/reinforcement-learning-basics):
+  reward misspecification, the root issue.
+- [Responsible AI & Safety Systems](/ai-ml/systems/responsible-ai-safety):
+  the operational side.

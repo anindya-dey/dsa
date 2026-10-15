@@ -1,0 +1,79 @@
+---
+title: "Activation Functions"
+summary: "Why non-linearity is essential, and the ReLU-era choices."
+---
+
+Between the weighted sums of a neural network sit the **activation
+functions** — small non-linear functions applied to each neuron's
+output. They look like a detail and they are actually the *reason
+neural networks can learn anything interesting*: without them, a stack
+of layers would collapse into a single linear function, and depth
+would buy nothing. The choice of activation is a real design decision
+with real consequences for training.
+
+## Why non-linearity is the whole point
+
+Consider two layers with no activation between them:
+`output = W₂ · (W₁ · x) = (W₂W₁) · x` — a *single* linear
+transformation. Any number of linear layers compose into one linear
+layer, so a deep network without activations is just a
+[linear model](/ai-ml/concepts/linear-and-logistic-regression) with
+extra steps. The activation breaks that: it makes each layer's output
+a *non-linear* function of its input, so composing layers composes
+non-linearities, and the network can represent curves, interactions,
+and arbitrarily complex patterns. **The activation is what makes
+"deep" mean anything.**
+
+## The functions, and their history
+
+- **Sigmoid / tanh** (the early choices): smooth S-shaped curves that
+  squash the output into a range (`(0,1)` or `(-1,1)`). Intuitive
+  (they look like a neuron "firing"), and problematic in deep
+  networks: their gradients *saturate* (become near-zero at the
+  extremes), so gradients **vanish** as they back-propagate through
+  many layers, and deep networks barely train. This was a major
+  reason early deep learning stalled.
+- **ReLU** (`max(0, x)`, the modern default): output the input if
+  positive, else zero. Dead simple, and it *fixed* the vanishing
+  gradient problem (the gradient is 1 for positive inputs, so it does
+  not shrink through depth), which is why the ReLU era unlocked deep
+  networks. Its issue: **dying ReLUs** (a neuron stuck outputting
+  zero for all inputs stops learning — the fix is variants).
+- **ReLU variants** (Leaky ReLU, ELU, GELU, SiLU): tweaks that keep a
+  small gradient for negative inputs (avoiding dead neurons) or
+  smooth the curve. **GELU and SiLU** are the modern defaults in
+  [transformers](/ai-ml/concepts/transformers) and large models.
+- **Softmax** (the output layer for classification): turns a vector
+  of scores into a *probability distribution* (all positive, summing
+  to 1), which is why classifiers end in softmax + cross-entropy.
+
+## The design considerations
+
+- **The output activation matches the task** (softmax for
+  multi-class, sigmoid for binary, *none* (linear) for regression —
+  a common mistake is applying an activation to a regression output,
+  which clips the predictions to a range).
+- **Hidden activations affect trainability** (the ReLU family for
+  hidden layers, sigmoid/tanh only where their squashing is wanted).
+- **Smoothness matters for some architectures** (the smooth
+  activations (GELU/SiLU) help in very deep models and transformers;
+  ReLU is fine and faster elsewhere).
+
+## The takeaway
+
+The activation function is a one-line detail with an outsized effect:
+it is the source of a network's expressive power, and its *gradient
+behavior* is a major factor in whether a deep network trains at all.
+The shift from sigmoid/tanh to the ReLU family is one of the quiet
+reasons deep learning took off.
+
+## Related concepts
+
+- [Perceptrons & Multilayer Perceptrons](/ai-ml/concepts/perceptrons-and-mlps):
+  the network the activations sit in.
+- [Backpropagation](/ai-ml/concepts/backpropagation): the gradients
+  the activation shapes.
+- [Normalization & Initialization](/ai-ml/concepts/normalization-and-initialization):
+  the related training-stability techniques.
+- [Transformers](/ai-ml/concepts/transformers): where GELU/SiLU
+  dominate.

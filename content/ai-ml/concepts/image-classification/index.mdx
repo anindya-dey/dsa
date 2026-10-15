@@ -1,0 +1,79 @@
+---
+title: "Image Classification"
+summary: "Assigning a label to an image: the vision task, and its evolution."
+---
+
+Image classification is the foundational computer-vision task: given
+an image, assign it a label ("cat", "dog", "tumor", "defective"). It
+is the task that deep learning first dominated, the benchmark that
+drove the [CNN](/ai-ml/concepts/convolutional-neural-networks)
+revolution, and still the workhorse behind a huge fraction of
+production vision — content moderation, medical imaging, quality
+inspection, photo organization. Understanding it (and its evolution)
+makes the rest of vision legible.
+
+## The task and the pipeline
+
+Input: an image (a grid of pixels). Output: a label (or a probability
+over labels). The pipeline: an image is fed through a network that
+extracts increasingly abstract features (edges → textures → parts →
+objects) and ends with a classifier over the labels. The training
+signal is labeled examples (this image is a cat), and the model learns
+the features that separate the classes — the
+[supervised](/ai-ml/systems/supervised-unsupervised-rl) setup.
+
+The challenges that make it non-trivial: **intra-class variation**
+(the same object looks different from different angles, in different
+lighting, at different scales), **inter-class similarity** (a wolf and
+a dog look alike), **occlusion**, and **context** (a small object
+might need its surroundings to classify). Deep networks handle these
+by learning *invariant* features — the reason
+[parameter sharing and hierarchy](/ai-ml/concepts/convolutional-neural-networks)
+matter.
+
+## The evolution
+
+- **Hand-crafted features** (pre-deep-learning: humans designed edge
+  and texture detectors — SIFT, HOG — and fed them to a classifier).
+- **The CNN breakthrough** (AlexNet, 2012: a deep
+  [CNN](/ai-ml/concepts/convolutional-neural-networks) trained on a
+  large dataset crushed the hand-crafted approach, launching the deep
+  learning era. Then VGG, ResNet (with
+  [residual connections](/ai-ml/concepts/normalization-and-initialization)),
+  and efficient architectures pushed accuracy up and cost down).
+- **Transfer learning** (the practical shift: instead of training from
+  scratch, [fine-tune](/ai-ml/concepts/transfer-learning) a
+  pre-trained image model on your small dataset — the reason image
+  classification is now accessible to anyone with a few hundred
+  labeled images).
+- **Vision transformers** (splitting an image into patches and applying
+  the [transformer](/ai-ml/concepts/transformers) architecture — now
+  competitive with or better than CNNs at scale).
+- **Zero-shot classification** (models like
+  [CLIP](/ai-ml/concepts/vision-language-models) classify into
+  *arbitrary* label sets given as text, with no task-specific
+  training — a genuinely new capability).
+
+## What it means in production
+
+Image classification is often the *simplest* vision capability to ship
+and a component of harder ones
+([detection and segmentation](/ai-ml/concepts/object-detection-and-segmentation)
+build on classification-like features). The engineering concerns are
+the usual ML-systems ones: the data (labeled examples, class balance,
+distribution shift), the model size versus latency (running on a
+phone or a server — [edge inference](/ai-ml/systems/edge-on-device-inference)),
+and monitoring for drift as the real world diverges from training. The
+concept is the entry point to vision; the evolution (hand-crafted →
+CNN → transformer → zero-shot) is a compact history of modern AI.
+
+## Related concepts
+
+- [Convolutional Neural Networks](/ai-ml/concepts/convolutional-neural-networks):
+  the architecture it drove.
+- [Object Detection & Segmentation](/ai-ml/concepts/object-detection-and-segmentation):
+  the harder vision tasks built on it.
+- [Vision–Language Models](/ai-ml/concepts/vision-language-models):
+  the zero-shot successor.
+- [Transfer Learning & Fine-Tuning](/ai-ml/concepts/transfer-learning):
+  how it is applied in practice.

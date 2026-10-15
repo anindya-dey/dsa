@@ -7,8 +7,10 @@ import { ComingSoon } from "@/components/coming-soon";
 import { Container } from "@/components/container";
 import { ArrowRightIcon } from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
+import { TierBadge } from "@/components/tier-badge";
 import { dsaPatterns, dsaPhaseTitles } from "@/lib/catalog/dsa";
 import { getPatternOverview, patternHasContent } from "@/lib/content/dsa";
+import { tierOf } from "@/lib/catalog/tiers";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -99,6 +101,7 @@ export default async function PatternPage({ params }: PageProps) {
         title={meta.title}
         description={meta.summary}
       >
+        <TierBadge tier={tierOf(slug)} />
         {meta.variants?.map((variant) => <Badge key={variant}>{variant}</Badge>)}
       </PageHeader>
 
