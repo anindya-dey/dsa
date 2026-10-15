@@ -1,0 +1,125 @@
+---
+title: "Autoscaling for Inference"
+summary: "Scaling a serving fleet on the right signal, when the unit of work is a slow, expensive request."
+---
+
+Autoscaling a model-serving fleet is the [load
+balancer](/system-design/fundamentals/load-balancing) scaling problem
+with three ML-specific twists that break the standard signals: the
+**unit of work is slow** (a forward pass is milliseconds-to-seconds,
+so in-flight requests pile up), the **resource is
+special** ([GPU](/system-design/ai-ml/gpu-accelerator-management):
+scaling out means *acquiring a scarce device*, not starting a cheap
+process), and the **warm-up is long** (a new replica takes
+seconds-to-minutes to be *ready*: the
+[cold-start](/system-design/ai-ml/serverless-inference) problem at
+fleet scale). The design: **scale on the signal that predicts the
+bottleneck** (queue depth, not CPU), with the *lead time* the warm-up
+demands.
+
+## Why the standard signals fail
+
+- **CPU utilization**: a GPU-backed model can be *CPU-idle* (the CPU
+  waits for the GPU) while saturated, or CPU-busy on preprocessing
+  while the GPU is idle — CPU does not track the bottleneck, so
+  scaling on it under- or over-provisions unpredictably.
+- **Memory**: a model's memory is *fixed* (the weights), so memory
+  utilization is a *binary* (loaded or not), not a load signal.
+- **Request rate alone**: without knowing the *service time*
+  (which varies with batch size and input size), rate does not imply
+  load — the same RPS is trivial or fatal depending on the model
+  and the inputs.
+- **The lagging signal**: by the time CPU is high, the queue is
+  already deep and the p99 is already breached (the
+  [queueing-theory](/system-design/fundamentals/latency-vs-throughput)
+  lesson: the wait explodes near saturation, so reacting *at*
+  saturation is too late).
+
+## The right signal: queue depth (or its proxies)
+
+The signal that *predicts* the bottleneck is the **queue**: the
+requests waiting to be served. It leads utilization (it rises
+*before* the workers are saturated), it directly encodes the user
+experience (queue depth × service time ≈ wait), and it is the
+standard autoscaling signal for slow-workload fleets
+(the same reason the [job scheduler](/system-design/hld/distributed-job-scheduler)
+scales on queue depth). Proxies where a true queue is not visible:
+**in-flight request count** (the requests currently being served:
+rises as concurrency exceeds capacity), **p99 latency** (the
+[latency-SLO](/system-design/fundamentals/latency-vs-throughput)
+as the signal: scale when the tail breaches, the
+[reliability](/system-design/fundamentals/reliability-engineering)
+framing), and the **batching queue length** (the
+[dynamic-batching](/system-design/ai-ml/batching-and-latency)
+tier's own backlog: the most direct ML-specific signal).
+
+## The lead time: scaling ahead of the warm-up
+
+The twist that dominates the design: **a new replica is not ready
+when it starts** — it must schedule, provision, load the model, and
+warm up (seconds to minutes). So autoscaling must **lead the load**,
+not follow it, which means:
+
+- **Predictive / proactive scaling** (scale on the *forecast*
+  (daily patterns, scheduled events): the
+  [capacity-planning](/system-design/fundamentals/capacity-planning-and-estimation)
+  discipline, because reacting to a spike with a 2-minute warm-up
+  means 2 minutes of degraded service — the honest admission that
+  *reactive* autoscaling cannot cover a *fast* spike for a *slow*
+  workload, and the pre-warm is the answer).
+- **Over-provisioned headroom** (keep a margin above the predicted
+  load, sized by the warm-up time: the faster the spike and the
+  slower the warm-up, the bigger the floor — a
+  [capacity-planning](/system-design/fundamentals/capacity-planning-and-estimation)
+  number, and the reason a serving fleet runs "hot").
+- **Scale-in is *slow and careful*** (do not drop a replica that is
+  mid-request, and do not drop the last warm copy of a model: the
+  [drain](/system-design/fundamentals/load-balancing) discipline,
+  with the model-warmth constraint added — scaling in *below* the
+  [warm pool's](/system-design/ai-ml/model-caching-warm-pools)
+  needs is the self-inflicted cold start).
+
+## The scale-to-zero tension
+
+The [serverless](/system-design/ai-ml/serverless-inference) ideal
+(scale to zero) fights the warm-up reality, and the design resolves
+it by **workload class**:
+
+- **Interactive, high-traffic**: scale on queue depth, keep a warm
+  floor, scale out ahead of the forecast — *never* to zero (the
+  floor is the price of the latency SLO).
+- **Long-tail, low-traffic**: scale to zero (or to the
+  [warm-pool floor](/system-design/ai-ml/model-caching-warm-pools)),
+  accept the cold start for the rare request, and cover it with the
+  [single-flight/queueing](/system-design/ai-ml/serverless-inference)
+  trick.
+- **Bursty**: the hybrid — a warm floor sized to the *baseline*, fast
+  scale-out for the burst, and the [autoscaling](/system-design/ai-ml/autoscaling-inference)
+  policy tuned to the *ramp*, not the peak.
+
+## The capacity-planning arithmetic
+
+The numbers the policy needs: **service time per request** (the
+model's latency, batch-dependent), **concurrency per replica**
+(how many in-flight requests one GPU sustains: the batching and
+[GPU](/system-design/ai-ml/gpu-accelerator-management) limits), and
+**warm-up time** (the lead time). From those: *replicas needed =
+peak RPS × service time / concurrency* (Little's Law, the
+[latency page's](/system-design/fundamentals/latency-vs-throughput)
+tool), and *the headroom = the load during the warm-up window* — the
+two numbers that make "how many replicas, and how far ahead" a
+computed answer rather than a guess.
+
+## Related concepts
+
+- [Model Serving Architectures](/system-design/ai-ml/model-serving-architectures):
+  the tier being scaled.
+- [Batching & Latency](/system-design/ai-ml/batching-and-latency):
+  the queue-depth signal's source.
+- [Serverless Inference](/system-design/ai-ml/serverless-inference)
+  and [Model Caching](/system-design/ai-ml/model-caching-warm-pools):
+  the warmth/scale-to-zero tension.
+- [Latency vs. Throughput](/system-design/fundamentals/latency-vs-throughput):
+  the queueing arithmetic.
+- [Capacity Planning & Estimation](/system-design/fundamentals/capacity-planning-and-estimation):
+  the fleet-sizing discipline.

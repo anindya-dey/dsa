@@ -1,0 +1,114 @@
+---
+title: "Edge / On-Device Inference"
+summary: "Running the model on the phone: privacy, offline tolerance, and tiny footprints."
+---
+
+Running the model **on the user's device** (phone, browser, embedded
+device) rather than in the cloud inverts the serving tier's whole
+resource picture: the compute is *tiny* and *borrowed* (a phone's
+NPU, the user's battery), the memory is *kilobytes*, there is *no
+network* (which is the point), and there is *no server bill* (the
+user's device pays). What it buys: **privacy** (data never leaves
+the device: the strongest privacy story there is), **latency** (no
+round trip: sub-frame-time inference for camera effects), **offline
+tolerance** (works on a plane), and **cost** (the cloud does not
+run it). What it costs: the model must be *dramatically* smaller,
+the device is a heterogeneous zoo, and updates are slow. This is the
+[inference optimization](/system-design/ai-ml/inference-optimization)
+discipline pushed to its extreme, plus a deployment problem the
+cloud never has.
+
+## The constraints, quantified
+
+The numbers that shape every edge model:
+
+- **Compute**: a phone's accelerator is ~1-10% of a data-center
+  [GPU](/system-design/ai-ml/gpu-accelerator-management): the model
+  must be *orders of magnitude* smaller (millions of parameters, not
+  billions), which is why edge models are the [distilled,
+  pruned, quantized](/system-design/ai-ml/inference-optimization)
+  end of the family (int8 and below: mobile NPUs prefer integer
+  math).
+- **Memory**: tens to hundreds of MB available to the app: the
+  model + the runtime + the working tensors must all fit, which caps
+  the model size hard.
+- **Power**: inference drains the battery, so the *energy per
+  inference* is a first-class metric (the mobile-specific one: a
+  model that is fast but power-hungry is rejected), and the
+  device may *throttle* under heat (the thermal behavior changes
+  the latency *over a session*: a real edge-serving subtlety).
+- **The device zoo**: thousands of device models, OS versions, and
+  accelerator APIs (iOS's Core ML/Neural Engine, Android's
+  NNAPI/vendor NPUs): the *portability* problem is brutal, and it
+  is why the runtime layer
+  ([TFLite](https://en.wikipedia.org/wiki/TensorFlow_Lite), Core ML,
+  ONNX Runtime Mobile, ExecuTorch) exists — the
+  [runtimes page's](/system-design/ai-ml/model-runtimes-compilation)
+  edge branch, where the "compiled artifact" must target *many*
+  devices.
+
+## The design decisions
+
+- **What runs on the edge vs. the cloud** (the split: the *always*
+  and *private* and *latency-critical* parts on-device (wake-word,
+  keyboard prediction, camera filters, local search), the *heavy*
+  and *fresh* parts in the cloud (the big recommendation model, the
+  [LLM](/system-design/ai-ml/model-serving-architectures)): the
+  hybrid is the norm, and the split is a per-feature product
+  decision (privacy requirement? offline requirement? latency
+  budget? model size?) — the same
+  [offline-vs-online](/system-design/ai-ml/offline-vs-online-inference)
+  framing, at the device boundary.
+- **The federated tie-in** (the [privacy](/system-design/ai-ml/privacy-preserving-ml)
+  connection: on-device *training* — the device improves the model
+  locally, only [updates](/system-design/ai-ml/privacy-preserving-ml)
+  travel, which is exactly federated learning, and the reason the
+  edge and privacy pages are neighbors).
+- **The model delivery** (the *update* problem: the app ships the
+  model, or downloads it (a *model update* without an app-store
+  release: the feature-flag-style delivery, with the
+  [CDN](/system-design/fundamentals/cdn) serving the model files and
+  the versioning/residency questions from the
+  [caching page](/system-design/ai-ml/model-caching-warm-pools)),
+  and the *A/B* problem (per-device model assignment: the
+  [experimentation](/system-design/ai-ml/ab-testing-experimentation)
+  platform extended to the edge, with the offline devices as the
+  hard case — an offline device cannot be re-bucketed until it
+  reconnects).
+- **The fallback contract** (the device may not have the model, or
+  the accelerator, or the memory: every on-device feature needs a
+  *cloud fallback* or a *degraded local* path — the
+  [degradation discipline](/system-design/fundamentals/availability-and-reliability),
+  device-shaped).
+
+## The operational shape
+
+Edge inference's observability is the *opposite* of the cloud's:
+**you cannot see the device** (no server logs, no live metrics:
+privacy and connectivity forbid it). The answers: **opt-in,
+aggregated telemetry** (crash reports, sampled performance stats —
+the [privacy-preserving](/system-design/ai-ml/privacy-preserving-ml)
+version: aggregated, no raw data), **local evaluation harnesses**
+(the model tested on a device *farm* before release: the
+[canary](/system-design/fundamentals/reliability-engineering)
+discipline, run in a lab because production is invisible), and the
+**slow, coarse rollout** (an app-store release or a model download
+that reaches the fleet over *days-to-weeks*: the edge's
+[deployment](/system-design/fundamentals/reliability-engineering)
+is the *slowest* on this site, which is why edge model *bugs* are
+the most expensive — the [rollback](/system-design/fundamentals/reliability-engineering)
+is a new release, not a config flip).
+
+## Related concepts
+
+- [Inference Optimization](/system-design/ai-ml/inference-optimization):
+  the techniques (quantize/prune/distill) that make an edge model
+  possible.
+- [Model Runtimes & Compilation](/system-design/ai-ml/model-runtimes-compilation):
+  the edge runtime branch (TFLite, Core ML).
+- [Privacy-Preserving ML](/system-design/ai-ml/privacy-preserving-ml):
+  the on-device-training tie-in.
+- [Model Caching & Warm Pools](/system-design/ai-ml/model-caching-warm-pools):
+  the model-delivery/versioning machinery.
+- [Offline vs Online Inference](/system-design/ai-ml/offline-vs-online-inference):
+  the edge/cloud split decision.
