@@ -1,4 +1,4 @@
-export type NavIcon = "home" | "dsa" | "system" | "matrix";
+export type NavIcon = "home" | "data" | "system" | "ai" | "matrix" | "code";
 
 export interface NavItem {
   href: string;
@@ -9,7 +9,7 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Home", shortLabel: "Home", icon: "home" },
-  { href: "/dsa", label: "DSA", shortLabel: "DSA", icon: "dsa" },
+  { href: "/dsa", label: "DSA", shortLabel: "DSA", icon: "data" },
   {
     href: "/system-design",
     label: "System Design",
@@ -20,19 +20,19 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/ai-ml",
     label: "AI/ML",
     shortLabel: "AI/ML",
-    icon: "system",
+    icon: "ai",
   },
   {
     href: "/dsa/cheat-sheet",
     label: "Cheat Sheet",
-    shortLabel: "Cheat Sheet",
+    shortLabel: "Cheats",
     icon: "matrix",
   },
   {
     href: "/cpp",
     label: "C++ Toolkit",
     shortLabel: "C++",
-    icon: "dsa",
+    icon: "code",
   },
 ];
 

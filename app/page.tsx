@@ -4,9 +4,9 @@ import { Container } from "@/components/container";
 import { ArrowRightIcon } from "@/components/icons";
 
 export const metadata: Metadata = {
-  title: "DSA & System Design",
+  title: "DSA, System Design & AI/ML",
   description:
-    "Learn Data Structures & Algorithms and System Design through patterns, not memorization.",
+    "Learn Data Structures & Algorithms, System Design, and AI/ML through patterns, not memorization, with a C++ toolkit for the code.",
 };
 
 const SAMPLE_CLUES = [
@@ -34,6 +34,24 @@ const VERTICALS = [
       "The building blocks first, then low-level object design and full distributed case studies.",
     cta: "Browse topics",
   },
+  {
+    href: "/ai-ml",
+    index: "03",
+    label: "Intelligence",
+    title: "AI/ML",
+    description:
+      "How modern models actually work, conceptually, then the data, serving, evaluation, and MLOps that ship them.",
+    cta: "Browse tracks",
+  },
+  {
+    href: "/cpp",
+    index: "04",
+    label: "Reference",
+    title: "C++ Toolkit",
+    description:
+      "The containers, algorithms, and idioms behind every solution: what each does, what it costs, and the gotchas.",
+    cta: "Browse entries",
+  },
 ];
 
 export default function Home() {
@@ -49,9 +67,9 @@ export default function Home() {
             <span className="text-accent-deep">Solve anything.</span>
           </h1>
           <p className="mt-5 max-w-lg text-base leading-relaxed text-pretty text-ink-soft sm:text-lg">
-            Every problem teaches recognition first: brute-force reasoning,
-            the optimal C++ solution, and the complexity analysis that
-            explains why.
+            Four tracks, one idea: understand the pattern once, then recognize
+            it everywhere. Algorithm archetypes, distributed systems, how
+            models actually work, and the C++ behind the code.
           </p>
 
           <div className="mt-8 grid gap-3 sm:flex sm:gap-4">
@@ -63,10 +81,10 @@ export default function Home() {
               <ArrowRightIcon className="size-4" />
             </Link>
             <Link
-              href="/system-design"
+              href="/ai-ml"
               className="inline-flex h-12 items-center justify-center rounded-full border border-ink/15 px-6 font-display text-[0.95rem] font-semibold text-ink transition-colors hover:border-accent hover:bg-accent-wash hover:text-accent-deep"
             >
-              System Design
+              Explore AI/ML
             </Link>
           </div>
         </div>

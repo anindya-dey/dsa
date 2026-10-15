@@ -10,26 +10,26 @@ import { siteUrl } from "@/lib/site";
 import "./globals.css";
 
 const siteDescription =
-  "A pattern-driven reference for Data Structures & Algorithms and System Design, with brute-force to optimal solutions in C++.";
+  "A pattern-driven reference for Data Structures & Algorithms, System Design, and AI/ML, with brute-force to optimal solutions in C++.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "DSA & System Design by Anindya Dey",
-    template: "%s | DSA & System Design",
+    default: "DSA, System Design & AI/ML by Anindya Dey",
+    template: "%s | DSA, System Design & AI/ML",
   },
   description: siteDescription,
   openGraph: {
     type: "website",
-    siteName: "DSA & System Design",
-    title: "DSA & System Design by Anindya Dey",
+    siteName: "DSA, System Design & AI/ML",
+    title: "DSA, System Design & AI/ML by Anindya Dey",
     description: siteDescription,
     url: siteUrl,
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "DSA & System Design by Anindya Dey",
+    title: "DSA, System Design & AI/ML by Anindya Dey",
     description: siteDescription,
   },
 };
