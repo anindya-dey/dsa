@@ -1,0 +1,143 @@
+---
+title: "Sorting & Selection"
+summary: "Sorting is the master pattern: three classic algorithms, one trade between them, and the k-th-element question that sorting secretly answers."
+---
+
+Sorting is the most studied problem in computer science for a reason: an
+enormous fraction of all algorithmic questions become easy on sorted
+data. [Binary search](/dsa/patterns/binary-search-variants) needs it,
+[two pointers](/dsa/patterns/two-pointers) needs it,
+[intervals](/dsa/patterns/intervals-and-sweep-line) need it, and
+[greedy algorithms](/dsa/patterns/greedy-algorithms) usually need it as
+their first step. So this page is partly about the sort algorithms
+themselves, and partly about the sorting *habit*: the reflex that when a
+problem feels quadratic, sorting the input is the most common single move
+that unlocks it.
+
+The second subject, less famous but equally standard, is **selection**:
+finding the k-th smallest element without fully sorting. It is sorting's
+cheaper sibling, and it has a classic randomized algorithm of its own.
+
+## How to spot it
+
+- The problem is about **order**: "k-th largest", "median", "how many
+  inversions", "closest pair".
+- A brute force compares all pairs, and sorting would make the pairs
+  adjacent.
+- "Sort, then sweep" as the natural shape of a solution.
+- Input arrives as k sorted streams to merge (the
+  [heap](/dsa/patterns/heaps-and-priority-queues) pattern's sibling).
+
+## The three classic algorithms, and the trade they encode
+
+Sorting has three canonical algorithms, and they are worth learning as a
+*trade* rather than a list, because each one is the best answer to a
+different question.
+
+**Quick sort**: pick a pivot, partition the array into
+less-than-pivot and greater-than-pivot (a single O(n) pass with two
+pointers), then recurse on both sides. Average O(n log n), worst case
+O(n²) (unlucky pivots, e.g. sorted input with a first-element pivot),
+fixable in practice with random pivots. Sorts in place, so O(log n)
+stack. It is the fastest in practice because the partition is cache-
+friendly and does one pass of work per level.
+
+```cpp
+void quickSort(std::vector<int>& nums, int lo, int hi) {
+    if (lo >= hi) {
+        return;                            // base: one element is sorted
+    }
+    int pivot = nums[lo + (hi - lo) / 2];   // any pivot; middle avoids traps
+    int i = lo;
+    int j = hi;
+    while (i <= j) {
+        while (nums[i] < pivot) {
+            ++i;
+        }
+        while (nums[j] > pivot) {
+            --j;
+        }
+        if (i <= j) {
+            std::swap(nums[i++], nums[j--]);  // hoare-style partition
+        }
+    }
+    quickSort(nums, lo, j);                // both sides, recursively
+    quickSort(nums, i, hi);
+}
+```
+
+**Merge sort**: halve, sort each half (recursively), merge the two
+sorted halves in one linear pass (the two-list
+[weave](/dsa/patterns/linked-list-manipulation/problems/merge-two-sorted-lists)).
+Guaranteed O(n log n), no bad inputs, *stable* (equal elements keep their
+order, which matters when sort keys are ties for a secondary criterion),
+but needs O(n) scratch space for the merge. Merge sort's guaranteed bound
+is why it is the standard answer when the worst case matters, and its
+merge step is why it generalizes beautifully (linked lists, external
+sorting of files bigger than memory, parallel sorting).
+
+**Heap sort**: heapify the array (O(n)), then repeatedly extract the
+maximum (O(log n) each) into sorted position from the back. Guaranteed
+O(n log n), in place, but with poor cache locality, which is why real
+libraries rarely use it as the general-purpose sort.
+
+The honest modern summary: in practice you call `std::sort` (introsort:
+quick sort that falls back to heap sort when recursion gets too deep),
+and the interview point is the *trade*: quick sort for average speed,
+merge sort for the guarantee and stability, heap sort for in-place
+guarantees.
+
+## Selection: k-th element without sorting
+
+"Find the k-th smallest" is answerable by sorting (O(n log n)) and then
+indexing, but the *answer* does not need the full order, which means there
+is room to do better. **Quickselect** is quick sort's partition with one
+change: after partitioning, the pivot sits at its final sorted position,
+so you can tell which side the k-th element lives in, and you recurse
+into *only that side*. Half the recursion of quick sort (one side, not
+two), so the recurrence is `T(n) = T(n/2) + O(n)`: O(n) average.
+
+That single change (recursing into one side instead of both) is the
+entire difference between quick *sort* and quick *select*, and it is the
+cleanest illustration of what
+[divide and conquer](/dsa/patterns/divide-and-conquer) costs: you pay for
+what you actually need.
+
+## The ideas that ride along
+
+- **Stability**: a stable sort preserves the relative order of equal
+  keys, which is how "sort by name, then stably by department" gives you
+  grouping without a compound comparator. Merge sort is stable; quick
+  sort is not.
+- **Counting and radix sort**: when keys are small integers (or digits),
+  counting sort prices by the key *range* (O(n + k)) instead of by
+  comparisons, breaking the O(n log n) comparison bound. Radix sort
+  extends it digit by digit. Worth knowing as the "why is n log n not a
+  law" answer.
+- **Comparators**: the real-world sort skill is designing the comparison
+  (sort by X, then Y: compare X first, break ties on Y), which is where
+  most production sorting bugs actually live.
+
+## When sorting is not the answer
+
+If you only need the k extremes, a bounded
+[heap](/dsa/patterns/heaps-and-priority-queues/problems/kth-largest-element-in-an-array)
+beats sorting a stream you cannot store. If you need *repeated* extremes
+under updates, a heap or an
+[ordered structure](/dsa/patterns/range-query-structures) is the tool.
+And if the data is already sorted (rotated, two halves), you do not sort
+it: [binary search](/dsa/patterns/binary-search-variants/problems/search-in-rotated-sorted-array)
+adapts instead.
+
+## Related patterns
+
+- [Divide & Conquer](/dsa/patterns/divide-and-conquer) is the family
+  quick and merge sort belong to, priced by the same Master Theorem.
+- [Binary Search Variants](/dsa/patterns/binary-search-variants) is what
+  sorted data *enables*, which is the whole reason to sort.
+- [Heaps / Priority Queues](/dsa/patterns/heaps-and-priority-queues) is
+  the streaming selection answer, and heap sort's engine.
+- [Intervals & Sweep Line](/dsa/patterns/intervals-and-sweep-line) is
+  the pattern that begins with a sort.
+- [Recursion & Math](/dsa/patterns/recursion-and-math) covers the call
+  trees and recurrence analysis these algorithms rest on.

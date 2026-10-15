@@ -1,0 +1,144 @@
+---
+title: "Concurrency & Parallelism"
+summary: "Two requests touching the same data at the same moment: the race conditions, the locks that fix them, and the costs every fix charges."
+---
+
+Concurrency is two things happening at once, and it deserves its own page
+because it is not about speed (that is parallelism) but about
+**correctness under interleaving**: two threads, two requests, two
+processes, all touching the same data, with the system free to interleave
+their operations in any order it likes. The single-threaded version of
+every algorithm is correct by construction: statement 2 happens after
+statement 1. The concurrent version loses that guarantee, and everything
+on this page exists to buy some of it back.
+
+The distinction that organizes the whole subject:
+
+- **Concurrency** is *dealing with* many things at once (structure:
+  tasks that may interleave). It is valuable on one core.
+- **Parallelism** is *doing* many things at once (execution: tasks that
+  literally overlap). It needs multiple cores.
+
+A web server is concurrent (thousands of requests, any interleaving)
+without being parallel (one core, time-sliced), and a matrix library is
+parallel without being concurrent (one task, split across cores). Most
+interview problems that say "concurrency" mean the first: correctness
+under interleaving.
+
+## The canonical bug: check-then-act
+
+Nearly every concurrency failure is a **race condition** on a
+check-then-act sequence: read state, decide, act, with the assumption
+that the state did not change between the read and the act. The deposit
+problem is the archetype: two threads both read `balance = 100`, both
+add 50, both write 150, and one deposit is silently gone. Nothing
+crashed, nothing errored: the *invariant* (deposits are never lost)
+broke, invisibly.
+
+```cpp
+// The race, stated plainly: three steps, interleavable between threads.
+balance = balance + deposit;
+// expands to: load balance; add deposit; store balance.
+// Two threads interleave: load(100); load(100); add; add; store(150); store(150);
+```
+
+The deeper framing that makes the subject tractable: a program is
+correct concurrently if **every possible interleaving** preserves the
+invariants. Sequential correctness proves nothing about concurrent
+correctness, because the sequential proof only covers one interleaving.
+This is why testing concurrency is famously inadequate (the bug
+interleaving is rare, timing-dependent, and disappears under a
+debugger), and why the discipline is *reasoning* (invariants and
+critical sections) rather than trial.
+
+## The fixes, and their prices
+
+**Mutual exclusion (a lock).** Wrap the check-then-act in a critical
+section: `std::mutex`, a database row lock, a
+`SELECT FOR UPDATE`. One thread at a time, the interleaving disappears,
+the invariant holds. The price list is the rest of the subject:
+
+- **Deadlock**: two threads each hold one lock and wait for each
+  other's. The classic prevention is a *lock ordering discipline*
+  (always acquire locks in the same global order), which is why
+  [movie ticket booking](/system-design/lld/movie-ticket-booking)
+  sorts its seat locks and [bank transfer](/system-design/lld/bank-ledger-system)
+  locks both accounts in ID order.
+- **Lost work under contention**: a lock serializes, so the section is
+  a throughput ceiling. The [rate limiter LLD](/system-design/lld/rate-limiter-lld)
+  makes this explicit: guard the check-consume-refill, and guard
+  *nothing else* (no I/O, no callbacks), so the ceiling stays high.
+- **Priority inversion and starvation**: a low-priority thread holding
+  a lock that a high-priority thread needs, while medium-priority work
+  runs forever. Real schedulers mitigate; designs that rely on fairness
+  "eventually" are the ones that starve.
+
+**Atomic operations (compare-and-swap).** Hardware gives an
+indivisible "set if currently equal to X": the check and the act become
+one step, so no lock is needed for simple transitions. `fetch_add`,
+`compare_exchange`, and the
+[fence-posting of stale tokens](/system-design/fundamentals/consensus-and-leader-election)
+are this family. Lock-free structures build on it, and the honest
+trade: brilliant for a counter or a single flag, and genuinely hard
+(composed-CAS-retry-machine hard) for multi-value invariants, which is
+why the [LRU cache LLD](/system-design/lld/lru-lfu-cache) chooses a
+mutex over cleverness.
+
+**Optimistic concurrency (versioning).** Do the work without a lock,
+commit only if the version you read is still current: retry otherwise.
+Databases call it MVCC; git is the cultural archetype (everyone works,
+commits fail on conflict, humans merge). Scales beautifully when
+*conflicts are rare* and degrades to retry storms when they are
+common: the write-optimistic [flash sale](/system-design/hld/e-commerce-flash-sale)
+inventory decrement is exactly this decision made load-bearing.
+
+**Transactional isolation.** A database transaction gives you a
+critical section over a *set of operations*, with a chosen isolation
+level (what other transactions' interleavings you may observe).
+Serializable is mutual exclusion's honesty; the weaker levels trade
+isolated anomalies (phantom reads, lost updates) for throughput. The
+interview-grade move: know which invariants need Serializable, and
+which survive Read Committed.
+
+## The memory-model footnote
+
+Sharing data across threads also has an *ordering* dimension: without
+synchronization, thread B may see thread A's writes in a different
+order than A performed them, or not at all (caches, reordering). The
+practical discipline: all shared mutable state is either behind a lock,
+atomic, or message-passed, and "it worked without synchronization" is
+a coincidence, not a design. This is the same
+[clock-and-ordering](/system-design/fundamentals/clock-synchronization-and-logical-time)
+lesson at thread scale, and it is why the discipline is conservative.
+
+## Choosing a fix
+
+- A counter, a flag, a single word: **atomic**.
+- A multi-step invariant over shared state (and the common case):
+  **a mutex (or DB transaction) around exactly the check-then-act**.
+- Read-heavy, conflict-rare, retry-cheap: **optimistic versioning**.
+- Cross-machine coordination: the same logic, different machinery
+  ([consensus](/system-design/fundamentals/consensus-and-leader-election)
+  for "exactly one", [idempotency](/system-design/fundamentals/idempotency-and-exactly-once)
+  for the retry path).
+
+The last rule, worth keeping as the summary: **lock the bookkeeping,
+never the work**, and prefer structures where the invariant is
+structural (an append-only log, a queue) over state where the invariant
+is policed (a mutable balance). The [bank ledger](/system-design/lld/bank-ledger-system)
+is the purest expression: the journal makes the invariant true by
+construction, and the concurrency question shrinks to the transfer
+critical section.
+
+## Related concepts
+
+- [Observability](/system-design/fundamentals/observability) for
+  detecting the races that ship anyway.
+- [Idempotency & Exactly-Once Delivery](/system-design/fundamentals/idempotency-and-exactly-once)
+  is the distributed cousin: the same lost-update problem, one network
+  hop further away.
+- [CAP Theorem & Consistency Models](/system-design/fundamentals/cap-theorem-and-consistency-models)
+  is what "isolation" means once the threads are on different machines.
+- Every LLD on this site that says "what if two attendants click at
+  once" ([parking lot](/system-design/lld/parking-lot), [tickets](/system-design/lld/movie-ticket-booking))
+  is applying this page.

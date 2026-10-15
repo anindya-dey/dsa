@@ -1,0 +1,121 @@
+---
+title: "Different Ways to Add Parentheses"
+difficulty: "Medium"
+variant: "Split at Every Operator"
+practiceLinks: []
+---
+
+## Problem
+
+Given a string `expression` of numbers and the operators `+`, `-`, and
+`*`, return all possible results from computing it with every possible
+grouping of the parentheses (all full-parenthesizations).
+
+**Constraints**
+
+- `1 <= expression.length <= 20`
+- Expressions consist of digits and the operators +, -, *.
+- The input is valid; no evaluation overflows.
+
+**Example**
+
+```text
+Input:  expression = "2*3-4*5"
+Output: [-34, -14, -10, -10, 10]
+```
+
+`(2*(3-(4*5)))` = -34, `((2*3)-(4*5))` = -14, `((2*(3-4))*5)` = -10,
+`((2*3)-4)*5` = 10, `(2*((3-4)*5))` = -10.
+
+## Brute force
+
+The honest brute force *is* the divide and conquer below without
+recognizing the structure: enumerate every operator as the "outermost"
+one (the operator applied last), recursively evaluate the left and right
+expressions under every grouping, and combine.
+
+What would make it "brute" is memoization by *string*: recursing on
+`"3-4*5"` and building fresh result lists, then re-deriving the same
+lists when the same substring appears under a different parent. With
+numbers this small it passes anyway, but the recomputation is real, and
+the memo key (the substring, or its index range) is the fix.
+
+## The pattern: the operator applied last is the split
+
+The insight that makes this divide and conquer rather than blind
+enumeration: **an expression's value is determined by which operator is
+applied last**, and that operator splits the expression into a left
+sub-expression and a right sub-expression that are *independent*. Every
+grouping of the whole expression corresponds to exactly one such final
+operator, with every grouping of the left and every grouping of the
+right available underneath it.
+
+```cpp
+std::vector<int> diffWaysToCompute(const std::string& expression) {
+    std::vector<int> results;
+    for (int i = 0; i < static_cast<int>(expression.size()); ++i) {
+        char c = expression[i];
+        if (c == '+' || c == '-' || c == '*') {
+            // Every value of the left, crossed with every value of the
+            // right, under this operator as the final operation.
+            std::vector<int> left =
+                diffWaysToCompute(expression.substr(0, i));
+            std::vector<int> right =
+                diffWaysToCompute(expression.substr(i + 1));
+            for (int l : left) {
+                for (int r : right) {
+                    if (c == '+') {
+                        results.push_back(l + r);
+                    } else if (c == '-') {
+                        results.push_back(l - r);
+                    } else {
+                        results.push_back(l * r);
+                    }
+                }
+            }
+        }
+    }
+    if (results.empty()) {                // no operator: a lone number
+        results.push_back(std::stoi(expression));
+    }
+    return results;
+}
+```
+
+Read the recursion as the contract: `diffWaysToCompute(s)` returns every
+possible value of s. For each operator position in s, *trust* the
+recursive calls to return every value of each side, and the two nested
+loops combine each left value with each right value under that operator:
+the cross product is exactly "every grouping where this operator is
+last". Operators not chosen as "last" are handled by the deeper calls,
+where they get their turn. The base case, reached when a sub-expression
+contains no operator, is a bare number with exactly one possible value.
+
+The split rule is worth noticing as a *design* move rather than a
+memorized algorithm: "find the decision that decomposes the problem into
+independent parts" is the general
+[divide and conquer](/dsa/patterns/divide-and-conquer) question, and
+here the decision is the outermost operator, because parenthesization is
+exactly a choice of evaluation order. Other problems in the family
+choose differently: [burst balloons](https://leetcode.com/problems/burst-balloons/)
+splits at the *last balloon to pop* (the same "which one is outermost"
+question in interval form), and both are the
+[interval DP](/dsa/patterns/dynamic-programming) shape when the answers
+*merge* rather than *enumerate*.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Split at every operator, no memo | exponential (with recomputation) | O(n) stack |
+| Same, memoized by substring | O(n * C) where C is the Catalan-ish result count | O(n * C) |
+
+The output size is the honest lower bound: the number of groupings of n
+operators is the [Catalan numbers](/dsa/patterns/number-theory-and-combinatorics),
+so exponential output is inherent, and no algorithm beats producing it.
+Memoization (a map from substring to its computed value list) removes
+the recomputation, which matters only for inputs with repeated
+sub-expressions, and is the standard interview add-on: "what would you
+memo, and on what key" is the same question the
+[recursion](/dsa/patterns/recursion-and-math) page asks of every
+exponential tree.

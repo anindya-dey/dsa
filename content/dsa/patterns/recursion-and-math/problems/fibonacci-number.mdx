@@ -1,0 +1,103 @@
+---
+title: "Fibonacci Number"
+difficulty: "Easy"
+variant: "Memoization vs Matrix"
+practiceLinks: []
+---
+
+## Problem
+
+The Fibonacci numbers are defined by `F(0) = 0`, `F(1) = 1`, and
+`F(n) = F(n - 1) + F(n - 2)` for n >= 2. Given `n`, compute `F(n)`.
+
+**Constraints**
+
+- `0 <= n <= 30`
+
+**Example**
+
+```text
+Input:  n = 6
+Output: 8
+```
+
+## Brute force
+
+Transcribe the definition.
+
+```cpp
+int fibBrute(int n) {
+    if (n <= 1) {
+        return n;                        // base: F(0)=0, F(1)=1
+    }
+    return fibBrute(n - 1) + fibBrute(n - 2);
+}
+```
+
+Correct by construction, and the canonical exponential example: the two
+calls each make two calls, and the same `fib(k)` is recomputed from
+scratch along exponentially many paths. At n = 30 the tree has roughly a
+million nodes for a problem whose answer needs 30 additions. This
+function *is* the demonstration of why
+[dynamic programming](/dsa/patterns/dynamic-programming) exists: only n
+distinct questions exist ("what is F(k)"), and the recursion asks them in
+an exponential order.
+
+## Optimal: two variables, building up
+
+Close the recursion into its own table: `F(n)` only ever needs the two
+values before it, so keep exactly those.
+
+```cpp
+int fib(int n) {
+    if (n <= 1) {
+        return n;
+    }
+    int previous = 0;                    // F(i-2)
+    int current = 1;                     // F(i-1)
+    for (int i = 2; i <= n; ++i) {
+        int next = previous + current;  // F(i) = F(i-1) + F(i-2)
+        previous = current;
+        current = next;
+    }
+    return current;
+}
+```
+
+O(n) time, O(1) space: the full table (as
+[memoization](/dsa/patterns/dynamic-programming) would build it)
+compressed to the two cells the recurrence actually reads, the standard
+DP space optimization applied to its smallest example.
+
+## The exotic version worth knowing
+
+There is a genuinely faster family, and it appears in interviews as a
+follow-up: **matrix exponentiation**. The recurrence is a linear map:
+
+    [F(n)  ] = [1 1] [F(n-1)]
+    [F(n-1)]   [1 0] [F(n-2)]
+
+so applying it n times is raising the matrix to the n-th power, which
+[exponentiation by squaring](/dsa/patterns/number-theory-and-combinatorics/problems/pow-x-n)
+does in O(log n) multiplications. The same trick generalizes to *any*
+linear recurrence (Tribonacci, counting paths on grids with linear
+dependencies), which is the real reason to know it: it turns
+"nth term of a linear recurrence" into a matrix power, always.
+
+For this specific problem there is also a closed form (Binet's formula,
+involving the golden ratio), which computes F(n) in O(1) floating point
+and is disqualified for n past ~70 by precision, a cute answer to
+*name*, not to implement.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Naive recursion | O(φ^n) ≈ O(1.618^n) | O(n) stack |
+| Two-variable loop | O(n) | O(1) |
+| Matrix exponentiation | O(log n) mults | O(1) |
+
+This problem is the smallest complete illustration of the whole
+[recursion](/dsa/patterns/recursion-and-math) page: the definition is the
+algorithm, the base case is the spec, the tree is the cost, and the fix
+(caching, then compressing the cache) is the DP idea in miniature.

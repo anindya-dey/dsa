@@ -1,0 +1,144 @@
+---
+title: "Stream vs. Batch Processing"
+summary: "Data as an unbounded, ever-arriving flow rather than a bounded table: windows, watermarks, and what exactly-once actually costs."
+---
+
+The default mental model of data is a *table*: a bounded set of rows,
+finished, sitting still, ready to be queried whenever. Stream processing
+starts from the opposite model: data as an **unbounded, continuously
+arriving flow of events** (the event sourcing
+[log](/system-design/fundamentals/event-sourcing-and-cqrs), the
+[queue](/system-design/fundamentals/message-queues-and-pubsub)'s
+delivery, a click log), where "query the table" stops making sense
+because the table never stops changing and never ends.
+
+The reason the distinction is a *design* question rather than a
+implementation detail: the two models answer different questions.
+Batch answers "what happened, as of the data I have now"; streaming
+answers "what is happening, continuously". And the entire
+infrastructure of modern data platforms (Kafka, Flink, Spark) exists
+because the honest answer for most real systems is *both*, with the
+same events feeding both.
+
+## Batch: the bounded world
+
+A batch job takes a bounded input, processes it fully, and produces a
+bounded output: the nightly reconciliation, the weekly report, the model
+training run. Its virtues are *economic and semantic*: no latency
+pressure (so the job can be cheap, restartable, retried), and
+*completeness* (the job sees all of the data at once, so per-record
+questions like dedup and exact ordering across the whole set are
+trivially honest).
+
+The costs are staleness (the freshest data is one cycle old) and the
+coordination overhead of the cycle itself: the 2 AM window where
+everything must finish before the business opens, which at scale
+becomes its own failure domain (the famous "the nightly job did not
+finish" outage, which is why batch systems at scale move to
+incremental/checkpointed designs that are streaming wearing a batch
+costume).
+
+## Stream: the unbounded world
+
+A streaming job consumes events *as they arrive* and maintains its
+answer continuously: a running count, a rolling average, an alert when
+the pattern shifts. The defining constraint is that **the job never
+sees all the data**, so every question must be answerable from a
+window of it, and the machinery exists to define which window.
+
+**Windows** are how unbounded data gets bounded per-question: fixed
+hourly buckets (tumbling), sliding last-4-hours (sliding), or
+per-key session windows (grouped by activity gaps). The *aggregate*
+becomes a function of the window, and the job is a pipeline of
+per-window aggregations rather than a single sweep.
+
+**Watermarks** are the honesty mechanism for *when a window can
+close*: a stream is out of order by nature (a mobile event arriving on
+reconnect, an [at-least-once](/system-design/fundamentals/idempotency-and-exactly-once)
+redelivery, a partition lagging), so "I have all the events for the
+11:00 window" is a *claim* that must be licensed. A watermark is a
+bound: "no event older than X will arrive after this point",
+propagated through the pipeline, and the window closes when the
+watermark passes it. Late events are then a policy: update (the
+correct-but-expensive answer, reopening aggregates), or drop (the
+event goes to a side output for handling), or ignore. The entire
+correctness-versus-cost trade of streaming lives on that one dial.
+
+**State** is what the window machinery implies: per-key, per-window
+running aggregates, held by the job, checkpointed so a restart resumes
+rather than restarts. That state is *also* unbounded (a million keys
+times open windows), which is why stream processors (Flink, Kafka
+Streams) are as much *state managers* as data movers: RocksDB-backed
+state, changelogging, exactly-once commits.
+
+## Exactly-once, priced honestly
+
+The [idempotency page](/system-design/fundamentals/idempotency-and-exactly-once)
+establishes that exactly-once delivery does not exist; streaming
+systems advertise "exactly-once semantics" anyway, and what they mean
+is precise and narrow: *atomic commits of (stream offset, state
+update)*, so a restarted job picks up exactly where it left off,
+with no double-processing of the offset it was mid-way through.
+Flink's two-phase checkpoint (barrier snapshot of all operators,
+atomic with the Kafka offset) is the standard implementation, and it
+is genuine engineering, *and* it expires at the boundary: the moment
+the result goes to a non-transactional sink (a database, an HTTP
+call), the job is back to at-least-once plus
+[idempotent](/system-design/fundamentals/idempotency-and-exactly-once)
+writes, by the general theorem.
+
+The honest cost model: exactly-once checkpoints cost *latency and
+throughput* (every barrier flushes), at-least-once costs *dedup logic
+at every sink*, and choosing per-pipeline is the actual decision.
+
+## The architectures
+
+**Lambda** (the classic): run *both* a batch pipeline (complete,
+correct, stale) and a streaming pipeline (fresh, approximate) and
+merge their outputs, with the batch layer periodically correcting the
+stream's errors. Honest about the trade, expensive in practice: two
+codebases to keep in agreement, forever.
+
+**Kappa**: one codebase, the streaming one, with "reprocess from the
+log" replacing the batch layer: the event store *is* the source of
+truth, and a full recompute is replaying it with a different job. The
+[architecture](/system-design/fundamentals/event-sourcing-and-cqrs)
+underneath is the same one that page describes, and the reason Kappa
+is the modern default: one set of bugs, one set of semantics, and the
+"batch" is just the stream read with a bigger window.
+
+**The honest streaming-replication of the batch world**: most modern
+platforms (Kafka, with its log-retention-and-replay semantics) make
+the *same events* feed both a streaming consumer (low latency) and a
+batch consumer (huge window), so the choice is per-question, not
+per-system.
+
+## Choosing
+
+- The answer must be fresh (seconds, minutes): **stream**.
+- The answer needs the whole dataset (training, reconciliation,
+  full-table joins): **batch**, or a stream replay with a giant window.
+- The question is "alert when X" or "running aggregate": **stream**,
+  with its window/watermark/state machinery.
+- The question is "report as of yesterday": **batch**, and forcing it
+  to a stream buys nothing but the machinery.
+
+The default mistake is reaching for streaming for *freshness* without
+pricing the machinery (state, watermarks, late events, exactly-once),
+which is a large standing cost for a feature sometimes worth less than
+a one-hour batch delay. The senior move is pricing the freshness
+honestly, per question, before choosing.
+
+## Related concepts
+
+- [Message Queues & Pub/Sub](/system-design/fundamentals/message-queues-and-pubsub)
+  is the transport under both models.
+- [Event Sourcing & CQRS](/system-design/fundamentals/event-sourcing-and-cqrs)
+  is the log-as-source-of-truth architecture that Kappa inherits.
+- [Idempotency & Exactly-Once Delivery](/system-design/fundamentals/idempotency-and-exactly-once)
+  prices the delivery guarantees each model leans on.
+- [Backpressure & Flow Control](/system-design/fundamentals/backpressure-and-flow-control)
+  is what the stream does when the consumer cannot keep up: the
+  windowing does not pause the world.
+- [OLAP vs. OLTP](/system-design/fundamentals/olap-vs-oltp) is where
+  the batch outputs (warehouses) live.

@@ -1,0 +1,132 @@
+---
+title: "Divide & Conquer"
+summary: "Split the input in half, solve each half recursively, and combine: the shape behind merge sort, quickselect, closest pair, and half of binary search."
+---
+
+Divide and conquer is [recursion](/dsa/patterns/recursion-and-math) where
+the smaller problem is not "the input minus one element" but **the input
+cut in half**. That single change transforms the cost profile: shaving
+one element gives depth n, and halving gives depth log n, which is the
+difference between linear-with-exponential-branching and the entire
+O(n log n) family. Merge sort, quicksort, quickselect, closest pair,
+karatsuba multiplication, and FFT are all this one shape: **split into
+(hopefully equal) halves, recurse, combine the results**.
+
+The pattern's discipline is that each of the three steps has its own
+quality bar, and the bugs live in a specific one of them.
+
+## The three steps, and where the bugs live
+
+**Divide** the input into smaller instances, ideally *equal* halves.
+The classic trap: if the split is lopsided (say, one side has 1 element
+and the other n - 1), the depth is n, not log n, and the algorithm quietly
+degrades to linear-depth. Quick sort's worst case is exactly this: a
+pivot that splits nothing. The divide step's job is to make the halves
+balanced, which is pivot selection, midpoint selection, and everything
+the word "balanced" means in balanced trees.
+
+**Conquer** each half with a recursive call. The discipline from
+[recursion](/dsa/patterns/recursion-and-math) applies in full: trust
+the call, do not re-verify, and do not call twice on the same half.
+The "one call, used twice" rule is the difference between O(log n) and
+O(n) in [fast exponentiation](/dsa/patterns/recursion-and-math/problems/pow-x-n-recursive),
+and between O(n log n) and O(n²) in naive recursion-tree merges.
+
+**Combine** the results of the halves. This is where the actual
+algorithmic content lives, and where the bugs live too: merge sort's
+merge (a linear weave of two sorted lists),
+[quickselect's](/dsa/patterns/sorting-and-selection) *non*-combination
+(throw away the half you do not need, which is the pattern's biggest
+saving), closest pair's cross-boundary check (the only genuinely hard
+combine step in the standard repertoire).
+
+## How to spot it
+
+- The input has a natural **midpoint**, and the problem for "both
+  halves" relates to the problem for the whole.
+- Sorting, selection, closest-pair, convex hull, or "count inversions"
+  (a sorted-half question).
+- A brute force is quadratic, and sorting the input would help: merge
+  sort's merge is *also* the answer to counting pairs across a split,
+  which is why "sort, and solve on the way up" is the pattern's most
+  common disguise.
+- The recurrence `T(n) = 2 T(n/2) + f(n)` matches.
+
+## The recurrence and the Master Theorem
+
+Every divide-and-conquer algorithm costs out to
+`T(n) = a * T(n / b) + f(n)`: a subproblems each of size n / b, plus
+f(n) work to divide and combine. The **Master Theorem** prices the whole
+family in one comparison: the work at the leaves is
+`n^(log_b a)` (the number of base-case-sized subproblems), and if the
+combine work f(n) dominates, the total is f(n); if the leaves dominate,
+the total is the leaf count; if they tie (f(n) = n^(log_b a) * log^k n),
+you pay both plus a log.
+
+Two instantiations cover most real usage:
+
+- Merge sort: `T(n) = 2 T(n/2) + O(n)`; leaves are `n^1`, combine is
+  `n^1`, a tie: **O(n log n)**.
+- Binary search: `T(n) = T(n/2) + O(1)`; one half, constant work, leaves
+  are `n^0`: **O(log n)**. (Binary search is divide and conquer with the
+  combine step deleted, which is why the
+  [binary search page](/dsa/patterns/binary-search-variants) is its own
+  pattern.)
+- Quickselect: `T(n) = T(n/2) + O(n)`; the discarded half: **O(n)**
+  expected, the whole of selection's advantage.
+
+## The counting trick: solve on the way up
+
+The pattern's most useful disguise: many "count pairs with property P"
+problems become divide and conquer because *sorted halves answer pair
+questions in linear time*. Count inversions is the canonical example:
+split, recursively count inversions within each half (that is the
+recursion), and count *cross* inversions during the merge, which a
+two-pointer sweep over the sorted halves does in linear time. The merge
+step is doing double duty (it sorts *and* it counts), and that doubling
+is why the algorithm is O(n log n) rather than a sort plus a separate
+quadratic count.
+
+The same shape answers "count pairs (i, j) with a[i] + a[j] > x", "count
+smaller elements after self" (which this site covers with a
+[Fenwick tree](/dsa/patterns/range-query-structures/problems/count-of-smaller-numbers-after-self),
+the other tool for the same question), and reverse-pair counting. The
+recognition move is: **if sorting the halves would make the pair question
+trivial, and you were going to need sorted data anyway, merge-sort with
+the counting folded into the merge**.
+
+## When it doesn't fit
+
+If the problem cannot be split into independent halves (the answer for
+the left half depends on the right half's *contents*, not just its
+result), divide and conquer dies, and that is exactly where
+[DP](/dsa/patterns/dynamic-programming) (overlapping subproblems, shared
+state) or a [sweep](/dsa/patterns/intervals-and-sweep-line) takes over.
+If the combine step costs more than linear (having to compare every
+cross pair genuinely), the log-depth advantage can evaporate: closest
+pair survives it by a packing argument (only a constant number of
+cross-candidates can be near the line), and *most* cross-pair problems do
+not. And if there is no natural ordering or midpoint, the "split" is
+arbitrary and the halves are not really subproblems of the same shape.
+
+## The takeaway
+
+Split in half, recurse with trust, combine with care, and price with the
+Master Theorem. The combine step is the algorithm (merge, or discard a
+half, or a cross-check), the divide step's job is balance, and the
+recursion is just the machinery. When a pair-counting problem smells
+quadratic, ask what sorted halves would make linear, because that is the
+pattern's favorite disguise.
+
+## Related patterns
+
+- [Recursion & Math](/dsa/patterns/recursion-and-math) is the contract
+  this pattern trusts, plus the call-stack mechanics.
+- [Sorting & Selection](/dsa/patterns/sorting-and-selection) is merge
+  sort and quickselect, in depth.
+- [Binary Search Variants](/dsa/patterns/binary-search-variants) is the
+  one-sided split: divide and conquer with the combine deleted.
+- [Dynamic Programming](/dsa/patterns/dynamic-programming) takes over
+  when the halves are not independent.
+- [Matrix & Grid Algorithms](/dsa/patterns/matrix-and-grid-algorithms)
+  borrows the shape for divide-and-conquer counting on grids.

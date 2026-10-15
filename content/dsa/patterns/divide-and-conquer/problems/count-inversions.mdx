@@ -1,0 +1,141 @@
+---
+title: "Count Inversions"
+difficulty: "Hard"
+variant: "Merge Sort Counting"
+practiceLinks: []
+---
+
+## Problem
+
+Given an integer array `nums`, return the number of **inversions**: pairs
+of indices `(i, j)` with `i < j` and `nums[i] > nums[j]`. Inversions
+measure how far the array is from sorted (a sorted array has zero, a
+reverse-sorted one has all n(n-1)/2).
+
+**Constraints**
+
+- `1 <= n <= 5 * 10^4`
+- `-10^9 <= nums[i] <= 10^9`
+
+**Example**
+
+```text
+Input:  nums = [5, 3, 2, 4, 1]
+Output: 7
+```
+
+The inversions are (5,3), (5,2), (5,4), (5,1), (3,2), (3,1), (2,1).
+
+## Brute force
+
+Count every pair that violates order.
+
+```cpp
+long long countInversionsBrute(const std::vector<int>& nums) {
+    long long count = 0;
+    int n = static_cast<int>(nums.size());
+    for (int i = 0; i < n; ++i) {
+        for (int j = i + 1; j < n; ++j) {
+            if (nums[i] > nums[j]) {
+                ++count;
+            }
+        }
+    }
+    return count;
+}
+```
+
+O(n²): 2.5 * 10^9 pair checks at the limits, too slow. And the waste is
+instructive: sorting the array would *destroy* exactly the information
+being counted (the out-of-order pairs), so this problem resists the
+obvious "sort and sweep" reflex. The trick is to sort while *counting
+what the sorting fixes*.
+
+## Optimal: fold the count into merge sort
+
+The divide-and-conquer decomposition: inversions are either *inside* the
+left half, *inside* the right half, or *across* the boundary. The two
+inside counts are the same problem on half the input (recurse). The cross
+count is where merge sort's merge step does double duty: **while merging
+the two sorted halves, every time an element is taken from the right
+half before the remaining left elements, it is smaller than all of them,
+so it forms exactly that many cross inversions**.
+
+```cpp
+long long sortAndCount(std::vector<int>& nums, int lo, int hi) {
+    if (hi - lo <= 1) {
+        return 0;                        // base: one element, no pairs
+    }
+    int mid = lo + (hi - lo) / 2;
+    long long count = sortAndCount(nums, lo, mid)
+                    + sortAndCount(nums, mid, hi);   // inside both halves
+
+    std::vector<int> left(nums.begin() + lo, nums.begin() + mid);
+    std::vector<int> right(nums.begin() + mid, nums.begin() + hi);
+
+    int i = 0;
+    int j = 0;
+    int write = lo;
+    while (i < static_cast<int>(left.size()) &&
+           j < static_cast<int>(right.size())) {
+        if (left[i] <= right[j]) {
+            nums[write++] = left[i++];
+        } else {
+            // right[j] jumps over every remaining element of left:
+            count += static_cast<long long>(left.size()) - i;
+            nums[write++] = right[j++];
+        }
+    }
+    while (i < static_cast<int>(left.size())) {
+        nums[write++] = left[i++];
+    }
+    while (j < static_cast<int>(right.size())) {
+        nums[write++] = right[j++];
+    }
+    return count;
+}
+
+long long countInversions(std::vector<int> nums) {
+    return sortAndCount(nums, 0, static_cast<int>(nums.size()));
+}
+```
+
+The load-bearing line is
+`count += left.size() - i`: when the merge takes `right[j]` while `left[i..]`
+remains, `right[j]` is smaller than *every one* of those remaining left
+elements (both halves are sorted), and each such pair is an inversion
+with i < j in the original array (the left half is all earlier indices).
+One line of arithmetic prices an entire block of cross pairs, which is
+the whole speedup: quadratic pair-counting collapses into linear
+pair-*block*-counting.
+
+Two details keep it correct. The `<=` in the merge comparison (take
+from the left on ties) counts *strict* inversions only, the standard
+definition: equal elements are not an inversion, and taking left first
+means right never jumps over an equal. And the scratch vectors (`left`,
+`right`) matter because the merge writes back into `nums` while still
+reading the halves: without the copies, the merge would overwrite values
+not yet compared, the same shared-memory trap as
+[merge sorted array](/dsa/patterns/sorting-and-selection/problems/merge-sorted-array)
+solved by merging from the back.
+
+The alternative worth naming: a
+[Fenwick tree over ranks](/dsa/patterns/range-query-structures/problems/count-of-smaller-numbers-after-self)
+counts inversions by sweeping right-to-left, asking "how many inserted
+values are below me", which is the same problem answered by a different
+tool (an order-statistics structure instead of sort-with-counting).
+Same complexity, different machinery, and knowing both is the honest
+answer.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Count every pair | O(n²) | O(1) |
+| Merge sort counting | O(n log n) | O(n) |
+
+This is the canonical "solve on the way up"
+[divide and conquer](/dsa/patterns/divide-and-conquer) problem: the sort
+is not incidental, it is the *mechanism*, and the counting rides inside
+the combine step that the sort needed anyway. Every "count pairs across a
+split" problem is this shape wearing a story.

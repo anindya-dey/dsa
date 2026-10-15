@@ -1,0 +1,111 @@
+---
+title: "Merge Sorted Array"
+difficulty: "Easy"
+variant: "Merge from the Back"
+practiceLinks: []
+---
+
+## Problem
+
+Given two integer arrays sorted in non-decreasing order, `nums1` (which
+has enough extra space at the end, total length `m + n`) and `nums2`
+(length `n`), merge `nums2` into `nums1` as one sorted array, in place.
+
+**Constraints**
+
+- `0 <= m, n <= 200`
+- `1 <= m + n <= 200`
+- `-(10^9) <= nums1[i], nums2[i] <= 10^9`
+
+**Example**
+
+```text
+Input:  nums1 = [1,2,3,0,0,0], m = 3, nums2 = [2,5,6], n = 3
+Output: [1,2,2,3,5,6]
+```
+
+## Brute force
+
+Copy the live part of `nums1` into a scratch array, then merge forward
+from the scratch and `nums2`, writing results from the front of `nums1`.
+
+```cpp
+void mergeForward(std::vector<int>& nums1, int m,
+                  const std::vector<int>& nums2, int n) {
+    std::vector<int> left(nums1.begin(), nums1.begin() + m);
+    int i = 0;
+    int j = 0;
+    int write = 0;
+    while (i < m && j < n) {
+        nums1[write++] =
+            (left[i] <= nums2[j]) ? left[i++] : nums2[j++];
+    }
+    while (i < m) {
+        nums1[write++] = left[i++];
+    }
+    while (j < n) {
+        nums1[write++] = nums2[j++];
+    }
+}
+```
+
+Correct and O(m + n), but the scratch array is pure waste: the problem
+*told you* the empty space is at the end of nums1, and forward merging
+cannot use it because writing the next smallest element overwrites
+values not yet read. The merge step of merge sort normally gets away
+with scratch space because the output is a fresh array; here the output
+and an input share memory, and that sharing is the entire problem.
+
+## Optimal: merge from the back
+
+The fix is to see which direction the free space points. The largest
+element of the result belongs in the *last* slot, which is guaranteed
+empty: take whichever tail is larger, place it there, and move inward.
+No element can be overwritten before it is read, because the write
+position always trails the read positions.
+
+```cpp
+void merge(std::vector<int>& nums1, int m,
+           const std::vector<int>& nums2, int n) {
+    int i = m - 1;                        // last real element of nums1
+    int j = n - 1;                        // last element of nums2
+    int write = m + n - 1;                // last slot: guaranteed free
+
+    while (j >= 0) {
+        if (i >= 0 && nums1[i] > nums2[j]) {
+            nums1[write--] = nums1[i--];  // nums1's tail is larger
+        } else {
+            nums1[write--] = nums2[j--];  // nums2's tail (or nums1 empty)
+        }
+    }
+}
+```
+
+The loop condition is the subtle part: it runs only while `j >= 0`,
+because if `nums2` is exhausted, the remaining `nums1` prefix is already
+sorted and already *in place*: nothing left to do. (Run it while `i >= 0`
+as well and the last loop iteration just copies `nums1[i]` onto itself;
+correct, but redundant.) The same two-list comparison as the
+[linked list weave](/dsa/patterns/linked-list-manipulation/problems/merge-two-sorted-lists),
+walked from the back because that is where the free space is.
+
+That "merge into the empty end" insight is the same class of move as
+the [write-index compaction](/dsa/patterns/linear-structures) family:
+when output and input share memory, find the region that is safe to
+overwrite *first* and drive the write pointer through it, which is the
+front for filtering problems (already-read elements) and the back here
+(largest-first, space at the end). Asking "which direction is safe to
+write" is the general question both answers come from.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Scratch + forward merge | O(m + n) | O(m) |
+| Backward merge in place | O(m + n) | O(1) |
+
+This is the standard in-place merge step, the one that
+[merge sort](/dsa/patterns/sorting-and-selection) needs when it cannot
+spare the scratch buffer, and the general "merge into shared memory"
+template: know it forward (with scratch), know it backward (in place),
+and know *why* the direction is chosen.

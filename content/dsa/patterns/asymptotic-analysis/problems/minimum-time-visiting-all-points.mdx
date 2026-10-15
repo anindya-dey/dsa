@@ -1,0 +1,126 @@
+---
+title: "Minimum Time Visiting All Points"
+difficulty: "Easy"
+variant: "Chebyshev Distance"
+practiceLinks: []
+---
+
+## Problem
+
+A plane has n points given as integer coordinates `points[i] = [xi, yi]`,
+listed in visiting order. Starting at `points[0]`, you move to each
+subsequent point, in one-second steps where each step moves 1 along either
+axis or 1 along both diagonally (a king's move, in one second). Return
+the minimum time to visit all points in order.
+
+**Constraints**
+
+- `1 <= n <= 100`
+- `-100 <= xi, yi <= 100`
+
+**Example**
+
+```text
+Input:  points = [[3,2],[-2,4]]
+Output: 5
+```
+
+From (3,2) to (-2,4): 5 diagonal-plus-straight seconds.
+
+## Brute force
+
+The honest brute force is not an algorithm but a *simulation*: from each
+point, greedily take king moves toward the next (one diagonal when both
+axes differ, otherwise one straight), counting steps until arrival.
+
+```cpp
+int minTimeToVisitAllPointsBrute(
+        const std::vector<std::vector<int>>& points) {
+    int total = 0;
+    for (size_t i = 1; i < points.size(); ++i) {
+        int cx = points[i - 1][0];
+        int cy = points[i - 1][1];
+        int tx = points[i][0];
+        int ty = points[i][1];
+        while (cx != tx || cy != ty) {
+            int dx = (tx > cx) - (tx < cx);    // sign of the x gap
+            int dy = (ty > cy) - (ty < cy);
+            if (dx != 0 && dy != 0) {
+                cx += dx;                       // diagonal while both
+                cy += dy;
+            } else {
+                cx += dx;
+                cy += dy;
+            }
+            ++total;
+        }
+    }
+    return total;
+}
+```
+
+Correct, and it reveals its own insight by simulation: while both axes
+differ, the diagonal move closes both gaps at once, so you should
+*always* diagonalize until the smaller gap closes, then walk straight.
+But the simulation is a loop whose trip count is driven by coordinate
+*gaps*, not by n, and the answer to "how many seconds does one segment
+take" is staring at the gaps directly.
+
+## Optimal: the diagonal-first formula
+
+Derive the per-segment cost once: with gaps `dx = |x1 - x0|` and
+`dy = |y1 - y0|`, the best strategy uses min(dx, dy) diagonal moves
+(closing both gaps together) and then |dx - dy| straight moves, which
+sums to:
+
+    cost(dx, dy) = max(dx, dy)
+
+That is the [Chebyshev
+distance](https://en.wikipedia.org/wiki/Chebyshev_distance), the natural
+distance metric for king moves, and the whole problem is the sum of
+Chebyshev distances between consecutive points.
+
+```cpp
+int minTimeToVisitAllPoints(
+        const std::vector<std::vector<int>>& points) {
+    int total = 0;
+    for (size_t i = 1; i < points.size(); ++i) {
+        int dx = std::abs(points[i][0] - points[i - 1][0]);
+        int dy = std::abs(points[i][1] - points[i - 1][1]);
+        total += std::max(dx, dy);          // Chebyshev distance per leg
+    }
+    return total;
+}
+```
+
+Why `max` is right, in the derivation's own words: each second, one unit
+of *some* combination of gap closes, so after t seconds at most t total
+progress exists on *each* axis, meaning no axis can close faster than
+one unit per second, and the larger gap *must* take at least max(dx, dy)
+seconds (a lower bound). The diagonal-then-straight strategy achieves
+exactly that many seconds (an upper bound), so max(dx, dy) is the exact
+cost. That bound-then-match argument is the
+[analysis](/dsa/patterns/asymptotic-analysis) habit in miniature:
+prove it cannot be less, exhibit a strategy that attains it, and the two
+clamps together are the answer.
+
+The "visiting order" clause is load-bearing and easy to miss: the
+points are visited *in the given order*, not in an optimal tour (which
+would be traveling-salesman, and
+[exponential](/dsa/patterns/dynamic-programming)). The problem is a sum
+of independent legs, which is why it is linear and closed-form.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Simulate king moves | O(total distance) | O(1) |
+| Chebyshev per leg | O(n) | O(1) |
+
+Linear in the number of points, constant space, and a closed-form answer
+per leg. This is the "geometry has closed-form distances" entry point
+that [matrix and grid](/dsa/patterns/matrix-and-grid-algorithms)
+algorithms draw on, and a good first place to see a *metric* (Manhattan
+for axis-only moves, Chebyshev for king moves) chosen by the move set,
+with the formula following from the movement rules rather than being
+memorized.

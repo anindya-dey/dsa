@@ -1,0 +1,132 @@
+---
+title: "Contains Duplicate"
+difficulty: "Easy"
+variant: "Complexity Tradeoff"
+practiceLinks: []
+---
+
+## Problem
+
+Given an integer array `nums`, return true if any value appears at least
+twice, false if every element is distinct.
+
+**Constraints**
+
+- `1 <= n <= 10^5`
+- `-(10^9) <= nums[i] <= 10^9`
+
+**Example**
+
+```text
+Input:  nums = [1, 2, 3, 1]
+Output: true
+```
+
+## The three solutions, and the trade they encode
+
+This problem is famous as the *introduction* to complexity analysis, and
+the right way to present it is not "brute force then the answer" but as
+an explicit trade: three solutions, each buying something the others do
+not, with the constraint set deciding the winner.
+
+**O(n²), no structure.** Compare every pair.
+
+```cpp
+bool containsDuplicateBrute(const std::vector<int>& nums) {
+    int n = static_cast<int>(nums.size());
+    for (int i = 0; i < n; ++i) {
+        for (int j = i + 1; j < n; ++j) {
+            if (nums[i] == nums[j]) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+```
+
+Correct, needs nothing, hopeless past a few thousand elements (10^10
+pairs at the limit). Its virtue is the one worth stating out loud: zero
+assumptions, no extra memory, and it *short-circuits* on the first hit,
+which matters when duplicates are early and common.
+
+**O(n log n), sort first.** Sort, then only neighbors can be equal.
+
+```cpp
+bool containsDuplicateSort(std::vector<int> nums) {
+    std::sort(nums.begin(), nums.end());
+    for (size_t i = 1; i < nums.size(); ++i) {
+        if (nums[i] == nums[i - 1]) {     // equal values are adjacent
+            return true;
+        }
+    }
+    return false;
+}
+```
+
+The [sorting habit](/dsa/patterns/sorting-and-selection) in one line of
+insight: duplicates are indistinguishable, so any total order puts them
+next to each other, and a sorted scan answers the question without a
+structure. It mutates (or copies) the input, which the pass-by-value
+above makes explicit, and which is a real cost if the caller needs the
+original order.
+
+**O(n) average, hash set.** Track everything seen.
+
+```cpp
+bool containsDuplicate(const std::vector<int>& nums) {
+    std::unordered_set<int> seen;
+    for (int value : nums) {
+        if (!seen.insert(value).second) {   // insert reports membership
+            return true;
+        }
+    }
+    return false;
+}
+```
+
+One pass, early exit, O(n) *extra memory*, and the
+[hash](/dsa/patterns/hash-based-structures) structure's whole reason to
+exist. Note the honest hedge in the complexity: an unordered container
+is O(1) *expected* per operation, O(n) worst case under pathological
+hashing, which is exactly the kind of asterisk
+[asymptotic analysis](/dsa/patterns/asymptotic-analysis) exists to
+notice.
+
+## Reading the trade
+
+| Solution | Time | Extra space | Mutates input | Worst case |
+| --- | --- | --- | --- | --- |
+| Pairwise compare | O(n²) | O(1) | no | guaranteed |
+| Sort + neighbor scan | O(n log n) | O(1) or O(n) copy | yes (or copy) | guaranteed |
+| Hash set | O(n) expected | O(n) | no | O(n²) pathological |
+
+The hash set wins on time and loses on memory; sort wins nothing outright
+but needs no structures and has no pathological case; the pairwise scan
+wins on assumptions and loses on everything else. At n = 10^5 the
+quadratic is ~10^10 operations (dead), the sort is ~10^6 * 17 (fine), and
+the hash is ~10^5 (fastest), which is the actual arithmetic behind
+"pick the hash set".
+
+The *interesting* interview variant is the constrained one: "what if
+memory is tight?" (sort: O(n log n) with no extra memory, or the
+[bounded-heap](/dsa/patterns/heaps-and-priority-queues/problems/kth-largest-element-in-an-array)
+style streaming trick if duplicates must merely be *probabilistically*
+detected). "What if the data is mostly-duplicated and early?" (the
+short-circuit favors whichever structure exits fastest, and pairwise
+scan's early exit is not obviously worse). The constraint set picks the
+winner, and this problem teaches saying *that* out loud.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Pairwise compare | O(n²) | O(1) |
+| Sort + neighbor scan | O(n log n) | O(1) |
+| Hash set | O(n) expected | O(n) |
+
+This is the smallest problem that makes the complexity *axes*
+(time, space, assumptions, worst-case) visible as a real trade, which is
+why it opens the [asymptotic analysis](/dsa/patterns/asymptotic-analysis)
+pattern's problem set: the lesson is not "use a hash set", it is "name
+what each solution pays, and choose on purpose".

@@ -1,0 +1,135 @@
+---
+title: "Recursion & Math"
+summary: "A function that calls itself on a smaller version of the problem: how to trust it, how to cost it, and how to read the call stack it rides on."
+---
+
+Recursion is a function defined in terms of itself: solve the smaller
+version of the problem, then do the small amount of work that separates
+the smaller version from yours. That sentence is the whole idea, and it
+is worth taking seriously, because most recursion bugs are failures to
+believe one half of it: either the smaller version is not actually
+smaller (infinite descent), or the extra work is not actually small
+(hidden cost).
+
+The reason recursion deserves its own pattern rather than being a
+language feature is that it is a *way of thinking*: trust the smaller
+call, solve the step. Iterative code says "loop until done"; recursive
+code says "assume the answer for n - 1 exists, build n from it". Some
+problems (trees, nested structures, divide and conquer) are stated in
+recursive shapes, and for those, recursive code is not a cleverness, it
+is the transcription of the definition.
+
+## How to spot it
+
+- The structure is **nested or self-similar**: trees, nested lists,
+  "parse this expression inside these brackets".
+- The problem **reduces to itself**: "reverse the rest, then attach me".
+- A brute force enumerates, and the enumeration has natural subproblems.
+- Dividing the input in half is natural (which points at
+  [divide and conquer](/dsa/patterns/divide-and-conquer)).
+
+## The contract: what makes a recursion correct
+
+Every recursive function is correct for exactly two reasons, and writing
+them down is the discipline:
+
+```cpp
+int factorial(int n) {
+    if (n <= 1) {
+        return 1;                       // base: solved without recursion
+    }
+    return n * factorial(n - 1);         // step: n-1 is strictly smaller
+}
+```
+
+**The base case** must be solvable without recursing, and every recursive
+path must reach it. Miss a base case and the function recurses forever
+(or overflows the stack); leave a path that skips it (a null subtree, an
+empty string, an index past the end) and you have the classic crash.
+
+**The step** must call on a *strictly smaller* input, and it must *assume
+that call is correct* rather than re-verifying it. This is the leap:
+`factorial(n - 1)` is *known* to return the right value, by the same
+argument that makes your own call correct. People who cannot make that
+leap write recursive functions full of defensive re-checks, which are
+both wrong in spirit and slow in fact.
+
+**Trust** is what the [two pointers](/dsa/patterns/two-pointers) and
+[binary search](/dsa/patterns/binary-search-variants) templates also run
+on; recursion just makes the trusting explicit, because the call *is* the
+loop.
+
+## Costing it: the call tree and the Master Theorem
+
+A recursion's running time is the *cost of the step* times the *number of
+steps*, and those come from two places. If a call branches b ways and
+each does work w, the tree has b^depth nodes; factorial (1 branch, n
+depth) is O(n); naive Fibonacci (2 branches, n depth) is O(2^n); [merge
+sort](/dsa/patterns/sorting-and-selection) (2 branches, log n depth,
+linear work per level) is O(n log n).
+
+For the divide-and-conquer family
+(`T(n) = a * T(n/b) + f(n)`), the **Master Theorem** prices the whole
+family in one sentence: compare the work at the root (`f(n)`) with the
+work at the leaves (`a^log_b n = n^(log_b a)`), and whichever dominates
+sets the total, with the boundary case paying both.
+
+But the most important cost fact about recursion is not a theorem, it
+is a mechanical fact: **every active call lives on the call stack**, and
+the stack has a memory budget (megabytes, so roughly 10^4-10^5 frames of
+typical size). Naive Fibonacci does not run out of time *only* because it
+runs out of practical patience; a recursion over a long linked list runs
+out of *stack*. The standard fixes are the ones every textbook teaches:
+memoize when subproblems repeat (turning exponential into linear, the
+[dynamic programming](/dsa/patterns/dynamic-programming) move), or
+convert to an explicit loop with a stack when depth is the enemy and
+subproblems do not repeat.
+
+## The stack is the state
+
+One more mental model earns its keep in debugging: while a recursion
+runs, the call stack *is* the algorithm's memory. Each frame holds that
+call's parameters and locals, frozen, waiting for its children to
+return. That is why printing a variable "after the recursive call" sees
+the deep state unwound back, and it is why an in-place
+[tree traversal](/dsa/patterns/binary-trees-and-bsts) needs nothing more
+than the recursion itself: the stack remembers where to resume.
+
+```cpp
+void reverseString(std::vector<char>& s, int i = 0) {
+    int j = static_cast<int>(s.size()) - 1 - i;
+    if (i >= j) {
+        return;                       // base: pointers met in the middle
+    }
+    std::swap(s[i], s[j]);           // step: fix the two ends
+    reverseString(s, i + 1);          // trust the rest
+}
+```
+
+Walk it once, watching the stack: `i = 0` swaps the ends and waits;
+`i = 1` swaps the inner pair; the base case returns; the frames unwind
+having done their work on the way *down*. Order of operations relative
+to the recursive call is the other half of the discipline: work before
+the call is done on the way down (preorder), after the call on the way
+up (postorder), and that choice is what
+[tree traversals](/dsa/patterns/binary-trees-and-bsts) name.
+
+## When it doesn't fit
+
+If the subproblems *repeat* (Fibonacci, paths on a grid), recursion alone
+is exponentially wasteful and memoization is mandatory. If the depth is
+linear over a big input (recursing over a 10^5-element list), the stack
+overflows and a loop is the honest answer. And if the problem has no
+natural self-similar structure, forcing recursion is a worse loop: same
+costs, less familiar control flow.
+
+## Related patterns
+
+- [Divide & Conquer](/dsa/patterns/divide-and-conquer) is recursion where
+  the calls split the input instead of shaving it.
+- [Dynamic Programming](/dsa/patterns/dynamic-programming) is recursion
+  plus a cache, when subproblems repeat.
+- [Backtracking & Pruning](/dsa/patterns/backtracking-and-pruning) is
+  recursion as search, where the stack unwinding *is* the undo.
+- [Binary Trees & BSTs](/dsa/patterns/binary-trees-and-bsts) is the
+  structure recursion is native to.

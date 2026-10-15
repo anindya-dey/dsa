@@ -1,0 +1,123 @@
+---
+title: "Linear Structures"
+summary: "Two ways to store a sequence, contiguous and linked, and the hidden cost each one charges for every operation you care about."
+---
+
+Every sequence you will ever store has to answer one question first: do the
+elements live **next to each other in memory** (contiguous), or does each
+element point to the next (linked)? There is no third option, and the
+choice is not about taste. It is a hidden price list, where each structure
+charges for the operations the other one gives away.
+
+A `std::vector` is contiguous. Because the elements touch, index 4 is
+exactly `start + 4 * elementSize`: O(1) access to any position, and the
+memory is one allocation with perfect cache behavior (the CPU prefetches
+the next elements for free). The price: inserting or removing in the
+middle means shifting everything after it, and growing means reallocating
+and copying the whole structure.
+
+A linked list is the mirror image. Each node holds its value and the
+address of the next node (and, in a doubly linked list, the previous),
+so inserting or removing anywhere is a couple of pointer writes: O(1),
+once you are standing at the right node. The price: reaching that node
+is a walk, O(n), because "index 4" does not exist, only "four steps from
+the head"; and every node is a separate allocation that the prefetcher
+cannot anticipate.
+
+## How to spot it
+
+- The problem is about **building or mutating a sequence**: insert at
+  front, remove by value, splice two lists, rotate an array.
+- "In place with O(1) extra memory" on an array problem: you are being
+  asked for the pointer/index arithmetic rather than a copy.
+- You need a **stack or queue**: both are linear structures with a
+  restricted door, and the array-vs-node choice is the same decision in
+  smaller clothes.
+
+The full toolbox is four structures, and knowing which two questions each
+one answers is the pattern:
+
+| Structure | Fast at | Slow at |
+| --- | --- | --- |
+| dynamic array (`vector`) | index, append at end | insert/remove front or middle |
+| linked list | insert/remove at a known node | index, cache behavior |
+| stack (either) | push/pop at one end | everything else |
+| queue | push back, pop front | index |
+
+An array-backed stack and queue are both just the array with discipline
+about which end you touch (a circular buffer turns the queue's two ends
+into O(1) each). The [stacks and queues](/dsa/patterns/stacks-and-queues)
+page covers the behavior; this page is about what they are *made of*.
+
+## The mechanics worth knowing cold
+
+**Array growth.** A `vector` does not grow by one element each time: it
+doubles (roughly), copying into a fresh allocation. That makes a single
+push O(n) but n pushes O(n) total, the *amortized* O(1) that array
+performance claims depend on. Two consequences worth internalizing: any
+pointer or iterator into the array can be invalidated by a growth, and
+`reserve()` when you know the final size turns the whole conversation
+moot.
+
+**The two-pointer trick for in-place array work.** Because the array is
+contiguous, "the region I have written" and "the region I am reading" can
+share memory, with two indices marking the boundary. This is how
+deduplication, in-place partitioning (the [Dutch national
+flag](/dsa/patterns/sorting-and-selection/problems/sort-colors)), and
+merging [without extra
+space](/dsa/patterns/sorting-and-selection/problems/merge-sorted-array)
+all work: a write index that only ever advances, and the untouched tail
+beyond it.
+
+```cpp
+// In-place dedup of a sorted array: the invariant in four lines.
+int removeDuplicates(std::vector<int>& nums) {
+    int write = 0;                        // nums[0..write] is deduplicated
+    for (int read = 0; read < static_cast<int>(nums.size()); ++read) {
+        if (write == 0 || nums[read] != nums[write - 1]) {
+            nums[write++] = nums[read];  // extend the clean prefix
+        }
+    }
+    return write;
+}
+```
+
+Read the invariant off the variables: `nums[0..write)` is always the
+deduplicated prefix, `read` scans ahead, and each kept element is written
+at most once. That prefix-plus-scan shape is the same one behind
+[rotate array](/dsa/patterns/linear-structures/problems/rotate-array) and
+every "compact this array" problem, and it is the array-side sibling of
+the [linked list surgery](/dsa/patterns/linked-list-manipulation)
+discipline.
+
+**The node surgery rules.** On the linked side, three rules prevent almost
+every bug: save the pointer you are about to overwrite, update pointers in
+an order that never leaves the structure half-attached, and draw the
+before/after diagrams before writing code. Those are the rules
+[linked list manipulation](/dsa/patterns/linked-list-manipulation) exists
+to drill, and the [design a linked
+list](/dsa/patterns/linear-structures/problems/design-linked-list) problem
+is where you implement them from raw nodes.
+
+## When each side wins
+
+Use the array when you index, iterate, or sort: contiguous memory makes
+all three fast, and sorting in particular is hopeless on a linked list
+(cache misses everywhere, no random access for the algorithms). Use the
+linked list when the structure mutates at *known positions* constantly:
+you hold a node, inserts and deletes around it are O(1) forever, and the
+trade pays. And when a problem says "implement a queue with O(1)
+operations", remember that both answers work, which is the whole point:
+the structures are two price lists, and reading the problem as "which
+prices can I afford" is the skill.
+
+## Related patterns
+
+- [Linked List Manipulation](/dsa/patterns/linked-list-manipulation) is
+  the pointer-surgery discipline this page introduces.
+- [Stacks & Queues](/dsa/patterns/stacks-and-queues) are the restricted
+  doors built on these structures.
+- [Hash-Based Structures](/dsa/patterns/hash-based-structures) adds the
+  "find it instantly" capability neither linear structure has.
+- [Sorting & Selection](/dsa/patterns/sorting-and-selection) is why
+  arrays usually win: sorting needs random access.

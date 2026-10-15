@@ -1,0 +1,124 @@
+---
+title: "Kth Largest Element in a Stream"
+difficulty: "Easy"
+variant: "Bounded Heap"
+practiceLinks: []
+---
+
+## Problem
+
+Design a class initialized with an integer `k` and an array `nums`. It
+supports `add(val)`, which appends a value and returns the k-th largest
+element in the current collection. The k-th largest is in sorted order,
+not the k-th distinct.
+
+**Constraints**
+
+- `1 <= k <= 10^4`
+- `0 <= nums.length <= 10^4`
+- `-(10^4) <= val <= 10^4`
+- At least k elements exist when `add` is called.
+
+**Example**
+
+```text
+init k = 3, nums = [4, 5, 8, 2]
+add(3) -> 4        // collection: [2,3,4,5,8], 3rd largest is 4
+add(5) -> 5
+add(10) -> 5
+add(9) -> 8
+```
+
+## Brute force
+
+Store everything; on each `add`, sort a copy and index the k-th from
+the top.
+
+```cpp
+class KthLargestBrute {
+public:
+    KthLargestBrute(int k, std::vector<int> nums)
+        : k_(k), values_(std::move(nums)) {}
+
+    int add(int val) {
+        values_.push_back(val);
+        std::sort(values_.begin(), values_.end(),
+                  std::greater<int>());     // full re-sort per query
+        return values_[k_ - 1];
+    }
+
+private:
+    int k_;
+    std::vector<int> values_;
+};
+```
+
+Correct, and each query is O(n log n) while memory grows without bound,
+holding every value ever seen. On a stream, "store everything and
+resort" is the answer that misses the point: the k-th largest of a
+stream is knowable from a window of k, and nothing else matters.
+
+## Optimal: a min-heap of size k
+
+Keep exactly the k largest elements seen so far, in a **min-heap**.
+The heap's smallest element is then by definition the k-th largest
+overall: it is the gatekeeper, the value a new arrival must beat to
+enter the top k.
+
+```cpp
+class KthLargest {
+public:
+    KthLargest(int k, const std::vector<int>& nums)
+        : k_(k) {
+        for (int value : nums) {
+            add(value);                      // reuse the add logic
+        }
+    }
+
+    int add(int val) {
+        heap_.push(val);
+        if (static_cast<int>(heap_.size()) > k_) {
+            heap_.pop();                    // evict the smallest
+        }
+        return heap_.top();                 // k-th largest = heap minimum
+    }
+
+private:
+    int k_;
+    std::priority_queue<int, std::vector<int>, std::greater<int>> heap_;
+};
+```
+
+Walk why a *min*-heap answers a *k-th largest* question, because it is
+the inverted-feeling part: the heap holds the current top k, so the
+smallest element inside that elite set is exactly the one on the
+boundary: everything outside is at most it, everything inside is at
+least it. That boundary element is the k-th largest. New arrivals either
+beat it (push, then evict it: the heap size returns to k and a new
+boundary emerges) or do not (it stays). A max-heap here would evict the
+*largest*, the exact opposite of the intent, and getting the comparator
+direction wrong is the classic bug in this family.
+
+Each `add` is O(log k) (one push, at most one pop) against the brute
+force's O(n log n), and memory is O(k) against O(n): on a long stream,
+this is the difference between a bounded structure and an unbounded
+one, which is the streaming-computation version of the same trade
+[kth largest in an array](/dsa/patterns/heaps-and-priority-queues/problems/kth-largest-element-in-an-array)
+makes against sorting.
+
+## Complexity
+
+| Approach | add | Space |
+| --- | --- | --- |
+| Sort per query | O(n log n) | O(n) growing |
+| Bounded min-heap | O(log k) | O(k) |
+
+This is the streaming form of the
+[bounded heap](/dsa/patterns/heaps-and-priority-queues) pattern: keep
+the opposite extreme as the eviction gate, and the top-k question
+becomes O(1) to *read* (it is the heap top) and O(log k) to *maintain*.
+The same skeleton answers "top k frequent words" (a heap ordered by
+count, ties broken lexicographically) and every sliding-top-k variant,
+and it composes with the
+[aging queue](/dsa/patterns/stacks-and-queues/problems/number-of-recent-calls)
+when the top k must also expire from the window.

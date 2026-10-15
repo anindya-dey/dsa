@@ -55,9 +55,10 @@ requirements and templates) and `2026-10-14-roadmap-review-decisions.md`
 | 2 | Finish Phase 2, finish the fundamentals core | Monotonic Structures, Intervals & Sweep Line, Matrix & Grid Algorithms, Stacks & Queues, Linked List Manipulation (14 problems) | Fundamentals: CDN, Rate Limiting, API Design, Observability, Distributed Transactions, Idempotency & Exactly-Once. LLD: LRU/LFU Cache, Rate Limiter. HLD: Distributed Rate Limiter, Chat Application. | **done** |
 | 3 | Trees, heaps, graphs; HLD infrastructure depth | Phase 3: Binary Trees & BSTs, Heaps / Priority Queues, Trie, Graph Traversals, Graph Specializations, Advanced Graphs (18 problems) | HLD: News Feed, Notification System, Search Autocomplete, Distributed Cache, Key-Value Store. LLD: Elevator System, Vending Machine, Chess Game. | **done** |
 | 4 | Dynamic programming; the big product case studies | Phase 4: Dynamic Programming, Backtracking & Pruning, Greedy Algorithms, String Algorithms, Range-Query Structures, Number Theory & Combinatorics, Design Data Structures (21 problems) | HLD: Payment System, Ride-Sharing App, Video Streaming Service, Distributed Job Scheduler, E-commerce / Flash Sale. LLD: Movie Ticket Booking, Task Scheduler, Bank / Ledger. | **done** |
-| 5 | Long tail; principal-level breadth | Remaining Phase 1/2/4: Linear Structures, Recursion & Math, Sorting & Selection, Bit Manipulation, Divide & Conquer, Intervals remainder | Remaining HLD infrastructure and case studies. Principal-level Fundamentals: Multi-Region & Active-Active, Consensus & Leader Election, Clock Synchronization, Reliability Engineering, Concurrency & Parallelism, Event Sourcing & CQRS, Backpressure, Stream vs Batch, and the rest. Remaining LLD. | **next** |
-| 6 | AI/ML Systems vertical | See `docs/plans/ai-ml-vertical.md` (71 topics, six tracks, systems-side scope) | — | not started |
-| 7 | C++ Toolkit reference track | See `docs/plans/cpp-toolkit.md` (14 entries; reference pages, "Related C++ tools" end sections, no inline links) | — | not started |
+| 5 | Long tail: complete DSA, principal-level Fundamentals | Phase 1: Asymptotic Analysis, Linear Structures, Recursion & Math, Sorting & Selection, Bit Manipulation. Phase 2: Divide & Conquer (all 29 patterns complete, 86 problems). Fundamentals: Multi-Region & Active-Active, Consensus & Leader Election, Clock Synchronization, Reliability Engineering, Concurrency & Parallelism, Event Sourcing & CQRS, Backpressure & Flow Control, Stream vs. Batch. | — | **done** |
+| 6 | System Design long tail | — | Remaining Fundamentals (15: capacity planning, latency vs throughput, OLAP, object storage, search, geospatial, networking, proxies, serialization, API gateway, microservices, availability, auth, security, multi-tenancy). Remaining LLD (12). Remaining HLD (20: the infra components, then the case studies). | **next** |
+| 7 | AI/ML Systems vertical | See `docs/plans/ai-ml-vertical.md` (71 topics, six tracks, systems-side scope) | — | not started |
+| 8 | C++ Toolkit reference track | See `docs/plans/cpp-toolkit.md` (14 entries; reference pages, "Related C++ tools" end sections, no inline links) | — | not started |
 
 ## Sequencing rules
 
@@ -74,6 +75,26 @@ requirements and templates) and `2026-10-14-roadmap-review-decisions.md`
   clue links to real content.
 - Before closing any batch: `pnpm check:content`, `pnpm lint`,
   `pnpm typecheck`, and `pnpm build` must all pass.
+
+## Batch 5 completion notes (2026-10-15)
+
+Batch 5 is written and shipped.
+
+- DSA is now **complete**: all 29 patterns live with 86 problem pages.
+  This batch added Phase 1 (Asymptotic Analysis, Linear Structures,
+  Recursion & Math, Sorting & Selection, Bit Manipulation) and Divide &
+  Conquer (Phase 2), with 15 new problem pages. Note: Asymptotic
+  Analysis had never been scheduled in any batch (found by a
+  completeness check during this batch) and was written here.
+- System Design Fundamentals grew by 8, all principal-level:
+  Multi-Region & Active-Active, Consensus & Leader Election, Clock
+  Synchronization & Logical Time, Reliability Engineering (SLOs & Error
+  Budgets), Concurrency & Parallelism, Event Sourcing & CQRS,
+  Backpressure & Flow Control, Stream vs. Batch. Fundamentals now
+  21/36, with 15 remaining (all long-tail: batch 6).
+- Remaining batches renumbered: batch 6 is the System Design long tail
+  (15 fundamentals + 12 LLD + 20 HLD), batch 7 is the AI/ML vertical,
+  batch 8 is the C++ Toolkit.
 
 ## Batch 4 completion notes (2026-10-15)
 

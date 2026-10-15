@@ -1,0 +1,101 @@
+---
+title: "Rotate Array"
+difficulty: "Medium"
+variant: "Reversal Trick"
+practiceLinks: []
+---
+
+## Problem
+
+Given an integer array `nums`, rotate the array to the right by `k` steps,
+where `k` is non-negative. Do it with O(1) extra space.
+
+**Constraints**
+
+- `1 <= n <= 10^5`
+- `-2^31 <= nums[i] <= 2^31 - 1`
+- `0 <= k <= 10^5`
+
+**Example**
+
+```text
+Input:  nums = [1,2,3,4,5,6,7], k = 3
+Output: [5,6,7,1,2,3,4]
+```
+
+## Brute force
+
+Rotate by one step at a time: each single rotation moves every element
+once (the last to the front, everything else over by one), repeated k
+times.
+
+```cpp
+void rotateBrute(std::vector<int>& nums, int k) {
+    int n = static_cast<int>(nums.size());
+    k %= n;
+    for (int step = 0; step < k; ++step) {
+        int last = nums[n - 1];
+        for (int i = n - 1; i > 0; --i) {
+            nums[i] = nums[i - 1];          // everything shifts over
+        }
+        nums[0] = last;
+    }
+}
+```
+
+O(n * k): up to 10^10 element moves at the limits, and the same elements
+shuffle over and over while a closed-form rotation sits right there.
+
+## Optimal: the triple reversal
+
+The elegant observation: rotating right by k means the last k elements
+move to the front as a *block*, and blocks survive reversal.
+
+```cpp
+void rotate(std::vector<int>& nums, int k) {
+    int n = static_cast<int>(nums.size());
+    k %= n;                                  // rotating by n is a no-op
+    auto reverseRange = [&](int lo, int hi) {
+        while (lo < hi) {
+            std::swap(nums[lo++], nums[hi--]);
+        }
+    };
+    reverseRange(0, n - 1);                  // reverse the whole array
+    reverseRange(0, k - 1);                  // reverse the first k
+    reverseRange(n - k, n - 1);              // reverse the rest
+}
+```
+
+Why that composes into the answer: reversing the whole array puts the
+last k elements in front (in reversed order), and the first n - k after
+them (also reversed). Reversing each of those two halves individually
+fixes the order within each block, and the block order stays. Three
+reversals, each a simple two-pointer walk, total O(n) time and O(1)
+space, exactly as required. Trace `[1,2,3,4,5,6,7]` with k = 3:
+`[7,6,5,4,3,2,1]`, then `[5,6,7,4,3,2,1]`, then `[5,6,7,1,2,3,4]`.
+
+Two details are load-bearing. `k %= n` first, because rotating by k and
+by k + n are the same array, and an enormous k is otherwise wasted work
+(and an out-of-bounds reversal). And each reversal is exclusive of the
+midpoint, the standard `while (lo < hi)` two-pointer walk, which is the
+same loop as [reverse string](/dsa/patterns/two-pointers) applied three
+times.
+
+The alternative worth naming: **cyclic replacement**, walking each
+element directly to its final home (index i goes to (i + k) mod n) and
+following the cycle it displaces, is the same complexity with far more
+bookkeeping (the cycle-count argument for why it visits every element is
+genuinely subtle). The triple reversal is the answer to give.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Rotate one step, k times | O(n * k) | O(1) |
+| Triple reversal | O(n) | O(1) |
+| Copy into a shifted array | O(n) | O(n) |
+
+This is the purest example of the array-side skill from
+[linear structures](/dsa/patterns/linear-structures): a contiguous block
+can be reshaped in place with two indices and no copy, because "where it
+came from" and "where it goes" can share memory.

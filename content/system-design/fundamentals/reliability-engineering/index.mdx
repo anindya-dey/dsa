@@ -1,0 +1,134 @@
+---
+title: "Reliability Engineering (SLOs & Error Budgets)"
+summary: "Deciding, in advance, how much unreliability is acceptable, then spending that budget like the resource it is."
+---
+
+A system that is "reliable" is a system whose users cannot tell, most of
+the time, that anything is wrong. That sentence, from the SRE tradition,
+is deliberately softer than "the system is up", because *up* is not a
+binary the users experience: they experience "my request worked, fast
+enough, correctly". Reliability engineering is the practice of making
+that experience **explicit, measured, and budgeted**: define what
+good looks like, measure it continuously, and treat the gap between
+perfection and your promise as a spendable resource.
+
+The reason this discipline exists rather than "just make it reliable":
+perfection is arbitrarily expensive. 99.9% availability is roughly 8.8
+hours of downtime a year, 99.99% is 52 minutes, and each extra nine
+costs more than the last, in engineering effort and in *velocity*
+(because the usual way to be more reliable is to change less often).
+The core insight is that unreliability is not a failure to eliminate
+but a *budget to allocate*.
+
+## SLI, SLO, SLA: the three words
+
+**SLI** (service level indicator) is the measurement: a ratio of good
+events to total events. Not "uptime" but "fraction of requests that
+succeeded", "fraction that answered under 400ms", "fraction of days
+the nightly job finished by 9am". The art of SLI design is picking
+indicators that track the *user's* experience rather than the server's
+internals: a request that returned 200 in 5 seconds because a cache
+served a stale page did not have a good experience, and "requests
+succeeded" alone will not say so.
+
+**SLO** (service level objective) is the promise *to yourself*: the SLI
+target, over a window. "99.9% of requests succeed, measured monthly."
+It is an internal target, and it is deliberately *below* 100%.
+
+**SLA** (service level agreement) is the promise to a *customer*, with
+consequences (contractual, financial) attached. It is always looser than
+your internal SLO, because you must have room to have a bad month
+without breaching the contract: the SLA is the floor, the SLO is where
+you actually aim.
+
+The relationship worth internalizing: SLI is the *measurement*, SLO is
+the *internal target over that measurement*, SLA is the *external floor
+under it*. And the most common anti-pattern is picking 99.99% for
+everything: it is either an unexamined default ("more nines must be
+better") or a promise the product never needed, and either way it
+silently spends the budget on nothing.
+
+## The error budget: the resource view
+
+The complement of the SLO is the **error budget**: 100% minus the
+target, and therefore the amount of unreliability you are *allowed*
+each window. At 99.9%, the budget is 43 minutes of full outage (or
+0.1% of all requests failing, mixed however they come) per month.
+
+The budget is a *resource* because of what spending it buys, and the
+spenders are the interesting part:
+
+- **Changes**: deploys, migrations, and rollouts each spend budget (the
+  bugs they carry). When the budget is spent, the *release train
+  slows*: freeze features, ship only fixes. This is the practice that
+  makes the budget real, and it is the one that generates organizational
+  friction, because "the budget is spent, we ship no features this
+  sprint" is a conversation between engineering and product that the
+  budget *settles by policy rather than argument*.
+- **Planned maintenance**: a maintenance window spends budget like an
+  outage does (users cannot tell the difference), which is the honest
+  accounting that pushes systems toward zero-downtime deploys.
+- **Attacks of reality**: the disk dies, the region flakes, the
+  dependency has a bad day. You cannot schedule these, which is why the
+  *leftover* budget after planned spend is the buffer.
+
+The budget *burn rate* is how you know you are in trouble early:
+dividing the budget by the window (a 43-minute monthly budget burns at
+about 1 minute per 16 hours) gives you thresholds, and "we burned 10% of
+the monthly budget in an hour" is a *page*, not a footnote. That is the
+alerting discipline: alerts on budget burn rather than on individual
+incidents, because a hundred small failures and one big one spend the
+same budget, and the user cannot tell which occurred.
+
+## What the user actually experiences: the SLI menu
+
+The honest SLI set for a request-serving system, and the standard
+complaints each one answers:
+
+- **Availability**: fraction of requests that did not error. Complaint
+  it prevents: "it was down".
+- **Latency**: fraction under a threshold (and *measured at the
+  tail*, [p99](/system-design/fundamentals/observability), not the
+  mean). Complaint: "it was so slow I gave up".
+- **Correctness / freshness**: fraction of responses that were right
+  and current. Complaint: "it worked but showed stale/wrong data", which
+  no uptime metric catches, and which is where
+  [eventual consistency](/system-design/fundamentals/cap-theorem-and-consistency-models)
+  becomes a *user-visible* reliability question.
+- **Throughput**: fraction of time the system absorbed offered load.
+  Complaint: "during the sale it fell over."
+
+Choosing which SLIs *matter* is the product conversation: a checkout flow
+needs availability *and* correctness; a recommendation box tolerates
+stale and slow happily. The per-feature SLO (strict where money moves,
+loose where a filler panel loads) is the mature output, and it is the
+same per-feature consistency assignment as every other page in this
+catalog makes.
+
+## The operational loop
+
+1. **Define** SLIs and SLOs per service, from the user experience
+   backward, with the window and the measurement method stated.
+2. **Measure** continuously ([observability](/system-design/fundamentals/observability):
+   the SLI must be computable from the telemetry, or it is a wish).
+3. **Alert on burn**, not on raw thresholds: fast-burn pages, slow-burn
+   tickets.
+4. **Account for spending**: deploys and maintenance consume budget on
+   the record, and budget-exhausted triggers the release freeze.
+5. **Review** after each window: what spent the budget, what the
+   customer saw, and whether the target should move. The error budget
+   is also the *argument-settler* for "should we invest in reliability
+   or ship features": when the budget is chronically underspent, the
+   honest answer is features; chronically overspent, reliability.
+
+## Related concepts
+
+- [Observability](/system-design/fundamentals/observability)
+  measures the SLIs; an SLO without telemetry is a wish.
+- [Availability & Reliability](/system-design/fundamentals/availability-and-reliability)
+  covers the mechanisms (replication, failover) that keep the SLI
+  healthy; this page covers the *policy* around them.
+- [CAP Theorem & Consistency Models](/system-design/fundamentals/cap-theorem-and-consistency-models)
+  is where "correctness" as an SLI gets its meaning.
+- [Backpressure & Flow Control](/system-design/fundamentals/backpressure-and-flow-control)
+  is one of the load-shapes that keeps the throughput SLI honest.

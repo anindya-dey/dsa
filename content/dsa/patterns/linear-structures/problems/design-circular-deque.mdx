@@ -1,0 +1,174 @@
+---
+title: "Design Circular Deque"
+difficulty: "Medium"
+variant: "Circular Buffer"
+practiceLinks: []
+---
+
+## Problem
+
+Design a circular double-ended queue (deque): `insertFront`,
+`insertLast`, `deleteFront`, `deleteLast`, `getFront`, `getRear`,
+`isEmpty`, `isFull`, all in O(1), with a fixed capacity given at
+construction.
+
+**Constraints**
+
+- `1 <= k <= 1000`
+- `0 <= value <= 1000`
+- At most 2000 calls.
+
+**Example**
+
+```text
+construct k = 3
+insertLast(1) -> true
+insertLast(2) -> true
+insertFront(3) -> true    // deque: [3, 1, 2]
+isFull() -> true
+deleteLast() -> true
+getFront() -> 3
+```
+
+## Brute force
+
+Use a `std::vector` with shifting: keep everything packed at the front,
+and let `insertFront` shift every element over by one.
+
+```cpp
+class MyCircularDequeBrute {
+public:
+    explicit MyCircularDequeBrute(int k) : storage_(k) {}
+
+    bool insertFront(int value) {
+        if (full()) {
+            return false;
+        }
+        storage_.insert(storage_.begin(), value);   // O(n) shift
+        return true;
+    }
+
+    bool insertLast(int value) {
+        if (full()) {
+            return false;
+        }
+        storage_.push_back(value);                 // O(1)
+        return true;
+    }
+
+    // deleteFront shifts, deleteLast pops: same asymmetry.
+    // ...
+private:
+    bool full() const { return static_cast<int>(storage_.size()) ==
+        static_cast<int>(storage_.capacity()); }
+    std::vector<int> storage_;
+};
+```
+
+Correct, and the classic trap: every front operation is O(n), so a
+workload of alternating front and back operations is quadratic overall.
+The requirement says O(1) for everything, and the shift is exactly what
+it is ruling out.
+
+## Optimal: the ring buffer
+
+The fixed capacity is the gift: with no growth to handle, the storage
+can be a plain array that *wraps*. Two indices (`front` and `count`,
+or `front` and `rear`) move forward through the array, and every access
+is taken modulo the capacity, so index k lands wherever the ring has
+carried it.
+
+```cpp
+class MyCircularDeque {
+public:
+    explicit MyCircularDeque(int k)
+        : storage_(k), capacity_(k) {}
+
+    bool insertFront(int value) {
+        if (isFull()) {
+            return false;
+        }
+        front_ = (front_ - 1 + capacity_) % capacity_;   // step back, wrap
+        storage_[front_] = value;
+        ++count_;
+        return true;
+    }
+
+    bool insertLast(int value) {
+        if (isFull()) {
+            return false;
+        }
+        storage_[(front_ + count_) % capacity_] = value;
+        ++count_;
+        return true;
+    }
+
+    bool deleteFront() {
+        if (isEmpty()) {
+            return false;
+        }
+        front_ = (front_ + 1) % capacity_;
+        --count_;
+        return true;
+    }
+
+    bool deleteLast() {
+        if (isEmpty()) {
+            return false;
+        }
+        --count_;                                  // rear = front + count - 1
+        return true;
+    }
+
+    int getFront() const {
+        return isEmpty() ? -1 : storage_[front_];
+    }
+
+    int getRear() const {
+        return isEmpty() ? -1
+            : storage_[(front_ + count_ - 1) % capacity_];
+    }
+
+    bool isEmpty() const { return count_ == 0; }
+    bool isFull() const { return count_ == capacity_; }
+
+private:
+    std::vector<int> storage_;
+    int capacity_;
+    int front_ = 0;
+    int count_ = 0;
+};
+```
+
+The representation choice is the whole design: `front` plus `count`
+(rather than `front` plus `rear`) means `rear` is *derived*
+(`front + count - 1`), so there is exactly one pair of quantities to
+keep in agreement, and "is it empty" versus "is it full" is answered by
+`count` instead of by comparing two indices that happen to coincide in
+both cases (the classic ring-buffer ambiguity: with front and rear
+pointers, "front == rear" means both empty and full, needing an extra
+flag or one sacrificed slot to disambiguate; the count buys that away).
+
+The wrap arithmetic `(front_ - 1 + capacity_) % capacity_` is the only
+fiddly line, and the `+ capacity_` inside is load-bearing: C++ modulo of
+a negative number is negative, so stepping back from `front_ == 0`
+naively would index at -1. This is the same "make the index safe for
+negatives" move as the [hash map](/dsa/patterns/design-data-structures/problems/design-hashmap)
+bucket function.
+
+## Complexity
+
+| Operation | Shifting vector | Ring buffer |
+| --- | --- | --- |
+| insertFront / deleteFront | O(n) | O(1) |
+| insertLast / deleteLast | O(1) | O(1) |
+
+All eight operations are O(1), which is what "fixed capacity" buys: the
+ring is the array price-list answer from
+[linear structures](/dsa/patterns/linear-structures) with the growth
+clause removed. This structure is what every bounded buffer actually is:
+audio buffers, keyboard event queues, sliding windows over streams (the
+[recent calls](/dsa/patterns/stacks-and-queues/problems/number-of-recent-calls)
+aging queue is this ring with one more eviction rule), and the internal
+storage of `std::deque`, which is a ring of fixed-size blocks for
+exactly this reason.

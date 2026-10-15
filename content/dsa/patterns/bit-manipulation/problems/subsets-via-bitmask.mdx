@@ -1,0 +1,108 @@
+---
+title: "Subsets via Bitmask"
+difficulty: "Easy"
+variant: "Bitmask Enumeration"
+practiceLinks: []
+---
+
+## Problem
+
+Given an integer array of unique elements, return all possible subsets
+(the power set). (This is the bitmask framing of
+[subsets](/dsa/patterns/backtracking-and-pruning/problems/subsets);
+read that page for the backtracking walk and the include-or-skip
+decision tree.)
+
+**Constraints**
+
+- `1 <= n <= 10`
+- `-10 <= nums[i] <= 10`
+- All elements are distinct.
+
+**Example**
+
+```text
+Input:  nums = [1, 2, 3]
+Output: [[], [1], [2], [1,2], [3], [1,3], [2,3], [1,2,3]]
+```
+
+## Brute force
+
+The bitmask version *is* the brute force: enumerate every number from 0
+to 2^n - 1, and read each one as a membership indicator (bit i set means
+element i is in the subset). There is no slower or simpler way to think
+about it, which is exactly why it is the clearest.
+
+```cpp
+std::vector<std::vector<int>> subsetsBitmask(
+        const std::vector<int>& nums) {
+    int n = static_cast<int>(nums.size());
+    std::vector<std::vector<int>> result;
+
+    for (int mask = 0; mask < (1 << n); ++mask) {     // every number...
+        std::vector<int> subset;
+        for (int i = 0; i < n; ++i) {                 // ...read as choices
+            if (mask & (1 << i)) {
+                subset.push_back(nums[i]);
+            }
+        }
+        result.push_back(std::move(subset));
+    }
+    return result;
+}
+```
+
+O(n * 2^n) time, which is optimal (the output itself has that many
+elements), and O(n) scratch per subset.
+
+## Why it works: numbers are subsets
+
+The single idea worth internalizing: **an n-bit number is n independent
+binary choices**, and `mask & (1 << i)` asks choice i's answer in O(1).
+Counting from 0 to 2^n - 1 enumerates every assignment of those choices
+exactly once, so the integers *are* the power set, wearing number
+costumes.
+
+That reading has three consequences that keep paying out:
+
+- **The count is free.** There are 2^n subsets because there are 2^n
+  n-bit numbers, and the number of subsets with exactly k elements is
+  C(n, k), the count of n-bit numbers with popcount k: the
+  [binomial coefficients](/dsa/patterns/number-theory-and-combinatorics)
+  falling out of the bit representation.
+- **Bitmask DP is this enumeration plus memoization.** When subsets
+  become *state* rather than output ("which items are used"), the same
+  masks index a DP table, and the iteration order is by popcount,
+  because a mask's answer builds strictly from smaller-popcount masks.
+  That is the shape behind traveling salesman and assignment
+  [DP](/dsa/patterns/dynamic-programming) over small sets.
+- **The set operations are the CPU's.** Union is `|`, intersection `&`,
+  complement `~` against a full mask, difference `a & ~b`, membership
+  `a & (1 << i)`, size `popcount(a)`. The "set" here is genuinely a set
+  in the data-structure sense, with an O(1) per-operation version
+  available while n fits in a word, which is what
+  [bit manipulation](/dsa/patterns/bit-manipulation) as a pattern is
+  *for*.
+
+The honest limits: this enumerates all 2^n subsets *unconditionally*,
+with no pruning, no early exit, and no way to express constraints ("only
+subsets summing to at most k") except by generating and filtering. The moment
+constraints exist, the
+[backtracking walk](/dsa/patterns/backtracking-and-pruning/problems/subsets)
+is the right tool: it makes the same decision per element but can refuse
+to extend a partial subset the mask version would generate anyway. The
+mask version is for when n is small and you want *all* of them, or when
+the subsets are *state* rather than the thing being built.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Bitmask enumeration | O(n * 2^n) | O(n) per subset |
+| Backtracking walk | O(n * 2^n) | O(n) recursion |
+
+Both are output-optimal. The enumeration is the conceptual floor (each
+number a subset, each subset a number), and the backtracking version
+adds exactly one capability on top: refusing to walk branches that
+cannot lead anywhere legal. Choosing between them is choosing between
+"generate everything" and "search with pruning".

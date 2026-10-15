@@ -1,0 +1,124 @@
+---
+title: "Sort Colors"
+difficulty: "Medium"
+variant: "Dutch National Flag"
+practiceLinks: []
+---
+
+## Problem
+
+Given an array `nums` containing objects colored red, white, or blue
+(represented by 0, 1, and 2), sort them in place so that all 0s come
+first, then all 1s, then all 2s. You must not use the library sort, and
+the intended solution is one pass.
+
+**Constraints**
+
+- `1 <= n <= 300`
+- `nums[i]` is 0, 1, or 2.
+
+**Example**
+
+```text
+Input:  nums = [2,0,2,1,1,0]
+Output: [0,0,1,1,2,2]
+```
+
+## Brute force
+
+Count the 0s, 1s, and 2s in one pass, then overwrite the array with that
+many 0s, 1s, and 2s in a second pass.
+
+```cpp
+void sortColorsCounting(std::vector<int>& nums) {
+    int counts[3] = {};
+    for (int value : nums) {
+        ++counts[value];
+    }
+    int index = 0;
+    for (int value = 0; value < 3; ++value) {
+        for (int i = 0; i < counts[value]; ++i) {
+            nums[index++] = value;
+        }
+    }
+}
+```
+
+Correct, O(n), and perfectly defensible (it is counting sort, the
+specialized tool for tiny known key ranges). It is called "brute force"
+here only because the *intended* lesson is a single-pass partition, and
+because the counting version needs two passes and a moment of thought
+about whether the overwrite destroys information you still need (it does
+not here, because the counts were taken first: the "record, then act"
+discipline from [set matrix
+zeroes](/dsa/patterns/matrix-and-grid-algorithms/problems/set-matrix-zeroes)).
+
+## The pattern: the Dutch national flag partition
+
+The one-pass answer is the **three-way partition** (Dijkstra's Dutch
+national flag), and its idea is a strict generalization of the two-way
+partition that powers quick sort: instead of one boundary ("less than
+pivot" and "the rest"), maintain *two* boundaries at once, so three
+regions grow simultaneously.
+
+```cpp
+void sortColors(std::vector<int>& nums) {
+    int low = 0;                          // next home for a 0
+    int mid = 0;                          // current element under review
+    int high = static_cast<int>(nums.size()) - 1;   // next home for a 2
+
+    while (mid <= high) {
+        if (nums[mid] == 0) {
+            std::swap(nums[low], nums[mid]);   // park a 0 at the front
+            ++low;
+            ++mid;
+        } else if (nums[mid] == 2) {
+            std::swap(nums[mid], nums[high]);  // park a 2 at the back
+            --high;                             // mid does NOT advance
+        } else {
+            ++mid;                               // a 1: already in place
+        }
+    }
+}
+```
+
+The invariant is the whole design, and it is worth reciting before the
+code: at every step, `nums[0..low)` is all 0s, `nums[high+1..n)` is all
+2s, and `nums[mid..high]` is the *unexamined* region. The middle region
+`nums[low..mid)` is therefore all 1s, by elimination. Each iteration
+examines `nums[mid]` and moves it into its region, shrinking the
+unexamined middle by one, and the loop ends when the middle is empty.
+
+The asymmetry between the branches is the load-bearing detail, and where
+every bug in this problem lives:
+
+- Swapping a **0** to the front: whatever came back from `nums[low]` was
+  in the *examined* 1-region (low never passes mid), so it is known to be a
+  1, and `mid` can safely advance past it.
+- Swapping a **2** to the back: whatever came back from `nums[high]` was
+  in the *unexamined* region, so it has not been reviewed yet, and `mid`
+  must stay put to examine the newcomer. Advancing `mid` there silently
+  swallows an unexamined element, which is how a wrong answer escapes
+  this algorithm.
+
+This three-way partition is exactly what quick sort wants when the array
+is full of *duplicate* keys: the classic two-way partition degrades to
+O(n²) on all-equal input, because every equal element participates in
+the pivot shuffle, while the flag partition parks the whole equal-run in
+one region and never touches it again.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Counting sort | O(n), two passes | O(1) |
+| Dutch national flag | O(n), one pass | O(1) |
+
+Both are linear and in-place; the flag version is the one to know because
+it *is* the general three-way partition, which is the tool behind
+["sort an array of three values"](/dsa/patterns/sorting-and-selection),
+quick sort with duplicates, and the
+[in-place partition](/dsa/patterns/sorting-and-selection) family. The
+invariant-plus-two-boundaries shape is the same discipline as the
+[write-index compaction](/dsa/patterns/linear-structures) trick, with one
+more boundary to keep honest.

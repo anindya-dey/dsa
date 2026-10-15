@@ -1,0 +1,103 @@
+---
+title: "Pow(x, n) - Recursive"
+difficulty: "Medium"
+variant: "Divide and Conquer"
+practiceLinks: []
+---
+
+## Problem
+
+Compute x^n. (This is the recursive framing of
+[pow-x-n](/dsa/patterns/number-theory-and-combinatorics/problems/pow-x-n);
+read that page for the iterative, modular form and the INT_MIN overflow
+trap. This page covers the divide-and-conquer reasoning.)
+
+**Constraints**
+
+- `-100.0 < x < 100.0`
+- `-2^31 <= n <= 2^31 - 1`
+
+**Example**
+
+```text
+Input:  x = 2.0, n = -2
+Output: 0.25
+```
+
+## Brute force
+
+Multiply x by itself |n| times: O(|n|) multiplications, hopeless past a
+moderate exponent, and blind to the structure that x^20 contains x^10
+squared.
+
+## The recursion, derived rather than memorized
+
+The divide-and-conquer contract: define `power(x, n)` in terms of a
+strictly smaller call, trusting the smaller call.
+
+- **Base:** n = 0 is 1, by definition (the empty product). n = 1 is x.
+- **Step:** split n in half. The smaller problem is `power(x, n/2)`,
+  and *one* recursive call is made and its result is used twice:
+
+```cpp
+double power(double x, long long n) {
+    if (n == 0) {
+        return 1.0;                       // base: the empty product
+    }
+    double half = power(x, n / 2);        // ONE call: solve half the exponent
+    if (n % 2 == 0) {
+        return half * half;               // even: two halves compose
+    }
+    return half * half * x;               // odd: one factor left over
+}
+
+double myPow(double x, int n) {
+    long long exponent = n;               // long long: |INT_MIN| overflows int
+    if (exponent < 0) {
+        x = 1.0 / x;
+        exponent = -exponent;
+    }
+    return power(x, exponent);
+}
+```
+
+The line that makes this O(log n) instead of O(n) is that the recursive
+result is **computed once and used twice** (`half * half`). The naive
+"recursion" of `power(x, n/2) * power(x, n/2)` makes two calls, each
+re-deriving the same half, collapsing back to linear cost with exponential
+call-tree shape. One call, two uses: that is the entire divide-and-conquer
+discipline, and it is the same "reuse the smaller answer"
+rule as [merge sort](/dsa/patterns/sorting-and-selection) and
+[fast exponentiation](/dsa/patterns/number-theory-and-combinatorics)
+everywhere else.
+
+The negative-exponent handling at the bottom is the other half of the
+problem: x^-n = (1/x)^n, and the promotion to `long long` before negating
+exists because n can be exactly INT_MIN, whose absolute value does not
+fit in an int. That promotion is the most-missed detail in this family.
+
+## Why the even/odd cases are what they are
+
+The two return lines deserve a sentence of derivation rather than
+memorization. If n is even, n/2 halves it exactly and squaring restores
+it. If n is odd, n/2 (integer division) *rounds down*, so the call
+computes x^((n-1)/2), squaring gives x^(n-1), and the one missing factor
+of x is appended. The odd case is the "rounding repair", and it recurs in
+every halving recursion that must hit a base case exactly: binary search
+does not need it (any cell is a valid base), this does.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Repeated multiplication | O(\|n\|) | O(1) |
+| Divide and conquer, one call reused | O(log \|n\|) | O(log \|n\|) stack |
+
+This is the smallest clean example of
+[recursion](/dsa/patterns/recursion-and-math) as a *cost* argument: the
+recursion is trusted for a halved exponent, the step work is constant,
+and the Master Theorem's "work at the leaves" (log n of them, constant
+each) gives O(log n) total. The same skeleton with a modulus is the
+modular exponentiation of
+[number theory](/dsa/patterns/number-theory-and-combinatorics), and with
+matrices instead of numbers it computes linear recurrences.

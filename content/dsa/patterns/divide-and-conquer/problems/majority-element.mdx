@@ -1,0 +1,146 @@
+---
+title: "Majority Element"
+difficulty: "Easy"
+variant: "Divide and Conquer"
+practiceLinks: []
+---
+
+## Problem
+
+Given an array of size n, return the **majority element**: the element
+that appears more than n / 2 times. It is guaranteed to exist.
+
+**Constraints**
+
+- `1 <= n <= 5 * 10^4`
+- `-(10^9) <= nums[i] <= 10^9`
+
+**Example**
+
+```text
+Input:  nums = [2, 2, 1, 1, 1, 2, 2]
+Output: 2
+```
+
+## Brute force
+
+Count each element's occurrences (a hash map), then take the maximum.
+
+```cpp
+int majorityElementBrute(const std::vector<int>& nums) {
+    std::unordered_map<int, int> counts;
+    for (int value : nums) {
+        ++counts[value];
+    }
+    int best = 0;
+    int bestCount = 0;
+    for (const auto& [value, count] : counts) {
+        if (count > bestCount) {
+            best = value;
+            bestCount = count;
+        }
+    }
+    return best;
+}
+```
+
+Correct, O(n) time, O(n) space, and completely reasonable code. It also
+ignores the strongest promise the problem makes: the majority appears
+*more than half* the time, which is so dominant a fact that the answer
+should be derivable without counting anyone.
+
+## Divide and conquer: the majority of halves
+
+The [divide and conquer](/dsa/patterns/divide-and-conquer) version:
+split the array in half, find each half's majority element recursively,
+and combine: if the two halves agree, that is the answer; if they
+disagree, one of the two candidates is the global majority, and one
+linear scan counts both to decide which.
+
+```cpp
+int countOccurences(const std::vector<int>& nums, int candidate) {
+    int count = 0;
+    for (int value : nums) {
+        if (value == candidate) {
+            ++count;
+        }
+    }
+    return count;
+}
+
+int majorityInRange(const std::vector<int>& nums, int lo, int hi) {
+    if (hi - lo == 1) {
+        return nums[lo];                // base: one element is its own
+    }                                   // majority
+    int mid = lo + (hi - lo) / 2;
+    int leftMajority = majorityInRange(nums, lo, mid);
+    int rightMajority = majorityInRange(nums, mid, hi);
+
+    if (leftMajority == rightMajority) {
+        return leftMajority;             // halves agree: done
+    }
+    int leftCount = countOccurencesInRange(nums, leftMajority, lo, hi);
+    if (leftCount * 2 > hi - lo) {
+        return leftMajority;             // left candidate wins globally
+    }
+    return rightMajority;
+}
+```
+
+Why the combine step is sound: the global majority (guaranteed to exist)
+must be the majority of *at least one* of the two halves (it holds more
+than half of the total, so it cannot hold at most half in both halves).
+So the true answer always survives to the combine, and the combine's
+counting decides between the two candidates. The cost recurrence is
+`T(n) = 2 T(n/2) + O(n)`: O(n log n), the classic Master-Theorem tie,
+notable here because the *counting* combine makes it slower than both
+alternatives below.
+
+## The real gem: Boyer-Moore voting
+
+The divide-and-conquer version is the canonical exercise for the
+pattern, but the famous answer to this problem is a one-pass, O(1)-space
+algorithm whose correctness is a delight: **Boyer-Moore voting**.
+
+```cpp
+int majorityElement(const std::vector<int>& nums) {
+    int candidate = nums[0];
+    int votes = 1;
+    for (size_t i = 1; i < nums.size(); ++i) {
+        if (votes == 0) {                // previous candidates cancelled
+            candidate = nums[i];         // a new candidate steps up
+        }
+        votes += (nums[i] == candidate) ? 1 : -1;
+    }
+    return candidate;
+}
+```
+
+The invariant: `votes` is the *surplus* of the current candidate over all
+other values seen so far, under the pairing "a non-candidate cancels one
+occurrence of the candidate". Pairing elements off against each other
+this way, a value with more than half the total occurrences cannot be
+fully cancelled: even if every non-candidate element pairs with a
+candidate occurrence, more than half the array is candidate, so the
+candidate outlasts them. Whatever survives with a non-negative surplus
+at the end *must* be the majority, which is why the guaranteed-existence
+promise is load-bearing: without it (the "majority element II" variant,
+asking for values over n/3), the algorithm needs a second verification
+pass, because a survivor could be merely *unpaired*, not *dominant*.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Hash map count | O(n) | O(n) |
+| Divide and conquer | O(n log n) | O(log n) stack |
+| Boyer-Moore voting | O(n) | O(1) |
+
+All three are worth being able to present: the hash map for the honest
+default, the divide and conquer because it is the pattern's textbook
+combine-step exercise (and the shape that generalizes when "majority"
+interacts with other structure), and Boyer-Moore because it extracts the
+answer from the problem's strongest promise with no bookkeeping at all.
+Choosing between them in an interview is a *presentation* decision, and
+naming what each one trades (space, or time, or nothing but proof
+obligations) is the actual skill on display.

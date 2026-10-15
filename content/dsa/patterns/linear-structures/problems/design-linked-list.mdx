@@ -1,0 +1,181 @@
+---
+title: "Design Linked List"
+difficulty: "Medium"
+variant: "Doubly Linked Nodes"
+practiceLinks: []
+---
+
+## Problem
+
+Implement a doubly linked list with `get(index)`,
+`addAtHead(value)`, `addAtTail(value)`, `addAtIndex(index, value)`, and
+`deleteAtIndex(index)`. If `index` is out of range, the operations do
+nothing; `addAtIndex` with `index == length` appends, and `index > length`
+is invalid.
+
+**Constraints**
+
+- `0 <= index <= 2000`
+- `-1000 <= value <= 1000`
+- Up to 2000 calls.
+
+**Example**
+
+```text
+addAtHead(1), addAtTail(3), addAtIndex(1, 2)
+get(1) -> 2
+deleteAtIndex(1)
+get(1) -> 3
+```
+
+## Brute force
+
+Keep the values in a `std::vector`, translating each operation into
+array terms: `get` is `values[index]`, head/tail adds are
+push/insert, `addAtIndex` is `insert` at a position, `deleteAtIndex` is
+`erase`.
+
+```cpp
+class MyLinkedListBrute {
+public:
+    int get(int index) const {
+        return index < static_cast<int>(values_.size()) ? values_[index] : -1;
+    }
+    void addAtHead(int value) { values_.insert(values_.begin(), value); }
+    void addAtTail(int value) { values_.push_back(value); }
+    void addAtIndex(int index, int value) {
+        if (index <= static_cast<int>(values_.size())) {
+            values_.insert(values_.begin() + index, value);
+        }
+    }
+    void deleteAtIndex(int index) {
+        if (index < static_cast<int>(values_.size())) {
+            values_.erase(values_.begin() + index);
+        }
+    }
+private:
+    std::vector<int> values_;
+};
+```
+
+Correct, and completely reasonable code. It violates the *intent* of the
+problem, which is to implement a linked list: the middle inserts and
+deletes it answers are O(n) shifting, exactly the price
+[linear structures](/dsa/patterns/linear-structures) says a linked list
+is built to avoid. A real caller doing 2000 alternating head-adds and
+middle-deletes would feel the difference.
+
+## Optimal: nodes, sentinels, and the size invariant
+
+The honest implementation: nodes with `next` and `prev`, one sentinel pair
+(`head`/`tail` dummy nodes so no operation ever handles "empty" as a
+special case), and a length counter.
+
+```cpp
+class MyLinkedList {
+public:
+    MyLinkedList() : head_(new Node(0)), tail_(new Node(0)) {
+        head_->next = tail_;
+        tail_->prev = head_;
+    }
+
+    int get(int index) const {
+        Node* node = nodeAt(index);
+        return node != nullptr ? node->value : -1;
+    }
+
+    void addAtHead(int value) { insertBefore(head_->next, value); }
+    void addAtTail(int value) { insertBefore(tail_, value); }
+
+    void addAtIndex(int index, int value) {
+        if (index == length_) {
+            addAtTail(value);
+            return;
+        }
+        Node* target = nodeAt(index);
+        if (target != nullptr) {
+            insertBefore(target, value);
+        }
+    }
+
+    void deleteAtIndex(int index) {
+        Node* target = nodeAt(index);
+        if (target != nullptr) {
+            unbind(target);
+            delete target;
+        }
+    }
+
+private:
+    struct Node {
+        int value;
+        Node* next;
+        Node* prev;
+        explicit Node(int v) : value(v), next(nullptr), prev(nullptr) {}
+    };
+
+    Node* nodeAt(int index) const {
+        if (index < 0 || index >= length_) {
+            return nullptr;                   // out of range: no-op
+        }
+        Node* current = head_->next;
+        for (int i = 0; i < index; ++i) {
+            current = current->next;
+        }
+        return current;
+    }
+
+    void insertBefore(Node* target, int value) {
+        Node* fresh = new Node(value);
+        fresh->prev = target->prev;
+        fresh->next = target;
+        target->prev->next = fresh;           // wire in, four writes
+        target->prev = fresh;
+        ++length_;
+    }
+
+    void unbind(Node* node) {
+        node->prev->next = node->next;
+        node->next->prev = node->prev;
+        --length_;
+    }
+
+    Node* head_;                              // sentinel: never null
+    Node* tail_;                             // sentinel: never null
+    int length_ = 0;
+};
+```
+
+The design's whole weight rests on two decisions, and each is worth
+stating out loud. The **sentinels** delete the null cases: without them,
+every operation needs "is this the first/last node, is the list empty"
+branches, which is where the classic segfaults live; with them, `tail_`
+is a node whose `prev` is always the real last element, and
+`insertBefore(tail_, value)` *is* the append. The **size counter**
+answers range checks in O(1) instead of a walk, and `nodeAt` returning
+`nullptr` for out-of-range is what turns the invalid operations into
+no-ops, which the spec (unusually precisely) defines as silence.
+
+Note what is deliberately *not* implemented: index access is a walk, the
+same as any linked list, and the doubly linked pointers cost memory for
+exactly the reason [linear structures](/dsa/patterns/linear-structures)
+describes: they buy O(1) removal at a *known* node, which
+`deleteAtIndex` pays for by walking there first.
+
+## Complexity
+
+| Operation | Vector | Doubly linked |
+| --- | --- | --- |
+| get(index) | O(1) | O(n) |
+| addAtHead / addAtTail | O(n) / O(1) | O(1) / O(1) |
+| addAtIndex / deleteAtIndex | O(n) | O(n) walk + O(1) splice |
+
+The linked list wins where the problem's workload concentrates: constant
+insertion at both ends and splicing at held positions, which is the
+price-list trade from [linear
+structures](/dsa/patterns/linear-structures) made concrete. The sentinel
+discipline here is the same one [merge two sorted
+lists](/dsa/patterns/linked-list-manipulation/problems/merge-two-sorted-lists)
+uses in miniature, and [design a hash
+map](/dsa/patterns/design-data-structures/problems/design-hashmap) is its
+chained-bucket cousin.

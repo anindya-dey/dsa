@@ -1,0 +1,103 @@
+---
+title: "Number of 1 Bits"
+difficulty: "Easy"
+variant: "Popcount"
+practiceLinks: []
+---
+
+## Problem
+
+Given an unsigned integer `n` (a 32-bit binary representation), count
+the number of 1 bits in it (the "population count" or Hamming weight).
+
+**Constraints**
+
+- `0 <= n <= 2^31 - 1`
+
+**Example**
+
+```text
+Input:  n = 00000000000000000000000000001011 (11)
+Output: 3
+```
+
+Eleven is 8 + 2 + 1: three set bits.
+
+## Brute force
+
+Test every bit position, one at a time.
+
+```cpp
+int hammingWeightBrute(uint32_t n) {
+    int count = 0;
+    for (int i = 0; i < 32; ++i) {
+        if ((n >> i) & 1) {
+            ++count;
+        }
+    }
+    return count;
+}
+```
+
+O(width) with width fixed at 32: constant in the formal sense, correct,
+and completely reasonable. Its "waste" is subtle but real: it performs 32
+iterations and 32 shift-AND tests regardless of how many bits are
+actually set, walking positions that hold zeros as dutifully as ones.
+
+## The pattern's own answer: count by clearing
+
+The [bit vocabulary](/dsa/patterns/bit-manipulation) move
+`n & (n - 1)` clears the *lowest* set bit, and turning that into a loop
+counts set bits by destroying them one at a time: every iteration removes
+exactly one 1, so the number of iterations *is* the answer.
+
+```cpp
+int hammingWeight(uint32_t n) {
+    int count = 0;
+    while (n != 0) {
+        n &= n - 1;                      // clear the lowest set bit
+        ++count;
+    }
+    return count;
+}
+```
+
+Walk it on eleven (`1011`): `n - 1` is `1010`, the AND gives `1010`
+(lowest bit cleared), then `1000`, then `0000`: three iterations for
+three set bits. The loop runs *popcount* times, not 32, so the work is
+proportional to the answer rather than to the width, and each step is
+the fixed vocabulary move rather than a shift-and-test per position.
+
+Why `n & (n - 1)` clears the lowest set bit, derived once so it stops
+being a memorized spell: subtracting one borrows through the trailing
+zeros, turning the lowest set bit to 0 and every trailing 0 below it to
+1. The AND with the original then zeroes that bit (it is 0 in `n - 1`)
+and restores the trailing zeros to 0 (they are 0 in n), leaving
+everything *above* the cleared bit untouched. One bit of damage, exactly
+where promised.
+
+In production, the honest answer is `__builtin_popcount(n)` (or
+`std::popcount`), a single instruction on modern CPUs; the loop version
+exists to show the *move*, and it is the move that generalizes:
+
+- **The same loop, different question**: "is n a power of two" is
+  "does clearing the lowest bit empty it" (`n != 0 && (n & (n - 1)) == 0`:
+  a power of two is a single bit).
+- **Iterating set bits**: `for (; mask; mask &= mask - 1)` with
+  `__builtin_ctz(mask)` visiting each set position, the standard
+  enumeration in [bitmask DP](/dsa/patterns/bit-manipulation).
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Test all 32 positions | O(32) fixed | O(1) |
+| Clear lowest bit per iteration | O(popcount) | O(1) |
+| `__builtin_popcount` | O(1) (hardware) | O(1) |
+
+This is the smallest complete example of a
+[bit manipulation](/dsa/patterns/bit-manipulation) *move* doing real
+work: not just testing a bit the problem asked about, but a reusable
+identity (`n & (n-1)`) that answers a whole family of questions
+(counting, powers of two, enumerating) wherever the lowest set bit is
+the thing worth destroying.

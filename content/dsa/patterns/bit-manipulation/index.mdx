@@ -1,0 +1,138 @@
+---
+title: "Bit Manipulation"
+summary: "Numbers as sequences of bits: extracting, testing, flipping, and enumerating with the operations the CPU gives you for free."
+---
+
+Every integer is already a data structure: an array of bits, indexed from
+the right, each holding a 0 or 1, each independently addressable. Bit
+manipulation is the discipline of treating them that way, using the
+operations the machine gives you for free: shift (`1 << i` is the number
+with only bit i set), and (`&`), or (`|`), xor (`^`), and not (`~`). The
+pattern is not about cleverness; it is a small vocabulary of moves, each
+one O(1), that answers questions about numbers that arithmetic cannot:
+"is bit 3 set", "what is the lowest set bit", "how many bits differ".
+
+The second half of the pattern is *enumeration*: because an n-bit number
+is n independent binary choices, the numbers 0 to 2^n - 1 enumerate all
+n-element subsets, which makes bitmasks the natural representation for
+[DP over subsets](/dsa/patterns/dynamic-programming) and every "try all
+combinations of small n" problem.
+
+## How to spot it
+
+- The problem mentions parity, single-number-finding, power-of-two, or
+  counting set bits.
+- "Every subset of a small set (n at most ~20)": bitmask enumeration or DP.
+- XOR appears in the statement: pairs, complements, toggling.
+- Arithmetic feels wrong but the values are naturally flags or sets.
+
+## The vocabulary: one move per question
+
+Each row of this table is a move worth knowing by heart, because each
+one is an *answer to a question*, and recognition goes question-first:
+
+```cpp
+unsigned set = 0b1101;                    // working example
+
+// Is bit i set?
+bool bitSet = (set >> 2) & 1;             // shift bit 2 to position 0
+
+// Set / clear / flip bit i.
+set |= (1u << 3);                          // set bit 3
+set &= ~(1u << 1);                         // clear bit 1
+set ^= (1u << 0);                          // toggle bit 0
+
+// Lowest set bit: isolate it.
+unsigned lowest = set & (~set + 1);        // or set & -set (two's complement)
+
+// Clear the lowest set bit.
+set &= set - 1;
+
+// Count set bits (popcount).
+int count = __builtin_popcount(set);
+
+// Test power of two: exactly one bit set.
+bool isPowerOfTwo = set != 0 && (set & (set - 1)) == 0;
+
+// Iterate the set bits (indices) of a mask.
+for (unsigned mask = set; mask != 0; mask &= mask - 1) {
+    int bit = __builtin_ctz(mask);        // index of lowest remaining bit
+    // ... use bit
+}
+```
+
+The two most important rows, because they answer the questions that keep
+reappearing: `set & -set` isolates the *lowest* set bit (the two's
+complement of a number flips everything below its lowest set bit to 1s,
+and the AND keeps exactly that bit), and `set & (set - 1)` *clears* it
+(subtracting one borrows through the trailing zeros and kills the lowest
+set bit). That pair is the engine behind counting set bits fast,
+iterating set bits without a loop over all positions, and the "is this a
+power of two" test (a power of two is exactly one bit, so clearing it
+gives zero).
+
+## XOR: the star of the family
+
+XOR has three properties that make it overrepresented in puzzles, and
+they are worth stating because every XOR trick is one of them in
+disguise: `a ^ a = 0` (self-cancelling), `a ^ 0 = a` (identity), and
+commutativity/associativity (order does not matter, so xor-ing a whole
+list is just counting each value's parity). The consequences:
+
+- **The single-number trick**: xor every element of a list where
+  everything appears twice except one value; the pairs cancel, and the
+  lone value remains. It is the parity property wearing a story.
+- **The swap without a temp**: `a ^= b; b ^= a; a ^= b;`, a classic and a
+  trap (undefined behavior when the two aliases are the same variable).
+- **The toggle**: xor-ing with a bit-mask flips exactly those bits, the
+  "undo" in symmetric-difference set operations.
+
+## Subsets as bitmasks
+
+The number `m` in `[0, 2^n)` has bit i set exactly when element i is in
+the subset it represents, which is the [subsets](/dsa/patterns/backtracking-and-pruning/problems/subsets)
+enumeration's other face: the [bitmask version](/dsa/patterns/backtracking-and-pruning)
+generates each subset by reading m's bits, and it is the honest
+representation whenever n is small enough for 2^n to be sane (roughly
+n at most 20).
+
+The same representation powers bitmask DP: the state "which set of items
+has been used" is a mask, the DP table is indexed by mask, and the
+iteration order is by popcount (each subset extends strictly smaller
+subsets). [Traveling salesman](/dsa/patterns/dynamic-programming) over n of
+at most 20 cities is the canonical example, and the pattern generalizes to
+assignment and scheduling problems whose n is small for the same reason.
+
+## The standing warnings
+
+- **Unsigned for shifts and masks.** Shifting and mask arithmetic on
+  signed types invite undefined behavior (shift counts >= width,
+  overflow on `1 << 31`); bit work is unsigned work, converted at the
+  boundary.
+- **`1 << i` needs the right width.** `1 << 31` overflows int; use
+  `1u << i` or `1LL << i` when i can be large.
+- **Precedence bites.** `&` and `|` bind *looser* than comparisons:
+  `x & 1 == 0` parses as `x & (1 == 0)`. Parenthesize every masked
+  comparison.
+
+## When it doesn't fit
+
+If n is large, bitmask enumeration is exponential and the answer is a
+real algorithm, not enumeration. If the values are not naturally
+independent flags (they carry arithmetic meaning), bit tricks are usually
+the wrong lens. And if a problem *only* needs popcount or parity, do not
+build a structure: the builtin is O(1) and the vocabulary above is the
+whole toolkit.
+
+## Related patterns
+
+- [Backtracking & Pruning](/dsa/patterns/backtracking-and-pruning) is
+  the other way to enumerate subsets, for n too large to enumerate
+  exhaustively.
+- [Dynamic Programming](/dsa/patterns/dynamic-programming) uses bitmasks
+  as the state for small-set problems.
+- [Number Theory & Combinatorics](/dsa/patterns/number-theory-and-combinatorics)
+  is the arithmetic sibling: the same modular machinery with different
+  goals.
+- [Design Data Structures](/dsa/patterns/design-data-structures) uses
+  bitsets as compact sets (bloom filters, quotient filters).

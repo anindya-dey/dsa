@@ -1,0 +1,106 @@
+---
+title: "Single Number"
+difficulty: "Easy"
+variant: "XOR Parity"
+practiceLinks: []
+---
+
+## Problem
+
+Given a non-empty array of integers where every element appears twice
+except one, find the single element that appears once. Solve it with
+linear runtime and O(1) extra memory.
+
+**Constraints**
+
+- `1 <= n <= 3 * 10^4`
+- `-3 * 10^4 <= nums[i] <= 3 * 10^4`
+- Each element appears exactly twice except one.
+
+**Example**
+
+```text
+Input:  nums = [4, 1, 2, 1, 2]
+Output: 4
+```
+
+## Brute force
+
+Count occurrences (a hash map, or sort and scan neighbors), then find the
+one with count one.
+
+```cpp
+int singleNumberBrute(const std::vector<int>& nums) {
+    std::unordered_map<int, int> counts;
+    for (int value : nums) {
+        ++counts[value];
+    }
+    for (const auto& [value, count] : counts) {
+        if (count == 1) {
+            return value;
+        }
+    }
+    return -1;                            // unreachable per the spec
+}
+```
+
+Correct, O(n) time, and it works for *any* "find the odd one out"
+variant, which is worth saying in its defense. But it uses O(n) extra
+memory, and it throws away a structural promise the problem made:
+everything comes in *pairs*. Any structure that pairs-then-cancels can
+answer in O(1) space, and pairs-then-cancels is practically the
+definition of XOR.
+
+## Optimal: xor everything
+
+The three properties of XOR do the whole job: `a ^ a = 0` (a pair cancels
+itself), `a ^ 0 = a` (unpaired values survive), and order does not matter
+(so the pairs do not need to be adjacent, or found, or matched).
+
+```cpp
+int singleNumber(const std::vector<int>& nums) {
+    int result = 0;
+    for (int value : nums) {
+        result ^= value;                  // pairs cancel; the loner stays
+    }
+    return result;
+}
+```
+
+Walk `[4, 1, 2, 1, 2]`: every value except 4 appears an even number of
+times, and XOR's commutativity means the *accumulated* result is the xor
+of each value's parity: 1 ^ 1 cancels, 2 ^ 2 cancels, and 4 is xor-ed
+against 0 (the identity), leaving 4. The accumulation order is irrelevant,
+which is why the algorithm does not need to sort, hash, or match: it is
+just counting parities, folded into a single register.
+
+That "xor is parity counting" reading is the one to carry away, because
+it tells you exactly when the trick applies: **every value an even number
+of times except exactly one value an odd number of times**, and the
+answer is the xor of them all. It is the same fold as the
+[hash-based grouping](/dsa/patterns/hash-based-structures/problems/group-anagrams)
+signature idea (a fingerprint invariant under reordering), with XOR as
+the fingerprint for *multiplicity* instead of *membership*.
+
+The variant worth knowing: if exactly *two* values appear once, xor-ing
+everything gives `a ^ b`, and the lowest set bit of that result
+(`x & -x`, from [bit manipulation](/dsa/patterns/bit-manipulation)) is a
+bit where a and b differ, which partitions the array into two groups
+that each contain the single-number problem once more. The one-liner
+collapses into a two-liner, which is the usual fate of these problems
+under generalization.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Count occurrences | O(n) | O(n) |
+| Sort and scan neighbors | O(n log n) | O(1) |
+| XOR fold | O(n) | O(1) |
+
+The XOR fold is optimal: one pass, no memory, using exactly the promise
+the problem made. It is the smallest complete example of
+[bit manipulation](/dsa/patterns/bit-manipulation) as a *problem-solving*
+tool (rather than an implementation detail), and the standard door-opener
+to the XOR family: find the duplicate, missing number, and the
+two-single-numbers variant above.
