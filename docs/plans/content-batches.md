@@ -61,10 +61,10 @@ requirements and templates) and `2026-10-14-roadmap-review-decisions.md`
 | 6b | System Design: finish LLD | — | The 12 remaining LLDs (library, URL shortener, logging, in-memory FS, splitwise, tic-tac-toe, ATM, hotel, car rental, text editor, pub/sub broker, shopping cart) | **done** |
 | 6c | System Design: HLD infrastructure components | — | Load balancer, CDN, distributed ID generator, message queue, object storage, file storage, metrics, log aggregation, web crawler (9) | **done** |
 | 6d | System Design: HLD product case studies | — | Collaborative editing, maps, stock exchange, proximity, video conferencing, leaderboard, recommendation, fraud detection, ad-click aggregator, webhooks, migration (11) | **done** |
-| 7a | AI/ML: Fundamentals core | — | ML System Design Basics · Supervised/Unsupervised/RL · Offline vs Online · Batch vs Real-Time · Training Data Pipelines · Data Labeling · Data Versioning · Feature Engineering · Feature Stores · Embeddings · Similarity Search & ANN · Vector Databases (12) | not started |
-| 7b | AI/ML: evaluation, ops, and serving | — | Evaluation Metrics · Offline vs Online Evaluation · A/B Testing · Monitoring & Drift · Concept Drift & Retraining · Bias/Fairness/Explainability · Privacy-Preserving ML · Responsible AI (8) + Model Serving Architectures · Inference Optimization · Batching & Latency · GPU Management · Runtimes · Multi-Model · Edge · Serverless · Model Caching · Autoscaling (10) | not started |
-| 7c | AI/ML: GenAI / LLM systems | — | LLM Serving · Prompt Engineering as a System Concern · RAG · Chunking & Indexing · Fine-Tuning vs Prompting vs RAG · LoRA/PET · Agents & Tool Use · Guardrails · Evaluating LLMs · Cost & Token Budgets · LLM Caching · LLM Gateways (12) | not started |
-| 7d | AI/ML: MLOps, case studies, LLD | — | MLOps & CI/CD · Registry · Experiment Tracking · Reproducibility · Distributed Training · Hyperparameter Tuning · AutoML · Governance · Cost Optimization · Multi-Tenant Platforms · Backfills (11) + case studies (RAG chat, semantic search, serving platform, feature platform, CTR, moderation, LLM gateway, anomaly detection, training platform) + LLDs (feature store, registry, tokenizer, embedding cache, vector index, pipeline) | not started |
+| 7a | AI/ML: Fundamentals core | — | ML System Design Basics · Supervised/Unsupervised/RL · Offline vs Online · Batch vs Real-Time · Training Data Pipelines · Data Labeling · Data Versioning · Feature Engineering · Feature Stores · Embeddings · Similarity Search & ANN · Vector Databases (12) | **done** |
+| 7b | AI/ML: evaluation, ops, and serving | — | Evaluation Metrics · Offline vs Online Evaluation · A/B Testing · Monitoring & Drift · Concept Drift & Retraining · Bias/Fairness/Explainability · Privacy-Preserving ML · Responsible AI (8) + Model Serving Architectures · Inference Optimization · Batching & Latency · GPU Management · Runtimes · Multi-Model · Edge · Serverless · Model Caching · Autoscaling (10) | **done** |
+| 7c | AI/ML: GenAI / LLM systems | — | LLM Serving · Prompt Engineering as a System Concern · RAG · Chunking & Indexing · Fine-Tuning vs Prompting vs RAG · LoRA/PET · Agents & Tool Use · Guardrails · Evaluating LLMs · Cost & Token Budgets · LLM Caching · LLM Gateways (12) | **done** |
+| 7d | AI/ML: MLOps, case studies, LLD | — | MLOps & CI/CD · Registry · Experiment Tracking · Reproducibility · Distributed Training · Hyperparameter Tuning · AutoML · Governance · Cost Optimization · Multi-Tenant Platforms · Backfills (11) + case studies (RAG chat, semantic search, serving platform, feature platform, CTR, moderation, LLM gateway, anomaly detection, training platform) + LLDs (feature store, registry, tokenizer, embedding cache, vector index, pipeline) | **next** |
 | 8 | C++ Toolkit reference track | 14 entries written (vector, string, unordered_map, map, deque, stack/queue, priority_queue, pair/tuple, optional, function/lambdas, algorithms, binary search, numeric, invalidation); "Related C++ tools" end sections added to 17 DSA pattern overviews; no inline links per the plan | — | **done** |
 
 ## Sequencing rules
@@ -82,6 +82,21 @@ requirements and templates) and `2026-10-14-roadmap-review-decisions.md`
   clue links to real content.
 - Before closing any batch: `pnpm check:content`, `pnpm lint`,
   `pnpm typecheck`, and `pnpm build` must all pass.
+
+## Batch 7c completion notes (2026-10-15)
+
+Batch 7c is written and shipped: the GenAI / LLM Systems group, 12
+topics. The AI/ML track is now 42/42 across its first five groups.
+Topics: LLM Serving Basics (tokens, KV cache, context windows),
+Prompt Engineering as a System Concern (versioned templates, eval
+sets, injection), RAG (the pipeline and failure taxonomy), Chunking
+& Indexing, Fine-Tuning vs Prompting vs RAG (the decision ladder),
+LoRA/PEft (one base, many adapters), Agents & Tool Use (the loop,
+sandbox, failure modes), Guardrails & Output Validation (schema
+enforcement, injection defense, refusal), Evaluating LLM Systems
+(LLM-as-judge biases, groundedness), Cost & Token Budgets, Caching
+for LLMs (prompt + semantic), LLM Gateways & Routing. Remaining:
+batch 7d (MLOps, case studies, LLD, ~29 topics).
 
 ## Batch 6a completion notes (2026-10-15)
 

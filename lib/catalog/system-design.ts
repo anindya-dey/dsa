@@ -863,6 +863,92 @@ export const systemDesignTopics: SystemDesignTopicMeta[] = [
     group: "Serving & Inference",
     summary: "Scaling a serving fleet on the right signal, when the unit of work is a slow, expensive request.",
   },
+
+  // AI/ML — GenAI / LLM Systems
+  {
+    slug: "llm-serving",
+    title: "LLM Serving Basics",
+    track: "ai-ml",
+    group: "GenAI / LLM Systems",
+    summary: "Tokens, the KV cache, and context windows: what makes serving an LLM different from serving a classifier.",
+  },
+  {
+    slug: "prompt-engineering-systems",
+    title: "Prompt Engineering as a System Concern",
+    track: "ai-ml",
+    group: "GenAI / LLM Systems",
+    summary: "Prompts as versioned artifacts: templates, evaluation, and the discipline of changing them safely.",
+  },
+  {
+    slug: "rag",
+    title: "Retrieval-Augmented Generation (RAG)",
+    track: "ai-ml",
+    group: "GenAI / LLM Systems",
+    summary: "Grounding generation in retrieved context: the retrieval/generation pipeline and where it fails.",
+  },
+  {
+    slug: "chunking-indexing-strategies",
+    title: "Chunking & Indexing Strategies",
+    track: "ai-ml",
+    group: "GenAI / LLM Systems",
+    summary: "How documents become retrievable chunks, and why chunking decides RAG's quality.",
+  },
+  {
+    slug: "fine-tuning-vs-prompting-vs-rag",
+    title: "Fine-Tuning vs Prompting vs RAG",
+    track: "ai-ml",
+    group: "GenAI / LLM Systems",
+    summary: "The three ways to change a model's behavior, their costs, and how to choose.",
+  },
+  {
+    slug: "lora-peft",
+    title: "Parameter-Efficient Fine-Tuning (LoRA)",
+    track: "ai-ml",
+    group: "GenAI / LLM Systems",
+    summary: "Adapting large models cheaply: adapters, LoRA, and serving many fine-tunes from one base.",
+  },
+  {
+    slug: "agents-and-tool-use",
+    title: "Agents & Tool Use",
+    track: "ai-ml",
+    group: "GenAI / LLM Systems",
+    summary: "Models that call tools and take multi-step actions: the loop, the sandbox, and the failure modes.",
+  },
+  {
+    slug: "llm-guardrails-validation",
+    title: "Guardrails & Output Validation",
+    track: "ai-ml",
+    group: "GenAI / LLM Systems",
+    summary: "Constrain and verify model outputs: schema enforcement, injection defense, and the refusal path.",
+  },
+  {
+    slug: "evaluating-llm-systems",
+    title: "Evaluating LLM Systems",
+    track: "ai-ml",
+    group: "GenAI / LLM Systems",
+    summary: "LLM-as-judge, groundedness checks, and the honest measurement of open-ended generation.",
+  },
+  {
+    slug: "cost-token-budgets",
+    title: "Cost & Token Budget Management",
+    track: "ai-ml",
+    group: "GenAI / LLM Systems",
+    summary: "Tokens are money: budgeting, routing, and the economics of context and generation.",
+  },
+  {
+    slug: "llm-caching",
+    title: "Caching for LLMs",
+    track: "ai-ml",
+    group: "GenAI / LLM Systems",
+    summary: "Prompt caching and semantic caching: reusing computation across requests.",
+  },
+  {
+    slug: "llm-gateways",
+    title: "LLM Gateways & Routing",
+    track: "ai-ml",
+    group: "GenAI / LLM Systems",
+    summary: "One front door for many models: routing, fallback, quotas, and observability.",
+  },
 ];
 
 export function getSystemDesignTopic(

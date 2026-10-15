@@ -1,0 +1,119 @@
+---
+title: "Evaluating LLM Systems"
+summary: "LLM-as-judge, groundedness checks, and the honest measurement of open-ended generation."
+---
+
+Evaluating a classifier is [solved-ish](/system-design/ai-ml/evaluation-metrics):
+a held-out set, a metric, a number. Evaluating *generation* is
+genuinely hard, because the output is *open-ended* (there is no
+single right answer to "summarize this," so exact-match metrics are
+meaningless), *long* (a paragraph's quality is not one number), and
+*subjective* (helpfulness, tone, correctness are judgments). The
+field's answers — **LLM-as-judge**, **groundedness checks**, and
+**human evaluation** — are each a *proxy* with a known bias, and
+this page is the honest accounting of the proxies and their
+calibration.
+
+## The metric families
+
+- **Reference-based metrics** (BLEU, ROUGE: n-gram overlap with a
+  reference answer — *cheap, automatic, and weak*: they reward
+  surface similarity, not correctness, and a *better* answer that
+  words things differently scores worse: useful for narrow tasks
+  (translation, extractive summary) and misleading for open
+  generation).
+- **Embedding-based similarity** (semantic similarity to a
+  reference: better than n-gram overlap (paraphrase-friendly),
+  still blind to *correctness* (a confidently-wrong answer can be
+  semantically *close* to the reference) — a proxy, used with
+  awareness).
+- **LLM-as-judge** (the modern default: a *strong model* scores the
+  output against criteria ("is this helpful, accurate, and on-
+  policy?"), with a rubric — the *scalable* quality metric, because
+  it approximates human judgment at machine cost, and it is the
+  reason LLM evaluation is *possible* at scale at all).
+- **Task-specific checks** (the *honest* ones: does the JSON parse
+  (the [guardrails](/system-design/ai-ml/llm-guardrails-validation)
+  check), does the [RAG](/system-design/ai-ml/rag) answer cite a
+  retrieved chunk (groundedness), did the [agent's](/system-design/ai-ml/agents-and-tool-use)
+  action *actually* succeed (the side-effect verification) — the
+  checks that measure the *thing the system needed*, not a proxy for
+  quality).
+- **Human evaluation** (the ground truth, expensive and slow: the
+  *calibration set* — a small, carefully-judged sample that
+  *validates* the automatic metrics, the
+  [offline/online](/system-design/ai-ml/offline-vs-online-evaluation)
+  discipline's anchor).
+
+## LLM-as-judge, honestly
+
+The technique that made LLM eval tractable, and its biases — which
+*must* be corrected for, or the eval is noise:
+
+- **Position bias** (the judge prefers the first (or second) answer:
+  the fix is to *swap positions* and average — the standard
+  protocol).
+- **Verbosity bias** (the judge prefers *longer* answers: a real,
+  documented preference, corrected by explicit rubrics or length
+  normalization).
+- **Self-preference** (the judge prefers answers from *its own
+  family*: a judge should differ from the model under test, and the
+  bias is measured and noted).
+- **The calibration requirement** (the judge's scores must *agree
+  with humans* on the calibration set — a judge that does not
+  correlate with human judgment is measuring itself: the
+  *judge-quality* metric, and the reason "we use an LLM judge" is
+  not the end of the conversation).
+
+## Groundedness: the RAG-specific evaluation
+
+For [RAG](/system-design/ai-ml/rag) (and any retrieval-grounded
+system), the metrics that matter are *retrieval* and *grounding*,
+and they are measured *separately* (because they fail
+independently):
+
+- **Retrieval metrics** (did the pipeline fetch the *relevant*
+  chunks? precision/recall of the retrieval stage, measured against
+  a labeled query→chunk set: the
+  [chunking](/system-design/ai-ml/chunking-indexing-strategies)
+  and [embedding](/system-design/ai-ml/embeddings-vector-representations)
+  quality, isolated).
+- **Groundedness / faithfulness** (does the answer *follow from* the
+  retrieved context, or hallucinate beyond it? measured by an
+  LLM-judge with the context as evidence, or by citation-checking:
+  the *generation* quality, isolated).
+- **Answer relevance** (does it answer the *question*?): the third
+  axis, and separating all three is what makes a RAG failure
+  *diagnosable* (retrieval miss? grounding failure? off-topic? —
+  the [failure taxonomy](/system-design/ai-ml/rag), measured).
+
+## The evaluation system
+
+The machinery, assembled: the **eval set** (curated inputs + expected
+behaviors, versioned, growing with each incident — the
+[regression suite](/system-design/ai-ml/prompt-engineering-systems)
+for the whole LLM system), the **judge pipeline** (the rubric, the
+judge model, the bias corrections, the calibration against humans),
+the **per-stage metrics** (retrieval, grounding, format, safety,
+latency, cost — the *decomposed* scorecard that localizes failures),
+and the **online tie-in** (the [A/B](/system-design/ai-ml/ab-testing-experimentation)
+and guardrail metrics that close the loop to real users — the
+[offline/online](/system-design/ai-ml/offline-vs-online-evaluation)
+funnel, LLM-shaped). The honest summary: LLM evaluation is *proxy
+management* — every metric is a biased estimate, the discipline is
+knowing each bias, calibrating against humans, and never treating a
+proxy as the truth.
+
+## Related concepts
+
+- [Evaluation Metrics for ML](/system-design/ai-ml/evaluation-metrics):
+  the classic metrics and their traps.
+- [Offline vs Online Evaluation](/system-design/ai-ml/offline-vs-online-evaluation):
+  the funnel LLM evals feed.
+- [Retrieval-Augmented Generation](/system-design/ai-ml/rag) and
+  [Chunking & Indexing](/system-design/ai-ml/chunking-indexing-strategies):
+  the retrieval metrics' subject.
+- [Guardrails & Output Validation](/system-design/ai-ml/llm-guardrails-validation):
+  the task-specific checks.
+- [Prompt Engineering as a System Concern](/system-design/ai-ml/prompt-engineering-systems):
+  the eval set prompts are tested against.
