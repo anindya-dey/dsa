@@ -116,8 +116,6 @@ export function TocDesktop({ headings }: { headings: Heading[] }) {
 }
 
 export function TocMobile({ headings }: { headings: Heading[] }) {
-  const activeId = useActiveHeading(headings);
-
   return (
     <nav
       aria-labelledby="toc-mobile-title"
@@ -127,7 +125,7 @@ export function TocMobile({ headings }: { headings: Heading[] }) {
         On this page
       </p>
       <div className="border-t border-accent/15 pt-2">
-        <TocLinks headings={headings} activeId={activeId} railIndicator={false} />
+        <TocLinks headings={headings} activeId={undefined} railIndicator={false} />
       </div>
     </nav>
   );
