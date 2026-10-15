@@ -1,0 +1,116 @@
+---
+title: "Cost Optimization for ML"
+summary: "The training and serving bill: where it goes and how to spend less."
+---
+
+ML has two bills — **training** (GPUs by the hour, for hours to
+weeks, per experiment) and **serving** (GPUs or CPUs by the
+request, forever) — and the discipline of *cost optimization* is
+understanding which dominates (it varies: a research-heavy org
+spends on training, a product-heavy one on serving), where the
+waste is, and which lever addresses it. This is the
+[capacity-planning](/system-design/fundamentals/capacity-planning-and-estimation)
+and [cost-efficiency](/system-design/fundamentals/scalability)
+discipline applied to ML's two expensive resources: *accelerator
+time* and *tokens*.
+
+## Where the money goes
+
+- **Training: accelerator-hours** (the [distributed
+  training](/system-design/ai-ml/distributed-training) fleet,
+  times the number of runs (the
+  [hyperparameter-tuning](/system-design/ai-ml/hyperparameter-tuning)
+  and [experiment](/system-design/ai-ml/experiment-tracking)
+  churn), and the *idle* time (GPUs waiting for data, for
+  checkpoints, for a scheduler: the utilization gap is often the
+  biggest line).
+- **Serving: GPU-hours (or CPU-hours) and tokens** (the
+  [serving tier's](/system-design/ai-ml/model-serving-architectures)
+  always-on cost, dominated by *utilization* (an idle GPU is pure
+  waste: the [batching](/system-design/ai-ml/batching-and-latency)
+  and [caching](/system-design/ai-ml/model-caching-warm-pools)
+  levers) and, for LLMs, the per-token bill (the
+  [cost-budget](/system-design/ai-ml/cost-token-budgets) page)).
+- **Storage and data movement** (the datasets, checkpoints, and
+  artifacts ([object storage](/system-design/fundamentals/object-storage)),
+  plus the egress and the data-transfer between training nodes: the
+  [capacity-planning](/system-design/fundamentals/capacity-planning-and-estimation)
+  line items, usually smaller than the compute but not free).
+
+## The training levers
+
+- **Right-size the accelerator** (a small model does not need an
+  A100: the [GPU-management](/system-design/ai-ml/gpu-accelerator-management)
+  matching, and the [distillation](/system-design/ai-ml/inference-optimization)
+  that makes the model fit a cheaper device).
+- **Spot/preemptible instances** (training is *interruptible* (with
+  checkpoints): the spot discount (often 50-70%) is the single
+  biggest training lever, at the cost of the
+  [fault-tolerance](/system-design/ai-ml/distributed-training)
+  machinery (checkpoint, resume, reconfigure) — the trade the
+  [job scheduler](/system-design/hld/distributed-job-scheduler)
+  handles).
+- **Kill losing runs early** (the [early
+  pruning](/system-design/ai-ml/hyperparameter-tuning) discipline:
+  most trials lose, and the saving is *killing them before they
+  finish* — the [successive-halving](/system-design/ai-ml/hyperparameter-tuning)
+  machinery, and the biggest *tuning* saving).
+- **Improve utilization** (the GPU waits for data: the *input
+  pipeline* (the [data-loader](/system-design/fundamentals/stream-vs-batch-processing)
+  feeding the accelerator) is a common bottleneck, and fixing it
+  (prefetching, faster storage, better sharding) is *free* compute —
+  the utilization gap, closed).
+
+## The serving levers
+
+- **Utilize the GPU** ([batching](/system-design/ai-ml/batching-and-latency)
+  (the biggest), [quantization](/system-design/ai-ml/inference-optimization)
+  (smaller = more per GPU), and the
+  [cache](/system-design/ai-ml/model-caching-warm-pools): the
+  utilization ladder, and the reason an "expensive" GPU serving a
+  batched model is *cheaper per request* than a "cheap" one serving
+  one-at-a-time).
+- **Route by cost** (the [gateway's](/system-design/ai-ml/llm-gateways)
+  difficulty routing: cheap model for easy requests — the single
+  biggest *LLM* serving lever).
+- **Cache aggressively** (the [LLM caches](/system-design/ai-ml/llm-caching):
+  the zero-cost request).
+- **Scale to zero (where possible)** (the
+  [long tail](/system-design/ai-ml/serverless-inference): pay only
+  for what is used — with the [cold-start](/system-design/ai-ml/serverless-inference)
+  caveat).
+- **Right-size the fleet** (the [autoscaling](/system-design/ai-ml/autoscaling-inference)
+  discipline: not over-provisioned, not under — the headroom
+  arithmetic).
+
+## The organizational view
+
+The honest systems lesson: **cost is a *first-class metric*, and
+making it visible is most of the optimization.** The org that
+*measures* cost per experiment, per model, per feature, per tenant
+(the [observability](/system-design/fundamentals/observability)
+discipline, applied to money) finds the waste (the idle GPUs, the
+runaway [agent](/system-design/ai-ml/agents-and-tool-use) loops,
+the over-provisioned fleet, the
+[duplicated experiments](/system-design/ai-ml/experiment-tracking))
+because it is *on a dashboard*, and the org that does not
+discovers it at the end of the quarter, when the bill arrives. The
+[unit economics](/system-design/fundamentals/capacity-planning-and-estimation)
+(cost per prediction, cost per resolved ticket, cost per trained
+model) is the metric that turns ML spending from an opaque
+line-item into an *engineered* quantity — which is the whole
+discipline, in one sentence.
+
+## Related concepts
+
+- [GPU & Accelerator Management](/system-design/ai-ml/gpu-accelerator-management):
+  the utilization levers.
+- [Inference Optimization](/system-design/ai-ml/inference-optimization)
+  and [Batching & Latency](/system-design/ai-ml/batching-and-latency):
+  the serving levers.
+- [Cost & Token Budgets](/system-design/ai-ml/cost-token-budgets):
+  the LLM-specific economics.
+- [Hyperparameter Tuning at Scale](/system-design/ai-ml/hyperparameter-tuning):
+  the training-budget discipline.
+- [Capacity Planning & Estimation](/system-design/fundamentals/capacity-planning-and-estimation):
+  the unit-economics framing.

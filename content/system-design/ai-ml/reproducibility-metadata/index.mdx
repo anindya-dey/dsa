@@ -1,0 +1,111 @@
+---
+title: "Reproducibility & Metadata"
+summary: "Making a model rebuildable months later: seeds, environments, and the metadata that pins them."
+---
+
+"Can you rebuild the model that is serving right now?" sounds
+trivial and is *genuinely hard*, because a model is the output of a
+long chain of inputs — data, code, configuration, environment,
+randomness — and if *any* link is unpinned, the rebuild produces a
+*different* model. Reproducibility is the discipline of pinning the
+whole chain, and its output is the **metadata**: the recorded
+inputs that make a rebuild (and a debug, and an audit) possible.
+This page is what must be pinned, why each pin is hard, and what
+"reproducible" honestly means in ML.
+
+## The chain that must be pinned
+
+Every link, and its failure mode when unpinned:
+
+- **The data** (the *exact* dataset: not "the events table" but a
+  [versioned snapshot](/system-design/ai-ml/data-versioning-lineage)
+  — an unpinned dataset is the *most common* reproducibility
+  failure, because "the data" changes daily and the training code
+  does not).
+- **The code** (the git sha of the training code *and* the pipeline
+  code: a notebook cell run out of order is the anti-pattern — the
+  pipeline must be *the* code, versioned, not a hand-run session).
+- **The configuration** (hyperparameters, architecture, feature
+  definitions: the [experiment
+  record](/system-design/ai-ml/experiment-tracking), the config
+  *as data*, not as hardcoded constants).
+- **The environment** (the library versions, the CUDA/driver
+  version, the OS: "it trained on my machine" is a
+  reproducibility failure — the fix is the
+  [container](/system-design/fundamentals/reliability-engineering)
+  (a pinned image), so the environment is an *artifact* like any
+  other).
+- **The randomness** (the seeds: weight init, data shuffling,
+  dropout — unpinned seeds mean the same inputs give *different*
+  models, which is the subtle one: even with everything else
+  pinned, an unpinned seed breaks exact reproduction).
+
+## The honest meaning of "reproducible"
+
+The bar is a *spectrum*, and stating which one you mean is the
+discipline:
+
+- **Bit-for-bit** (the rebuild produces *identical* weights:
+  achievable only with careful determinism (fixed seeds,
+  deterministic GPU ops, fixed data order) — the strongest, and
+  sometimes *impractical* (some GPU ops are non-deterministic for
+  speed: the trade is [determinism vs
+  performance](https://pytorch.org/docs/stable/notes/randomness.html)).
+- **Metric-for-metric** (the rebuild produces a model that scores
+  *the same* on the eval set (within noise): the *practical*
+  standard, and usually what "reproducible" means — the model is
+  *equivalent*, not identical).
+- **Behaviorally equivalent** (the rebuild produces a model that
+  *behaves* the same in production: the loosest, and for some
+  stochastic methods (large-scale LLM training) the only honest
+  claim).
+
+The design consequence: the *metadata* must be sufficient for the
+*bar you chose* — bit-for-bit needs the seeds and determinism flags;
+metric-for-metric needs the data, code, config, and environment
+(seeds optional); behavioral needs the data and config. Over-pinning
+(forcing bit-for-bit where it is not needed) costs performance for
+nothing; under-pinning (claiming reproducible without the data
+version) is a lie.
+
+## The metadata (what to record, and where)
+
+The reproducibility metadata *is* the [lineage
+record](/system-design/ai-ml/data-versioning-lineage), and it lives
+in the [experiment tracker](/system-design/ai-ml/experiment-tracking)
+(per run) and the [registry](/system-design/ai-ml/model-registry)
+(per promoted model), assembled into the artifact a rebuild (or an
+audit) consumes: the dataset hash, the code sha, the config, the
+environment image, the seeds, and the *versions of the tools*.
+The practical test: **a new engineer, given only the metadata,
+rebuilds the model** — if they cannot, a link is unpinned, and the
+gap is a bug in the metadata, not in their skill.
+
+## Why it matters beyond "nice to have"
+
+- **Debugging** (a production regression: "did the model change or
+  the data?" — unanswerable without the metadata: the
+  [drift](/system-design/ai-ml/model-monitoring-drift) investigation
+  *needs* the training baseline).
+- **Audit** (regulatory or internal: "prove this model was trained
+  on data you were allowed to use" — the
+  [governance](/system-design/ai-ml/model-governance-compliance)
+  requirement, which *is* the metadata).
+- **Science** (comparing models is only meaningful if the
+  comparison is controlled: an unpinned pipeline makes "v8 beat v7"
+  ambiguous — was it the model or the data?).
+- **Recovery** (the winning model's artifact is lost or the serving
+  framework changed: the metadata *is* the rebuild recipe).
+
+## Related concepts
+
+- [Data Versioning & Lineage](/system-design/ai-ml/data-versioning-lineage):
+  the data and provenance half.
+- [Experiment Tracking](/system-design/ai-ml/experiment-tracking):
+  where the per-run metadata lives.
+- [Model Registry & Versioning](/system-design/ai-ml/model-registry):
+  where the promoted model's metadata lives.
+- [Model Governance & Compliance](/system-design/ai-ml/model-governance-compliance):
+  the audit that consumes it.
+- [MLOps & CI/CD for Models](/system-design/ai-ml/mlops-cicd): the
+  pipeline that enforces the pinning.

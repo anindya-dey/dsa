@@ -64,7 +64,7 @@ requirements and templates) and `2026-10-14-roadmap-review-decisions.md`
 | 7a | AI/ML: Fundamentals core | — | ML System Design Basics · Supervised/Unsupervised/RL · Offline vs Online · Batch vs Real-Time · Training Data Pipelines · Data Labeling · Data Versioning · Feature Engineering · Feature Stores · Embeddings · Similarity Search & ANN · Vector Databases (12) | **done** |
 | 7b | AI/ML: evaluation, ops, and serving | — | Evaluation Metrics · Offline vs Online Evaluation · A/B Testing · Monitoring & Drift · Concept Drift & Retraining · Bias/Fairness/Explainability · Privacy-Preserving ML · Responsible AI (8) + Model Serving Architectures · Inference Optimization · Batching & Latency · GPU Management · Runtimes · Multi-Model · Edge · Serverless · Model Caching · Autoscaling (10) | **done** |
 | 7c | AI/ML: GenAI / LLM systems | — | LLM Serving · Prompt Engineering as a System Concern · RAG · Chunking & Indexing · Fine-Tuning vs Prompting vs RAG · LoRA/PET · Agents & Tool Use · Guardrails · Evaluating LLMs · Cost & Token Budgets · LLM Caching · LLM Gateways (12) | **done** |
-| 7d | AI/ML: MLOps, case studies, LLD | — | MLOps & CI/CD · Registry · Experiment Tracking · Reproducibility · Distributed Training · Hyperparameter Tuning · AutoML · Governance · Cost Optimization · Multi-Tenant Platforms · Backfills (11) + case studies (RAG chat, semantic search, serving platform, feature platform, CTR, moderation, LLM gateway, anomaly detection, training platform) + LLDs (feature store, registry, tokenizer, embedding cache, vector index, pipeline) | **next** |
+| 7d | AI/ML: MLOps, case studies, LLD | — | MLOps & CI/CD · Registry · Experiment Tracking · Reproducibility · Distributed Training · Hyperparameter Tuning · AutoML · Governance · Cost Optimization · Multi-Tenant Platforms · Backfills (11) + case studies (RAG chat, semantic search, serving platform, feature platform, CTR, moderation, LLM gateway, anomaly detection, training platform) + LLDs (feature store, registry, tokenizer, embedding cache, vector index, pipeline) | **done** |
 | 8 | C++ Toolkit reference track | 14 entries written (vector, string, unordered_map, map, deque, stack/queue, priority_queue, pair/tuple, optional, function/lambdas, algorithms, binary search, numeric, invalidation); "Related C++ tools" end sections added to 17 DSA pattern overviews; no inline links per the plan | — | **done** |
 
 ## Sequencing rules
@@ -82,6 +82,31 @@ requirements and templates) and `2026-10-14-roadmap-review-decisions.md`
   clue links to real content.
 - Before closing any batch: `pnpm check:content`, `pnpm lint`,
   `pnpm typecheck`, and `pnpm build` must all pass.
+
+## Batch 7d completion notes (2026-10-15)
+
+Batch 7d is written and shipped: the final AI/ML batch (26 topics)
+across three groups.
+
+- **MLOps & Platform (11)**: MLOps & CI/CD, Model Registry &
+  Versioning, Experiment Tracking, Reproducibility & Metadata,
+  Distributed Training, Hyperparameter Tuning at Scale, AutoML,
+  Model Governance & Compliance, Cost Optimization for ML,
+  Multi-Tenant ML Platforms, Feature/Model Backfills & Migrations.
+- **Case Studies (9, HLD-style)**: RAG/Chat-With-Your-Docs, Semantic
+  / Vector Search, Model Serving Platform, Feature Platform, CTR /
+  Ad Ranking, Content Moderation, LLM Gateway, Real-Time Anomaly
+  Detection, ML Training Platform.
+- **Low-Level Design (6)**: Feature Store, Model Registry,
+  Tokenizer (BPE), Embedding Cache, Vector Index, Feature Transform
+  Pipeline.
+
+With this, **the entire site is complete**: DSA (29 patterns, 108
+problems), System Design (90 topics across Fundamentals / LLD / HLD),
+AI/ML Systems (68 topics), and the C++ Toolkit (14 entries). No
+"coming soon" placeholders remain. The only deliberately-deferred
+item is R11 (curated external practice links on DSA problem pages),
+which remains an empty UI slot by design.
 
 ## Batch 7c completion notes (2026-10-15)
 

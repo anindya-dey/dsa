@@ -1,9 +1,11 @@
 # DSA & System Design
 
-A pattern-driven reference for Data Structures & Algorithms and System
-Design. Every DSA problem is taught from brute-force reasoning to the
-optimal C++ solution, with the complexity analysis that explains why. System
-Design is split into Fundamentals, Low-Level Design, and High-Level Design.
+A pattern-driven reference for Data Structures & Algorithms, System
+Design, and AI/ML Systems. Every DSA problem is taught from brute-force
+reasoning to the optimal C++ solution, with the complexity analysis that
+explains why. System Design is split into Fundamentals, Low-Level Design,
+High-Level Design, and AI/ML Systems, with a C++ Toolkit reference for the
+language features the solutions use.
 
 Live: <https://dsa.anindyadey.com>
 
@@ -44,6 +46,7 @@ Open <http://localhost:3000>.
 app/                    Routes (App Router)
   dsa/                  DSA roadmap, patterns, problems, cheat sheet
   system-design/        Roadmap + [track]/[slug] topic pages
+  cpp/                  C++ Toolkit reference
   opengraph-image.tsx   Generated social preview image
   sitemap.ts            Sitemap (published content only)
 components/             Presentational components
@@ -51,16 +54,18 @@ content/                MDX content (the source of truth for pages)
   dsa/patterns/<slug>/index.mdx
   dsa/patterns/<slug>/problems/<problem>.mdx
   system-design/<track>/<slug>/index.mdx
+  cpp/<slug>.mdx
 lib/
-  catalog/              Typed catalog: every pattern/topic + roadmap metadata
+  catalog/              Typed catalog: every pattern/topic/entry + roadmap metadata
   content/              Filesystem-backed content loaders
   mdx.tsx               MDX compilation pipeline
+  search.ts             Static search-index builder
 docs/                   Requirements and planning docs
 ```
 
 ## The roadmaps
 
-### DSA — four phases
+### DSA — four phases (29 patterns, 108 problems)
 
 1. **Core Mechanics & Complexity Foundations** — complexity analysis, linear
    and hash-based structures, recursion, sorting, bit manipulation.
@@ -73,7 +78,7 @@ docs/                   Requirements and planning docs
    dynamic programming, greedy, string algorithms, range-query structures,
    number theory, design-from-scratch data structures.
 
-### System Design — three tracks
+### System Design — four tracks
 
 - **Fundamentals** (36 topics) — grouped into Scalability & Performance,
   Data & Storage, Communication & APIs, Distributed Systems, Reliability &
@@ -83,11 +88,22 @@ docs/                   Requirements and planning docs
 - **High-Level Design** (33 topics) — split into Infrastructure Components
   (load balancers, CDNs, message queues, storage) and Product Case Studies
   (URL shortener, chat, feeds, payments, maps, exchanges).
+- **AI/ML Systems** (68 topics) — the systems side of ML (engineering, not
+  theory): the learning problem, data, serving state, evaluation and
+  operations, serving and inference, GenAI/LLM systems, MLOps and platform,
+  case studies, and code-level designs.
+
+### C++ Toolkit (14 entries)
+
+Reference pages for the containers, algorithms, and idioms the DSA solutions
+use (`std::vector`, `priority_queue`, `unordered_map`, `lower_bound`,
+iterator invalidation, and more): what each does, what it costs, and the
+gotchas. Linked from the pattern overviews via "Related C++ tools" sections.
 
 The catalog is calibrated to carry a candidate from junior through
 lead-level interviews, with enough depth (consensus, multi-region,
 reliability engineering, concurrency, migrations, multi-tenancy) for
-principal-level breadth.
+principal-level breadth, and the AI/ML track for the GenAI era.
 
 ## Authoring content
 
