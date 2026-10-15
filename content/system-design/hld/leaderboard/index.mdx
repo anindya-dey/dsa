@@ -1,0 +1,172 @@
+---
+title: "Design a Leaderboard"
+summary: "The ranking HLD: the sorted-set trick, the memory wall at a hundred million players, and the approximation that makes the long tail cheap."
+---
+
+A leaderboard ("top players by score", the game vertical's signature
+feature) is a small-sounding HLD with one genuinely deep problem:
+**rank queries at scale**. The top-10 is easy; *"what rank am I?"* for
+the 50-millionth player is the problem, because it asks "how many of
+the hundred million players have a higher score than me", which naively
+costs a scan per player per query, and the design is the family of
+structures that make it cheap.
+
+## Requirements
+
+**Functional**
+
+- Update a player's score (absolute, or delta: +50 points).
+- Top-N query (the leaderboard page: ranks 1-100, by segment).
+- **Rank-of-a-player** ("you are #42,317 of 50M", the personal
+  hook), and neighbors ("rank 42,316 and 42,318" around me).
+- Time windows: daily/weekly/all-time leaderboards.
+- Optional: per-friend, per-country, per-segment boards.
+
+**Non-functional**
+
+- **Read-heavy**: every player who ever opens the scoreboard asks
+  top-N and their own rank, so both queries must be milliseconds.
+- **Write-heavy in bursts**: score updates arrive with game events
+  (session end: a burst of millions of updates), so the write path
+  must absorb and batch.
+- **Eventual is acceptable**: a rank a few seconds stale is fine
+  (the honesty the [CAP](/system-design/fundamentals/cap-theorem-and-consistency-models)
+  page licenses), which is what makes the approximate designs
+  viable.
+- **Windows expire**: daily boards reset, which is a retention/
+  TTL problem, not a deletion problem.
+
+## The core: the sorted set, and why it answers everything
+
+The canonical structure (Redis's `ZSET`, the game industry's
+default) is a **sorted set**: members (players) ordered by score,
+backed by a [skiplist](/dsa/patterns/design-data-structures) or a
+balanced tree, *plus* a hash for member -> score lookups. Its
+operations are the leaderboard's operations, one-to-one:
+
+```mermaid
+graph LR
+    W[Game event: +50] --> Z[Sorted set: score-ordered members]
+    Z -->|ZREVRANGE 0 99| TOP[Top 100: O(log N + 100)]
+    Z -->|ZREVRANK player| RANK[My rank: O(log N)]
+    Z -->|ZREVRANGE k, k+2| NB[My neighbors: O(log N)]
+```
+
+```cpp
+// The in-memory form: member -> score, score -> ordered members.
+class SortedSet {
+public:
+    void addScore(const std::string& player, long long delta) {
+        long long newScore = scores_[player] + delta;
+        removeOrdered(scores_[player], player);   // old position out
+        scores_[player] = newScore;
+        insertOrdered(newScore, player);          // new position in
+    }
+
+    // Rank: how many members score above this one. O(log n).
+    long long rankOf(const std::string& player) const {
+        auto it = scores_.find(player);
+        if (it == scores_.end()) {
+            return -1;
+        }
+        return countAbove(it->second);    // the skiplist's index count
+    }
+
+    // Top-N: the highest scores, in order. O(log n + N).
+    std::vector<std::pair<std::string, long long>> topN(int n) const {
+        return reverseRange(0, n - 1);
+    }
+
+private:
+    std::unordered_map<std::string, long long> scores_;
+    OrderedIndex ordered_;     // skiplist: (score, player) -> rank count
+};
+```
+
+The complexity story: **every operation is O(log n)** (update, rank,
+top-N, neighbors), which at 100M members is ~27 comparisons per
+operation: the sorted set is why a single Redis node serves
+leaderboards for games with hundreds of millions of players, and
+the [design data structures](/dsa/patterns/design-data-structures)
+pattern's showcase member.
+
+## The scale problems, in order of pain
+
+**The memory wall.** 100M members * ~100 bytes is ~10 GB of
+sorted-set state per leaderboard (per *window*: daily, weekly,
+all-time), which is where a single node stops being the answer.
+The sharding moves, honestly priced:
+
+- **Shard by player, aggregate by query** (the
+  [distributed cache](/system-design/hld/distributed-cache)'s
+  [consistent hashing](/system-design/fundamentals/consistent-hashing)):
+  scores are sharded, a top-100 queries every shard (top-100 per
+  shard: 27 shards * 100 candidates, a merge: correct, exact, and
+  O(shards) per query, which is fine for top-N and *disastrous for
+  rank-of-player*: exact rank needs every shard's count, and a
+  fan-out per personal rank is the death of the read path).
+- **Shard by score band** (the rank-specialized split): high scores
+  (the head: ranks 1 to ~100k, the segment anyone ever looks at)
+  in one exact shard, the *tail* (rank 100k to 50M, which is "you
+  are somewhere around 12M" territory: nobody cares about the exact
+  number) in buckets: **the approximation** below.
+
+**The approximate tail** (the honest answer to the personal rank at
+scale): a **histogram** (count per score-bucket, e.g. 1000 buckets
+over the score range), where "my rank" is "the sum of buckets above
+mine, plus my offset inside mine", which is a precomputed
+**prefix-sum** answer ([the DSA pattern](/dsa/patterns/prefix-sums-and-difference-arrays),
+in production costume): O(1) per personal-rank query, exact at the
+top (the head is exact: anyone who *visibly* ranks cares), and
+approximate (± a bucket) in the tail where the exact number is
+emotionally meaningless. The top 100k exact, the rest histogrammed,
+is the standard production shape, and *stating the approximation
+out loud* is the design conversation.
+
+**The burst.** Score updates ride a [queue](/system-design/fundamentals/message-queues-and-pubsub)
+(session end: a batch of deltas), and the worker *coalesces* (one
+player, two deltas in the same batch: apply both, write once: the
+[logging](/system-design/lld/logging-framework) async-sink
+discipline), which converts the burst into bounded writes against
+the sorted set.
+
+## The windows and the reset
+
+Daily/weekly boards are **separate leaderboards** (one sorted set
+per window: `lb:daily:2026-10-15`), with the reset being *the
+creation of the new set* (the [rename-not-update](/system-design/fundamentals/cdn)
+discipline: no deletion pass, no migration: the old set ages out by
+TTL and a new one starts empty), and the all-time board persisting.
+The interesting variant: **rolling windows** ("last 7 days"), where
+the window slides continuously and exact sliding membership is
+expensive (every player's score is a set of timestamped events,
+[the stream-vs-batch](/system-design/fundamentals/stream-vs-batch-processing)
+windowing machinery), so the honest answer is a periodic snapshot
+plus a delta (the approximation again, at the time dimension).
+
+## Capacity sketch
+
+The arithmetic: 100M players, a daily board at ~10 GB of sorted-set
+state (one beefy node or a shard pair), read load ~10k
+queries/sec (the game's open-the-board rate, almost entirely
+top-N hits + personal ranks: [cache](/system-design/fundamentals/caching)
+the top-100, which is one key, and it is 90% of reads), write load
+~the game's event rate through the coalescing queue. The head
+(100k exact) * the tail (histogram) split means the exact structure
+is 100k members = ~10 MB: tiny, cacheable, cheap, and the design's
+whole memory story is the tail's.
+
+## Related concepts
+
+- [Design Data Structures](/dsa/patterns/design-data-structures) is
+  the pattern family (the sorted set, the skiplist).
+- [Heaps / Priority Queues](/dsa/patterns/heaps-and-priority-queues)
+  is the "keep the extreme" structure (top-N maintenance without
+  the full set).
+- [Prefix Sums](/dsa/patterns/prefix-sums-and-difference-arrays) is
+  the histogram-rank answer's machinery.
+- [Design a Distributed Cache](/system-design/hld/distributed-cache)
+  is the sharding and hot-key companion (the top-100 is the
+  hottest key there is).
+- [CAP Theorem & Consistency Models](/system-design/fundamentals/cap-theorem-and-consistency-models)
+  licenses the seconds-stale approximation.
