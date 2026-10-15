@@ -63,8 +63,11 @@ requirements and templates) and `2026-10-14-roadmap-review-decisions.md`
 
 - Don't start Batch 4 (dynamic programming) before Batch 3 is done: DP
   constantly reuses tree and graph patterns.
-- Static search (R14/R15) ships right after Batch 1: there is finally
-  enough published content to be worth indexing.
+- Static search (R14/R15) **shipped 2026-10-14**, after Batch 3: a
+  prerendered `/search-index.json` route built from the content
+  (`lib/search.ts`), a client dialog with Cmd+K, snippet extraction, and
+  section labels. No backend, no external dependency; the index
+  regenerates on every build.
 - Each batch alternates DSA and System Design, per the requirements doc
   (R16/R17).
 - Batches 1-4 fill the cheat-sheet's diagnostic matrix references so every
@@ -137,8 +140,7 @@ Batch 1 is written and shipped. Published content is now:
   requirements, class design with Mermaid class/architecture diagrams, a
   C++ sketch for the LLD, a capacity estimate for the HLD, and links back
   to the Fundamentals they rely on.
-- Static search (R14/R15) is now unblocked: there is enough published
-  content to be worth indexing.
+- Static search (R14/R15) has shipped; see the sequencing rules above.
 
 ## Batch 1 file list
 
