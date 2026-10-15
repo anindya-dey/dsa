@@ -15,10 +15,10 @@ import type { SystemDesignTrack } from "@/lib/catalog/types";
 export const metadata: Metadata = {
   title: "System Design Roadmap",
   description:
-    "Fundamentals, low-level design, and high-level design case studies for building systems that scale.",
+    "Fundamentals, low-level design, high-level design, and AI/ML systems for building systems that scale.",
 };
 
-const TRACKS: SystemDesignTrack[] = ["fundamentals", "lld", "hld", "ai-ml"];
+const TRACKS = Object.keys(systemDesignTrackTitles) as SystemDesignTrack[];
 
 export default function SystemDesignRoadmapPage() {
   return (

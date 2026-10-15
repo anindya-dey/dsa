@@ -4,11 +4,12 @@ import { SystemDesignTopicView } from "@/components/system-design-topic-view";
 import {
   getSystemDesignTopicsByTrack,
   systemDesignTopics,
+  systemDesignTrackTitles,
 } from "@/lib/catalog/system-design";
 import { topicHasContent } from "@/lib/content/system-design";
 import type { SystemDesignTrack } from "@/lib/catalog/types";
 
-const TRACKS: SystemDesignTrack[] = ["fundamentals", "lld", "hld"];
+const TRACKS = Object.keys(systemDesignTrackTitles) as SystemDesignTrack[];
 
 function isTrack(value: string): value is SystemDesignTrack {
   return (TRACKS as string[]).includes(value);
