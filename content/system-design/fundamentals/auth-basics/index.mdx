@@ -1,0 +1,145 @@
+---
+title: "Authentication & Authorization Basics"
+summary: "Who you are versus what you may do: sessions, tokens, and OAuth, at the depth a system designer needs."
+---
+
+Two questions hide inside "is this request allowed?", and conflating
+them is the classic security-design bug. **Authentication** (authn):
+who is making the request? **Authorization** (authz): may *that
+identity* do *this thing*? The order is fixed (authorize an identity,
+not a mystery), the mechanisms differ entirely (authn is
+credential-verification and session management; authz is policy
+attached to resources), and the failure modes differ (an authn
+failure is "who are you?", an authz failure is "you may not").
+
+This page covers the standard mechanisms at system-design depth: the
+shapes, the trade-offs, and where each belongs. It deliberately stops
+short of implementing crypto, which is its own subject.
+
+## Sessions: the server remembers you
+
+The original web model: you log in (a credential exchange), the
+server creates a **session** (its own record of "this user is logged
+in"), and the browser carries a **session ID** (an opaque random
+token) in a cookie. Each request presents the ID, the server looks up
+the session, and the session *is* the authentication state.
+
+- **The cookie's security profile**: `HttpOnly` (JavaScript cannot
+  read it, mitigating
+  [XSS](https://en.wikipedia.org/wiki/Cross-site_scripting) theft),
+  `Secure` (HTTPS only), `SameSite` (not sent on cross-site requests,
+  mitigating [CSRF](https://en.wikipedia.org/wiki/Cross-site_request_forgery),
+  because a forged cross-site request no longer carries the
+  credential).
+- **The trade**: server-side state (sessions are stored, expired,
+  invalidated, *revocable*: the great virtue, and the reason sessions
+  remain the right answer for server-rendered apps), and the
+  [statelessness](/system-design/fundamentals/networking-basics)
+  tension: every request re-looks-up a session, so sessions live in a
+  shared store (a
+  [distributed cache](/system-design/hld/distributed-cache)) the
+  moment the app tier is a fleet.
+
+Revocation is the property worth noting for the contrast below: a
+stolen session ID is *invalidatable* (log the user out, everywhere,
+now), because the server is the one remembering.
+
+## Tokens: you carry your own identity
+
+The API-era model: instead of the server remembering, the client
+carries a **token** it presents on every request. The
+[stateless](/system-design/fundamentals/scalability) tier's dream
+(any server can verify any request, no lookup) comes with a
+structural cost, and the whole modern token machinery is negotiating
+that cost.
+
+**JWT** ([JSON Web Token](https://en.wikipedia.org/wiki/JSON_Web_Token))
+is the standard bearer: a signed payload (user id, scopes, expiry)
+that any service verifies locally with a shared public key or secret.
+The verification is a signature check, not a database lookup, which
+is the entire value: no session store, any server, any region.
+
+The honest trade, which is where the design lives:
+
+- **Cannot be revoked.** A valid-signature JWT is valid until it
+  expires, and "log out everywhere" is impossible without a blocklist
+  (which reintroduces the lookup you were avoiding). Hence the
+  standard discipline: **short expiry** (minutes) for access tokens,
+  with a **refresh token** (long-lived, stored safely, *revocable*)
+  that exchanges for new access tokens. The pattern is exactly "make
+  the revocable thing long-lived and rare, the irrevocable thing
+  short-lived and disposable".
+- **Trust the source, verify everything else**: the signature says
+  "nobody tampered", the claims say "this is user 42", and the
+  **audience/expiry/issuer checks** are as load-bearing as the
+  signature (the classic bug: a token minted for service A accepted
+  by service B).
+- **What a JWT is *not***: encrypted. Signed payloads are readable
+  by anyone; tokens carry identity, never secrets.
+
+## OAuth: the delegation model
+
+"Log in with Google" is neither a session nor a raw JWT: it is
+**delegated authorization**, and the vocabulary is worth knowing
+precisely because systems designers keep mis-using it:
+
+- The **resource owner** (the user) delegates to a **client** (the
+  app) limited access to a **resource server** (Google's profile
+  data), via an **authorization server** that vouches.
+- The **authorization code flow** (the standard, redirect-based,
+  browser-mediated) ends with the client holding an *access token*
+  for the resource server, and the point of the whole dance is that
+  the client never sees the user's password.
+- **Scopes** are the delegation's *size* ("read profile", not "all
+  access"), and designing scopes is designing the authz surface of
+  your delegation, worth as much care as any API.
+
+The failure modes worth reciting (the interview's actual checklist):
+open redirects, stolen codes ([PKCE](https://en.wikipedia.org/wiki/OAuth#Proofs)
+exists for exactly this), token storage in browsers (a token readable
+by any script on the page is a
+[leak](https://owasp.org/www-community/attacks/Session_hijacking)
+waiting for the first bad library), and the difference between
+*authentication* and *authorization* (the reason
+[OpenID Connect](https://en.wikipedia.org/wiki/OpenID) exists as a
+layer on OAuth: OAuth answers "may this app access this", not "is this
+person who they claim", and building login on raw OAuth is the
+classic category error).
+
+## Authorization: the part after the door
+
+With identity established, **authz** is policy, and its standard
+shapes are worth naming because they scale differently:
+
+- **RBAC** (role-based): permissions attach to roles, roles to users
+  ("editor", "admin"). Simple, auditable, and coarse.
+- **ABAC** / **policy-based**: rules over attributes (user's
+  department, resource's owner, request's context), the fine-grained
+  and unmaintainable-if-not-careful version.
+- **The resource-owner check**: "may user X touch resource Y" is the
+  authz question that RBAC models badly ("editor of *which*
+  document?"), and the standard fix is an ownership check at the
+  service that holds the resource, never at the
+  [gateway](/system-design/fundamentals/api-gateway-and-service-mesh)
+  (which knows *who*, not *what they may do*: the boundary this page
+  began with).
+
+The discipline that matters more than the model chosen: **authz
+decisions live at the data**, not in the middle, because the service
+that owns the resource is the only place that can evaluate
+"owner-of-what" correctly, and a gateway or library that encodes
+resource rules centrally is a coupling you will regret.
+
+## Related concepts
+
+- [API Gateway & Service Mesh](/system-design/fundamentals/api-gateway-and-service-mesh):
+  authn at the edge, the boundary this page assumes.
+- [Security Fundamentals](/system-design/fundamentals/security-fundamentals):
+  the threat-model and crypto layer beneath these mechanisms.
+- [Networking Basics](/system-design/fundamentals/networking-basics):
+  TLS, the transport-level authentication underneath all of it.
+- [Proxies](/system-design/fundamentals/proxies) and
+  [Rate Limiting](/system-design/fundamentals/rate-limiting): the other
+  edge concerns that live beside auth.
+- [Multi-Tenancy & Data Residency](/system-design/fundamentals/multi-tenancy-and-data-residency):
+  authz at its most consequential (whose data, where).

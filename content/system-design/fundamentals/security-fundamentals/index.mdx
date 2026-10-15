@@ -1,0 +1,166 @@
+---
+title: "Security Fundamentals"
+summary: "Threat modeling, encryption at rest and in transit, secrets management, and the defense-in-depth habits that make a design auditable."
+---
+
+Security has a reputation for being a pile of checklists, and the
+checklist reputation is deserved but the *pile* is not: underneath the
+lists is a small set of principles, and the lists are what the
+principles look like when applied to specific technologies. The
+principle-first framing also answers the interview question the
+checklists cannot ("is this design secure?", which depends on "secure
+*against what*"), and that question is the subject's real entry
+point.
+
+## Threat modeling: the first question
+
+"Is this secure?" is unanswerable; "**secure against what adversary,
+doing what, to which asset?**" is a design question. The standard
+exercise, worth running on any system you design:
+
+1. **Assets**: what is worth stealing, tampering with, or denying?
+   (User data, credentials, money, availability itself.)
+2. **Adversaries**: who attacks, with what capability? (Anonymous
+   internet users, bored teenagers, organized crime, insiders, state
+   actors: the answer changes the defenses.)
+3. **Attack surface and trust boundaries**: where does data cross
+   between trusted and untrusted zones? Every boundary is where
+   validation, authn, and logging must live, and drawing the diagram
+   (the [proxies](/system-design/fundamentals/proxies), the
+   [gateways](/system-design/fundamentals/api-gateway-and-service-mesh),
+   the service-to-service hops) is the deliverable.
+4. **Threats**: enumerate what crosses each boundary badly, with the
+   classic
+   [STRIDE](https://en.wikipedia.org/wiki/STRIDE_(security))
+   categories (Spoofing, Tampering, Repudiation, Information
+   disclosure, Denial of service, Elevation of privilege) as the
+   prompting vocabulary.
+
+The output is a list of *specific* mitigations against *specific*
+threats, which is what "secure" means when it means anything.
+
+## The core principles, in practice
+
+**Least privilege.** Every actor (user, service, key, process) gets
+the minimum access needed, because every granted permission is
+attack surface. The operational versions: short-lived credentials
+(the [token page](/system-design/fundamentals/auth-basics)'s whole
+expiry discipline), per-service identities instead of shared admin
+accounts, and database accounts that cannot drop tables.
+
+**Defense in depth.** No single control is trusted to be perfect, so
+layer them: network segmentation *and* service authn *and* input
+validation *and* least-privilege DB accounts, so that one broken
+layer is an incident, not a breach. The corollary worth stating:
+"we have a firewall" and "we have auth" are each *one* layer, and a
+design that leans entirely on either is not defense-in-depth.
+
+**Fail closed.** When a security decision errors (the auth service
+unreachable, the cert expired), deny by default: the
+[fail-open/fail-closed](/system-design/lld/rate-limiter-lld) choice,
+applied here, and the reason security-relevant failures are
+conservative even when they hurt availability
+([CAP](/system-design/fundamentals/cap-theorem-and-consistency-models)
+with the security hat on).
+
+**Auditability.** Every security-relevant event logged (who did
+what, when), logs immutable, access to logs itself logged: the
+difference between "an incident" and "an *unexplainable* incident".
+
+## Encryption: two different jobs
+
+The two great encryption questions are frequently conflated, and they
+have different machinery, different key-management stories, and
+different failure modes:
+
+**In transit** (data moving over a network):
+[TLS](/system-design/fundamentals/networking-basics) everywhere,
+which is now easy and default, and the remaining design question is
+the *internal* hops (service-to-service over the public internet:
+always; inside a VPC: increasingly
+[mTLS](/system-design/fundamentals/api-gateway-and-service-mesh),
+because "trusted network" is a shrinking assumption). Threat
+addressed: the network observer, the man-in-the-middle.
+
+**At rest** (data sitting on a disk, in a backup, in an
+[object store](/system-design/fundamentals/object-storage)):
+encrypted volumes, encrypted backups, encrypted
+[buckets](/system-design/fundamentals/object-storage), with the
+**key-management story** being the actual hard part. The threat
+addressed is *not* the live system (an attacker with the running
+system's keys reads anything), it is the *lost/stolen artifact*: the
+disk that leaves the datacenter, the backup tape in a car, the
+snapshot in a misconfigured bucket. At-rest encryption is why a
+stolen laptop is an incident rather than a disclosure.
+
+The at-rest key question worth reciting: **where do the keys live,
+relative to the data?** Keys on the same system as the data are
+comfort, not security. Real answers are the
+[KMS](https://en.wikipedia.org/wiki/Key_management)
+pattern (a separate, audited, permissioned service holding keys) and
+**envelope encryption** (a data-encryption key per record, itself
+encrypted by a key-encryption key in the KMS), which is how every
+cloud provider actually does it, and how you should describe it.
+
+## Secrets management
+
+Secrets (API keys, passwords, certificates) are the highest-value
+assets and the most commonly mishandled, and the discipline is short:
+
+- **Never in source control.** The git history is forever, and a
+  leaked repo is a leaked credential set.
+- **Short-lived and rotated.** A key that expires in hours is a
+  smaller asset than one that expires in years;
+  [workload identities](/system-design/fundamentals/auth-basics)
+  (a service authenticating as itself, to a broker) beat long-lived
+  shared secrets.
+- **Injected at runtime, not baked in.** Environment/config from a
+  secrets manager, so that rotation is a config change, not a
+  redeploy, and so that the artifact (the container image) contains
+  *nothing* sensitive.
+- **Least privilege on the secrets themselves**: the frontend-for-
+  BFF service can read the session key, not the database root
+  password.
+
+## The web-facing checklist (OWASP-shaped)
+
+The recurring vulnerabilities, named so they can be checked: 
+[injection](https://owasp.org/www-community/attacks/Injection)
+(SQL and otherwise: parameterized queries, never string building),
+[XSS](https://en.wikipedia.org/wiki/Cross-site_scripting) (untrusted
+input rendered as markup: output-encoding, and
+[CSP](https://en.wikipedia.org/wiki/Content_Security_Policy)),
+[CSRF](https://en.wikipedia.org/wiki/Cross-site_request_forgery)
+(SameSite cookies, tokens), broken authn and authz (the
+[auth page](/system-design/fundamentals/auth-basics)'s subject),
+[insecure deserialization](/system-design/fundamentals/serialization-and-schema-evolution)
+(the reason schema'd formats beat hand-rolled parsers), and
+**SSRF** (a server tricked into fetching an internal URL: the reason
+URL inputs are validated and egress is
+[proxied](/system-design/fundamentals/proxies)).
+
+## Where the systems-design conversations actually bite
+
+The security questions that recur in this catalog's own topics, worth
+spotting as security decisions rather than implementation details:
+which [failure](/system-design/lld/rate-limiter-lld) mode degrades
+the security control; what the
+[queue](/system-design/fundamentals/message-queues-and-pubsub)
+carries (credentials in event payloads: usually a mistake, reference
+instead); what a [cached](/system-design/fundamentals/caching)
+response leaks (per-user data in a shared
+[CDN](/system-design/fundamentals/cdn) cache: the classic
+disclosure); and
+[multi-tenancy](/system-design/fundamentals/multi-tenancy-and-data-residency),
+where the authz question becomes physical isolation.
+
+## Related concepts
+
+- [Authentication & Authorization Basics](/system-design/fundamentals/auth-basics)
+  is the identity layer this page assumes.
+- [Networking Basics](/system-design/fundamentals/networking-basics):
+  TLS, the in-transit story.
+- [Serialization & Schema Evolution](/system-design/fundamentals/serialization-and-schema-evolution):
+  the wire formats, and their parsing risks.
+- [Multi-Tenancy & Data Residency](/system-design/fundamentals/multi-tenancy-and-data-residency):
+  isolation and legal boundaries, the policy-heavy neighbors.

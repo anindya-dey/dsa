@@ -1,0 +1,149 @@
+---
+title: "Microservices vs. Monolith"
+summary: "One deployable or many: the real trade is organizational, and the technical costs follow it in both directions."
+---
+
+The question "microservices or a monolith?" is usually asked as a
+technical question and is almost always an *organizational* one. The
+technology of both shapes is well understood, and the difference in
+outcomes comes overwhelmingly from a different source: **who can
+deploy what, how independently, at what coordination cost**. A monolith
+is one deployable unit where every team ships together; microservices
+are many units where each team ships alone. Everything else, the
+scaling stories, the failure isolation, the polyglot freedom, and
+also the distributed-systems tax and the operational burden, is a
+consequence of that choice, and deciding well means pricing the
+consequences in that order.
+
+## What each shape actually is
+
+A **monolith** is one deployable: one process (or a few identical
+ones behind a
+[load balancer](/system-design/fundamentals/load-balancing)), one
+codebase, one database, one release. Its virtues are underrated and
+mostly forgotten by people who only hear the counterargument:
+
+- **One transaction boundary**: money moves across modules in a single
+  ACID transaction, and the
+  [consistency](/system-design/fundamentals/distributed-transactions)
+  machinery is the database's, mature and boring.
+- **One deployment artifact**: no version skew between modules, no
+  [contract evolution](/system-design/fundamentals/serialization-and-schema-evolution)
+  problem, no "service B is on an old API and we cannot deploy C".
+- **In-process calls**: a function call, nanoseconds, no
+  serialization, no retry semantics, no partial failure.
+
+**Microservices** split the system into independently deployable
+services, each owning its data, communicating over the network. The
+split's *purpose* is independence: teams deploy without coordinating,
+scale and fail independently, and own their domains end to end. The
+technical claims (scaling parts separately, isolating failures,
+polyglot languages) are real but secondary: they are bonuses, and the
+org-level independence is the product.
+
+## The honest trade ledger
+
+What you *buy* with microservices, and what you *pay*, stated so the
+decision can be made rather than assumed:
+
+**Bought:**
+
+- **Independent deployment**: the headline. Teams ship their own
+  cadence, and a slow team does not block the fleet.
+- **Independent scaling**: the
+  [hot tier](/system-design/fundamentals/scalability) scales without
+  paying for the rest.
+- **Failure isolation**: one service's crash is a degraded feature, not
+  a dead product (if the callers degrade gracefully, which is work).
+- **Clear ownership boundaries**: Conway's law in the good direction,
+  with a team per domain.
+
+**Paid:**
+
+- **The distributed-systems tax**: every internal call is now a
+  network call, which means latency, partial failure, retries,
+  [idempotency](/system-design/fundamentals/idempotency-and-exactly-once),
+  timeouts, and circuit breakers, on every path, forever.
+  [CAP](/system-design/fundamentals/cap-theorem-and-consistency-models)
+  stops being a slide and starts being your Tuesday.
+- **Cross-service consistency**: the single transaction is gone, and
+  "transfer money between two services' accounts" becomes the
+  [saga/outbox](/system-design/fundamentals/distributed-transactions)
+  machinery, the hardest tax in this catalog.
+- **Operational surface area**: dozens of deployables, each needing
+  observability, deployment pipelines, secrets, and
+  [an internal proxy layer](/system-design/fundamentals/api-gateway-and-service-mesh)
+  before any of it is manageable.
+- **Contract discipline**: the
+  [schema evolution](/system-design/fundamentals/serialization-and-schema-evolution)
+  rules become load-bearing, because services are deployed at
+  different versions, at different times, permanently.
+
+The summary that should be recited before choosing: **a monolith
+trades deployment independence for simplicity; microservices trade
+simplicity for deployment independence**, and the correct choice
+depends almost entirely on how many teams you have and how much they
+need to ship independently. The famous heuristic: *if you cannot run
+a monolith well, you cannot run microservices either* (the operational
+maturity the monolith demands is a subset of what microservices
+demand), and the second one: the split is not irreversible in either
+direction, but "merge back" is easier said than done.
+
+## The decomposition discipline (when you do split)
+
+The failure mode of microservices is not the technology, it is the
+*boundaries*: a split along the wrong lines buys all the costs and
+none of the independence. The disciplines worth reciting:
+
+- **Split by business capability, not by technical layer.** "Orders",
+  "Payments", "Inventory", not "a data layer" (which couples every
+  feature to one deploy), not "a service per table" (which
+  distributes the database without distributing anything worth
+  distributing).
+- **Own your data.** A service's database is private, accessed only
+  through its API; the moment another service reads the table, the
+  boundary is a lie and the coupling is worse than the monolith's
+  (it is distributed coupling, the worst of both).
+- **Design for the failure of every dependency.** Each caller
+  degrades gracefully, caches, queues, or fails loudly, because the
+  dependency *will* be down
+  ([backpressure](/system-design/fundamentals/backpressure-and-flow-control)
+  is the caller's problem, not the callee's).
+- **The [strangler fig](/system-design/hld/large-scale-migration)**
+  is the honest migration path: extract a service when its boundary
+  is clear and its independence pays, incrementally, never a rewrite.
+
+## The modern middle grounds
+
+The binary is false in both directions, and the current practice
+names the in-betweens:
+
+- **Modular monolith**: one deployable, strictly module boundaries,
+  private data per module, enforced by build rules. Gives you the
+  *boundaries* (and a future extraction path) without the distributed
+  tax. The answer for most teams under ~50 engineers, and the honest
+  starting point for everyone.
+- **Service-oriented with a few coarse services**: split at the
+  *seams that already hurt* (the scaling hotspot, the deploy-frequency
+  hotspot), not everywhere. The
+  [estimation](/system-design/fundamentals/capacity-planning-and-estimation)
+  discipline applied to architecture: split where the numbers say to
+  split.
+- **Eventual consistency as a design tool**: once split, lean on
+  [event-driven](/system-design/fundamentals/event-sourcing-and-cqrs)
+  integration rather than synchronous chains, because a call chain of
+  five microservices is a latency and availability story that a queue
+  makes boring.
+
+## Related concepts
+
+- [Scalability](/system-design/fundamentals/scalability): the
+  scale-out ladder that the split lets you climb per-tier.
+- [Distributed Transactions](/system-design/fundamentals/distributed-transactions):
+  the consistency bill the monolith's single transaction deletes.
+- [Serialization & Schema Evolution](/system-design/fundamentals/serialization-and-schema-evolution):
+  the contract discipline the split makes load-bearing.
+- [API Gateway & Service Mesh](/system-design/fundamentals/api-gateway-and-service-mesh):
+  the infrastructure that makes the split operable.
+- [Design a Large-Scale Migration (Strangler Fig)](/system-design/hld/large-scale-migration):
+  how you actually get from one to the other.

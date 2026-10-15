@@ -1,0 +1,153 @@
+---
+title: "Networking Basics"
+summary: "The layers underneath everything: DNS, TCP/UDP, HTTP/HTTPS, and WebSockets, each solving one problem the layer below created."
+---
+
+Every system in this catalog runs on a stack of protocols, and each
+protocol exists to fix a problem the layer below it created. That is
+the easiest way to learn them, and it is the framing an interview
+rewards: not "what is TCP" but "what problem does TCP solve that IP
+does not, and what does TCP cost for it".
+
+The stack, in one sentence per layer:
+
+- **IP**: move packets between machines, with no promises (may drop,
+  duplicate, reorder).
+- **TCP**: make that channel reliable and ordered, by acknowledging,
+  retransmitting, and sequencing.
+- **UDP**: skip the promises, and pay no price for them (and the
+  application deals with loss).
+- **TLS**: encrypt and authenticate the TCP channel, so the middle
+  cannot read or tamper.
+- **HTTP**: give messages structure (request, response, verbs,
+  headers, status codes) over the reliable channel.
+- **WebSockets**: turn one HTTP exchange into a long-lived two-way
+  channel, so the server can talk first.
+
+## DNS: the phone book (and its caching)
+
+DNS translates names to IPs, and its design is worth knowing because it
+is a distributed-systems case study wearing a utility's costume:
+hierarchical delegation (root → TLD → domain), caching at every level
+with **TTLs** (why a DNS change takes minutes-to-days to propagate),
+and the operational consequences (the "we changed DNS and half the
+traffic still hits the old box" incident, answered by
+[TTL planning](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/ttl.html)).
+
+Two facts interviewers probe: DNS is the *first* thing every
+connection does (a cache miss adds a full round trip before your app
+code runs), and it is the natural place for
+[global load balancing](/system-design/fundamentals/load-balancing)
+(route by geography at the name-resolution level, which is how
+[multi-region](/system-design/fundamentals/multi-region-and-active-active)
+systems steer users to the near region).
+
+## TCP and UDP: reliability versus speed
+
+IP delivers packets independently, best-effort, no promises. **TCP**
+builds a reliable, ordered, byte-stream channel on top: sequence
+numbers (reassembly, reorder detection), acknowledgments and
+retransmission (loss recovery), flow control (the **receive window**:
+the receiver telling the sender to slow down, which is
+[backpressure](/system-design/fundamentals/backpressure-and-flow-control)
+at protocol level), and congestion control (the network telling the
+sender to slow down, because the router's queue is full). What you pay
+for all this: **a handshake before any data** (SYN, SYN-ACK, ACK: a
+round trip), per-byte overhead, and head-of-line behavior within a
+connection (a lost segment stalls everything behind it, because the
+stream is ordered).
+
+**UDP** makes the opposite trade: datagrams, fire-and-forget, no
+channel, no handshake, no retransmission. Use it when you would rather
+*lose* data than wait for it, and each datagram is independent (no
+head-of-line): live audio and video (a lost frame is better than a
+stalled one), gaming (the newest position matters, old ones are
+useless), and as the substrate for protocols that build their own
+reliability ([QUIC](https://en.wikipedia.org/wiki/QUIC), which rebuilt
+TCP's ideas on UDP to escape head-of-line and handshake costs, and
+which now carries most of the web as HTTP/3).
+
+The interview-grade judgment: "would you rather lose a piece of data
+or wait for it", asked per datagram.
+
+## TLS and HTTPS
+
+TLS gives the TCP channel a **session key** (symmetric encryption:
+fast) negotiated with **asymmetric cryptography** (slow, used only to
+agree on the key and to authenticate the server's identity via its
+certificate). The properties: confidentiality (nobody reads), integrity
+(nobody tambers undetected), and authenticity (the server is who it
+says). The costs: another round trip in the handshake (modern TLS 1.3
+collapses it to one), CPU for the crypto (cheap now), and the
+**termination question** of where the decryption happens (at the
+[load balancer](/system-design/fundamentals/load-balancing), which then
+re-encrypts internally: the standard shape, and the reason
+"end-to-end encryption" is a design claim, not a default).
+
+## HTTP: the shape of the web
+
+HTTP gives TCP/TLS a message protocol, and the parts that matter for
+system design:
+
+- **Request/response, client-first**: the model's deepest constraint
+  (the server cannot speak unless spoken to, which is what WebSockets
+  exist to escape).
+- **Verbs with semantics**: GET (safe, cacheable), POST (work),
+  PUT/DELETE (idempotent): the
+  [API design](/system-design/fundamentals/api-design) page's whole
+  vocabulary.
+- **Headers** carry the cross-cutting concerns: content types,
+  [caching directives](/system-design/fundamentals/caching),
+  [auth](/system-design/fundamentals/auth-basics), compression.
+- **Status codes** are the contract's vocabulary: 2xx success, 3xx
+  redirect ([301 vs 302](/system-design/hld/url-shortener), the
+  tradeoff between caching and counting), 4xx client's fault
+  ([429](/system-design/fundamentals/rate-limiting)), 5xx server's
+  fault.
+- **Statelessness**: no session in the protocol, every request
+  self-describing, which is *the* property that makes the stateless
+  tier [scalable](/system-design/fundamentals/scalability) and
+  [load-balancable](/system-design/fundamentals/load-balancing).
+
+The versions, briefly: HTTP/1.1 (one request at a time per connection,
+the reason browsers open 6), HTTP/2 (multiplexing: many requests share
+one TCP connection, in parallel), HTTP/3 (QUIC: no head-of-line at the
+transport, faster handshakes).
+
+## WebSockets: escaping client-first
+
+The model's constraint bites when the *server* has news: chat, live
+scores, collaborative editing, presence. Polling works (every N
+seconds, ask) but wastes most requests; long-polling
+(hold-until-there-is-news) improves it; **WebSockets** fix it: one
+HTTP upgrade handshake, then a persistent, full-duplex channel over
+which either side speaks first.
+
+The costs are the whole [real-time architecture
+question](/system-design/hld/chat-application): the connection is
+*stateful* (the server holds a socket per user: memory, file
+descriptors, and a [sticky routing or routing
+table](/system-design/fundamentals/load-balancing) for who is
+connected where), and the fallback story (proxies, timeouts, and
+browsers that cannot hold sockets) means "WebSockets with
+long-polling fallback" is the honest production answer.
+
+The **server-sent events (SSE)** alternative deserves its line: a
+one-directional HTTP channel (server → client only), which is enough
+for feeds and notifications, and which keeps the HTTP semantics
+(reconnect, headers, existing infrastructure) that WebSockets give
+up. Choose per directionality.
+
+## Related concepts
+
+- [Load Balancing](/system-design/fundamentals/load-balancing) rides
+  these layers (L4 vs L7) and DNS steers at the name level.
+- [API Design](/system-design/fundamentals/api-design) is the shape
+  built on HTTP's verbs and codes.
+- [Caching](/system-design/fundamentals/caching) and
+  [CDNs](/system-design/fundamentals/cdn) are HTTP's header-driven
+  behavior, scaled out.
+- [Design a Chat Application](/system-design/hld/chat-application) is
+  the WebSockets case study.
+- [Backpressure & Flow Control](/system-design/fundamentals/backpressure-and-flow-control)
+  begins at the TCP receive window this page introduces.

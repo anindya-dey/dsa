@@ -1,0 +1,140 @@
+---
+title: "Capacity Planning & Estimation"
+summary: "Back-of-the-envelope math: turning product numbers into machine numbers before you build, so the architecture meets the traffic instead of discovering it."
+---
+
+Every systems conversation eventually reaches the question "will this
+design hold up?", and the only honest answer is arithmetic. A design
+drawing with boxes and arrows says nothing about load: ten thousand
+requests per second is a rounding error for one design and an outage for
+another, and the difference lives entirely in the numbers. Capacity
+estimation is the practice of doing that arithmetic *before* building,
+with rough numbers and a calculator, which is why interviews ask for it
+out loud: the skill is not precision, it is knowing which numbers matter
+and how they combine.
+
+The standard exercise: take a product statement ("a social network with
+100 million daily active users"), and derive the machine requirements
+from it through a chain of estimates, each either stated or derivable.
+
+## The six numbers every estimate needs
+
+Every capacity estimate reduces to some combination of:
+
+- **Users**: daily actives (DAU), and concurrency (how many are online at
+  once, typically ~10% of DAU at peak for a consumer product).
+- **Requests**: reads and writes per user per day (a feed refresh is 10+
+  API calls; a checkout flow is 5), giving QPS = DAU * actions / 86400,
+  with the peak multiplier (~2-3x average) applied.
+- **Data**: bytes per record, records per day, retention years, giving
+  storage per year.
+- **Bandwidth**: request size * QPS, both ingress and egress (egress
+  usually dominates: a response is often larger than its request).
+- **Ratios**: read:write (almost always 10:1 or higher), cache hit rate
+  (90%+ for hot content), fan-out (one write becoming N reads or N
+  materialized writes).
+- **Per-machine limits**: what one box of each kind actually handles,
+  which is the number that turns everything else into machine counts.
+
+## Per-machine limits worth memorizing
+
+The classic reference numbers, roughly stable across years, are the
+denominators of the whole subject. A single modern server handles on
+the order of ~100k open connections, ~10k-100k QPS of trivial work
+(returns from memory) but only ~1k-10k QPS of real work (a database
+query, a JSON render), and a web/app server is typically provisioned at
+8-16 cores and 32-128 GB of RAM. A
+[distributed cache](/system-design/hld/distributed-cache) node
+serves ~100k ops/sec; a [relational
+database](/system-design/fundamentals/database-fundamentals) node handles
+~1k-10k writes/sec before replication lag and locks complain; an SSD
+gives ~100k IOPS, spinning disks ~100, a network card ~10 Gbps, and a
+cross-region round trip ~100ms while an intra-region one is ~1ms.
+
+The purpose of memorizing these is not accuracy, it is *having
+denominators at all*: "we need 50,000 writes/sec and a database node does
+about 2,000, so ~25 primary nodes or a partitioning plan" is an answer,
+and "that seems like a lot" is not.
+
+## A worked example
+
+The classic prompt: design a URL shortener for 100M new URLs/month,
+100:1 read:write.
+
+**Writes**: 100M/month = ~40/sec average, ~100/sec peak (2-3x multiplier).
+Trivial for any [app tier](/system-design/fundamentals/load-balancing):
+2-3 machines is comfortable; the write path is not the constraint.
+
+**Reads**: at 100:1 that is ~10,000 redirects/sec average, ~30k peak.
+Each redirect is a cache-or-database lookup, so with a
+[90% cache hit rate](/system-design/fundamentals/caching), ~3k
+lookups/sec hit the database, which is 2-3 database nodes' worth of
+real work: read replicas, and the tier is sized.
+
+**Storage**: 100M URLs/month * ~500 bytes/row = ~50 GB/month, ~6
+TB/year with 10-year retention, which is one
+[sharded](/system-design/fundamentals/database-fundamentals) cluster
+for availability rather than capacity: the working set (the hot tail
+people actually click) is a tiny fraction and lives in cache.
+
+The conclusion of that arithmetic: "a handful of app servers, a cache,
+2-3 database nodes, 6 TB over the decade" is a system that fits in one
+region and embarrasses the intuition that 100M users means a datacenter,
+and it is the kind of conclusion that changes the design: the
+[url shortener HLD](/system-design/hld/url-shortener) is *simple
+precisely because the estimate says it may be*, and the same estimate
+run for [video streaming](/system-design/hld/video-streaming-service)
+says the origin cannot possibly serve the egress, which is why that
+architecture is a CDN with a pipeline attached.
+
+## The estimation discipline
+
+- **Round aggressively.** An estimate's job is the *order of magnitude*
+  and the binding constraint, and precision past two significant digits
+  is theater: 10k vs 12k QPS changes nothing, 10k vs 100k changes the
+  design.
+- **State every assumption as you make it.** The estimate is only as
+  good as its inputs, and an interviewer (or a design review) checking
+  the inputs is checking exactly this: "I'm assuming 10 reads per DAU
+  per day and a 3x peak multiplier" is a sentence that can be wrong,
+  which is the point.
+- **Solve for the binding constraint.** Every estimate has one number
+  that decides the machine count (writes/sec, GB of working set, egress
+  bandwidth), and the discipline is finding it: size for it, note the
+  others, and move on.
+- **Leave headroom, state how much.** Provisioning at exactly 100% of
+  estimated peak is provisioning for the outage, because the estimate
+  is wrong (it is always wrong) and traffic grows. 2x headroom on the
+  binding constraint is the usual ask, with
+  [error budgets](/system-design/fundamentals/reliability-engineering)
+  as the policy version of "how much slack is acceptable".
+
+## Where estimates feed the architecture
+
+The estimate is not homework after the design: it *is* design input,
+and the feedback loops are the interesting part. Egress bandwidth drives
+[CDN](/system-design/fundamentals/cdn) placement; write volume drives
+[sharding](/system-design/fundamentals/database-fundamentals) and
+[queueing](/system-design/fundamentals/message-queues-and-pubsub);
+working-set size drives [cache](/system-design/fundamentals/caching)
+tiering; fan-out ratios drive the
+[feed](/system-design/hld/news-feed) push-vs-pull decision; latency
+budgets add up per hop (a [1s p99
+budget](/system-design/fundamentals/latency-vs-throughput) is ~20
+service hops at best, which constrains architecture depth all by
+itself). A good design doc runs the numbers, finds the constraint, and
+then *shows the design meeting it*: that is what "this scales" means.
+
+## Related concepts
+
+- [Scalability](/system-design/fundamentals/scalability) is what you do
+  when the estimate says the single version does not fit.
+- [Latency vs. Throughput](/system-design/fundamentals/latency-vs-throughput)
+  is the second axis of "will it hold up", estimated with the same
+  discipline.
+- [Reliability Engineering](/system-design/fundamentals/reliability-engineering)
+  turns the headroom question into policy.
+- Every HLD case study on this site carries its estimate: the
+  [URL shortener](/system-design/hld/url-shortener) and
+  [flash sale](/system-design/hld/e-commerce-flash-sale) are the
+  worked examples to study.

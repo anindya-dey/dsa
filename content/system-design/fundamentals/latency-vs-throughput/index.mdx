@@ -1,0 +1,134 @@
+---
+title: "Latency vs. Throughput"
+summary: "Two different meanings of 'fast', measured in different units, optimized by different moves, and traded against each other by every real system."
+---
+
+"Fast" is two claims wearing one word. **Latency** is how long one
+request takes: 200 milliseconds, end to end, measured at the
+percentile. **Throughput** is how many requests a system handles per
+second: 10,000 of them, measured as a rate. The units differ (time per
+request versus requests per time), and so does everything else: what
+makes each one good, what makes each one bad, and who suffers when you
+optimize one at the expense of the other.
+
+The connection is real but loose: a system with low average latency
+*usually* has high throughput, because the same efficiency drives
+both. The divergences are the interesting part, and almost every
+production performance decision is about one of them.
+
+## The inverse that is not a law
+
+If every request took exactly 10ms, latency and throughput would be
+perfect inverses: 100 requests/sec per worker, full stop, nothing to
+trade. Real traffic does not look like that: request times are
+spread over orders of magnitude (a cache hit is 1ms, a cache miss with
+a join is 500ms, a cold cache with a slow disk is 5s), and that spread
+is where the two metrics come apart.
+
+**Batching** is the canonical trade. A database that groups 100 writes
+into one disk flush raises throughput enormously (the disk's cost is
+per-flush, not per-byte) and raises the latency of the average write
+(your write waits for the batch). A
+[model server](/system-design/fundamentals/rate-limiting) batching
+requests to a GPU doubles throughput and adds queueing delay to every
+request in the batch. The [queue](/system-design/fundamentals/message-queues-and-pubsub)
+itself is the same trade at architecture scale: buffer work, smooth the
+pipeline, gain throughput, add waiting.
+
+**Parallelism** is the other lever, and it helps both, with a ceiling:
+adding workers lowers latency (less queueing) and raises throughput
+until the bottleneck saturates, and then it does neither. The
+[load balancer](/system-design/fundamentals/load-balancing) page's
+scaling story is this curve.
+
+## Percentiles: why the average lies
+
+The single most important technical fact in this subject: **the average
+latency is not the latency the user experiences**, because latency
+distributions are heavy-tailed. A system with a 100ms mean can have a
+99th percentile of 4 seconds (a minority of requests hitting GC pauses,
+cache misses, lock contention, or an overloaded shard), and the users
+whose requests land in that tail do not experience "a fast system with
+some variance", they experience a system that is sometimes broken.
+
+Hence the measurement discipline, from
+[observability](/system-design/fundamentals/observability): report
+**p50, p95, p99** (and sometimes p99.9), never the mean alone. The mean
+answers "what is the total cost of all requests" (which is what
+throughput cares about); the percentiles answer "what fraction of users
+are having a bad time" (which is what the product cares about).
+
+The tail's causes are worth memorizing, because they are the standard
+checklist: **queueing** (the classic: at 80% utilization, queues grow
+non-linearly; the [p99 is where queueing
+lives](https://en.wikipedia.org/wiki/Queueing_theory)), **cache misses
+and cold paths**, **GC and runtime pauses**, **lock contention**
+(everyone waiting for one mutex), and **the overloaded neighbor**
+(noisy-multitenant: one shard's hot user degrading everyone on that
+box, which is the [multi-region](/system-design/fundamentals/multi-region-and-active-active)
+tiering question in miniature).
+
+## Tail latency and the fan-out tax
+
+The tail gets worse when requests fan out, which is the modern
+architecture's built-in trap: a page that calls 20 services takes the
+*maximum* of their latencies, not the average, so 20 services each
+99%-reliable at 100ms yield a page that is p99-broken by
+multiplication. The [CAP page](/system-design/fundamentals/cap-theorem-and-consistency-models)
+has the consistency version of this; the latency version is
+"p99 * (number of hops) is your real p99", and it is the reason the
+[microservices](/system-design/fundamentals/microservices-vs-monolith)
+conversation keeps returning to depth.
+
+## Choosing what to optimize
+
+The product decides, per feature, which metric is real, and the
+mismatch is the classic performance mistake:
+
+- A **checkout flow** is latency-bound (a slow request is a lost sale;
+  the [flash sale](/system-design/hld/e-commerce-flash-sale) page wants
+  p99 under 500ms), and its throughput needs are modest for the same
+  traffic.
+- A **log pipeline or analytics job** is throughput-bound (nobody is
+  waiting for *this one* log line), and its latency budget is measured
+  in minutes.
+- A **cache** is latency-bound by definition: its whole purpose is the
+  1ms hit, which is why the
+  [distributed cache](/system-design/hld/distributed-cache) pays a
+  network hop rather than batching.
+- A **feed builder** is throughput-bound ([fan-out](/system-design/hld/news-feed)
+  is a write-amplification problem) with a latency budget of seconds,
+  which is why the queue between "post created" and "feed visible"
+  is acceptable by design.
+
+The [SLO](/system-design/fundamentals/reliability-engineering)
+discipline is the formal version: pick the metric per feature, pick
+the percentile, put it in writing, and measure it. "Our p99 is under
+500ms" is a promise that can be kept or broken, which is exactly why
+it is more useful than "the system is fast".
+
+## The queueing lens, briefly
+
+The theory that prices all of this: an M/M/c queue (Poisson arrivals,
+exponential service, c servers) says utilization ρ drives queue length
+non-linearly, so at 50% utilization queues are negligible, at 80% they
+are noticeable, at 95% they are the tail, and at 100% they are
+unbounded. Little's Law (L = λ * W: things in system = arrival rate *
+wait time) is the sanity check for everything: if 10,000 requests/sec
+arrive and each spends 200ms in the system, 2,000 requests are in
+flight *somewhere*, which sizes buffers, worker pools, and connection
+limits, and is the single most useful equation for turning latency and
+throughput numbers into each other.
+
+## Related concepts
+
+- [Observability](/system-design/fundamentals/observability): the
+  percentiles this page leans on are its measurements.
+- [Capacity Planning & Estimation](/system-design/fundamentals/capacity-planning-and-estimation):
+  the arithmetic that turns these targets into machine counts.
+- [Backpressure & Flow Control](/system-design/fundamentals/backpressure-and-flow-control):
+  what happens when throughput exceeds the queue's opinion.
+- [Reliability Engineering](/system-design/fundamentals/reliability-engineering):
+  the latency-SLO version of "how much tail is acceptable".
+- [Load Balancing](/system-design/fundamentals/load-balancing): the
+  utilization-vs-queueing trade applied across a fleet.

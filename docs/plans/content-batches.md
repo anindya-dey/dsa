@@ -56,7 +56,10 @@ requirements and templates) and `2026-10-14-roadmap-review-decisions.md`
 | 3 | Trees, heaps, graphs; HLD infrastructure depth | Phase 3: Binary Trees & BSTs, Heaps / Priority Queues, Trie, Graph Traversals, Graph Specializations, Advanced Graphs (18 problems) | HLD: News Feed, Notification System, Search Autocomplete, Distributed Cache, Key-Value Store. LLD: Elevator System, Vending Machine, Chess Game. | **done** |
 | 4 | Dynamic programming; the big product case studies | Phase 4: Dynamic Programming, Backtracking & Pruning, Greedy Algorithms, String Algorithms, Range-Query Structures, Number Theory & Combinatorics, Design Data Structures (21 problems) | HLD: Payment System, Ride-Sharing App, Video Streaming Service, Distributed Job Scheduler, E-commerce / Flash Sale. LLD: Movie Ticket Booking, Task Scheduler, Bank / Ledger. | **done** |
 | 5 | Long tail: complete DSA, principal-level Fundamentals | Phase 1: Asymptotic Analysis, Linear Structures, Recursion & Math, Sorting & Selection, Bit Manipulation. Phase 2: Divide & Conquer (all 29 patterns complete, 86 problems). Fundamentals: Multi-Region & Active-Active, Consensus & Leader Election, Clock Synchronization, Reliability Engineering, Concurrency & Parallelism, Event Sourcing & CQRS, Backpressure & Flow Control, Stream vs. Batch. | — | **done** |
-| 6 | System Design long tail | — | Remaining Fundamentals (15: capacity planning, latency vs throughput, OLAP, object storage, search, geospatial, networking, proxies, serialization, API gateway, microservices, availability, auth, security, multi-tenancy). Remaining LLD (12). Remaining HLD (20: the infra components, then the case studies). | **next** |
+| 6a | System Design: finish Fundamentals | — | The 15 remaining Fundamentals (capacity planning, latency vs throughput, OLAP vs OLTP, object storage, search & inverted index, geospatial, networking, proxies, serialization, API gateway, microservices, availability, auth, security, multi-tenancy) | **done** |
+| 6b | System Design: finish LLD | — | The 12 remaining LLDs (library, URL shortener, logging, in-memory FS, splitwise, tic-tac-toe, ATM, hotel, car rental, text editor, pub/sub broker, shopping cart) | not started |
+| 6c | System Design: HLD infrastructure components | — | Load balancer, CDN, distributed ID generator, message queue, object storage, file storage, metrics, log aggregation, web crawler (9) | not started |
+| 6d | System Design: HLD product case studies | — | Collaborative editing, maps, stock exchange, proximity, video conferencing, leaderboard, recommendation, fraud detection, ad-click aggregator, webhooks, migration (11) | not started |
 | 7 | AI/ML Systems vertical | See `docs/plans/ai-ml-vertical.md` (71 topics, six tracks, systems-side scope) | — | not started |
 | 8 | C++ Toolkit reference track | See `docs/plans/cpp-toolkit.md` (14 entries; reference pages, "Related C++ tools" end sections, no inline links) | — | not started |
 
@@ -75,6 +78,21 @@ requirements and templates) and `2026-10-14-roadmap-review-decisions.md`
   clue links to real content.
 - Before closing any batch: `pnpm check:content`, `pnpm lint`,
   `pnpm typecheck`, and `pnpm build` must all pass.
+
+## Batch 6a completion notes (2026-10-15)
+
+Batch 6 (the System Design long tail) was split into four sub-batches,
+6a-6d, for shippable size and thematic coherence. Batch 6a (all 15
+remaining Fundamentals) is written and shipped: Fundamentals are now
+36/36, complete. Highlights: Capacity Planning & Estimation and
+Latency vs. Throughput close the Scalability & Performance group;
+OLAP vs. OLTP, Object Storage, Search & Inverted Index, and Geospatial
+Indexing close Data & Storage; Networking Basics, Proxies,
+Serialization, and API Gateway close Communication & APIs;
+Microservices vs. Monolith closes Distributed Systems; Availability &
+Reliability, Auth Basics, Security Fundamentals, and Multi-Tenancy &
+Data Residency close Reliability & Operations and Security. Every
+group in the Fundamentals track is now fully written.
 
 ## Batch 5 completion notes (2026-10-15)
 

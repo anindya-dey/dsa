@@ -1,0 +1,142 @@
+---
+title: "Serialization & Schema Evolution"
+summary: "How data crosses the wire as bytes, and the contract discipline that lets producers and consumers change without breaking each other."
+---
+
+Every object your service holds in memory is a layout: fields at
+offsets, pointers, a structure the CPU understands. The moment that
+data crosses a process boundary, the layout is worthless: the reader
+has different memory, a different language, a different version. So
+every message, every
+[queue](/system-design/fundamentals/message-queues-and-pubsub) event,
+every [API](/system-design/fundamentals/api-design) payload is
+*serialized*: converted to a self-describing sequence of bytes that
+the reader reconstructs. Serialization is that conversion, and it
+looks like plumbing until the second question appears: **the producer
+and the consumer change at different times**, deployed independently,
+forever, so the byte-format is a *contract* between them, and the
+contract must survive both sides evolving.
+
+## The format landscape, priced honestly
+
+**JSON** is the default of the web, and its virtues are real: human
+readable (debugging by inspection), everywhere (every language, every
+tool), schema-free (ship it now). Its costs: size (text is verbose:
+field names in every record), parsing speed (a real cost at high
+throughput), no types (numbers are numbers, everything else is
+convention), and no schema (the contract lives in your head, enforced
+by nothing, discovered by the consumer at runtime).
+
+**Protocol Buffers / Avro / Thrift** are the typed, binary,
+schema-first family, and they exist because of the costs above:
+compact (field numbers instead of names), fast to parse, and
+**explicitly schema'd**, which is the point: the contract is a
+compilable artifact, checked at build time, versioned in the repo, and
+the *entire* basis for the evolution rules below.
+
+**Text-with-schema** (XML, YAML, and JSON with
+[JSON Schema](https://json-schema.org/)) is the middle ground, and
+JSON Schema is worth naming: it gives JSON most of the contract
+discipline (validation, code generation, compatibility checking)
+without changing the format.
+
+The design axis under all of them: **schema-on-the-wire versus
+schema-in-the-code**. The binary family puts the schema in a
+repository artifact and generates code from it (the
+[producer's and consumer's code both descend from the same
+definition](https://protobuf.dev/overview/)); JSON puts it in
+convention and hope, and the discipline of adding a JSON Schema
+retrofits the rigor.
+
+## Compatibility: the actual subject
+
+The reason schemas exist is the evolution rules, and the vocabulary is
+worth learning precisely because it decides what you may deploy:
+
+- **Backward compatibility**: *new* code can read *old* data. The
+  consumer evolves without the producer waiting.
+- **Forward compatibility**: *old* code can read *new* data (it
+  ignores what it does not know). The producer evolves without the
+  consumer upgrading first.
+- **Full compatibility**: both, which is what
+  [queue-based systems](/system-design/fundamentals/message-queues-and-pubsub)
+  need *the most*: events sit in a log being read by consumers at
+  different versions for *days*, so a published event must be readable
+  by every consumer that will ever be deployed against that log,
+  which is the strictest version of the contract in this whole
+  subject.
+
+The rules that deliver it (per format, but Protobuf's are the
+canonical statement):
+
+- **Adding a field** is safe if it is *optional* (readers old and new
+  ignore or default what they do not know).
+- **Removing a field** is safe only if you first stop *writing* it and
+  wait for every reader to move past it (the
+  [deprecation dance](https://protobuf.dev/programming-guides/dos-donts/)),
+  because old readers still have the field in their code.
+- **Renaming a field** breaks the wire (the name *is* the address in
+  self-describing formats), so renames are new-field-plus-migrate.
+- **Changing a type** (int to string) breaks both directions, always,
+  unless the format versions the whole message.
+- **Reusing a field number / tag** for a different meaning is the
+  catastrophic one in the binary family: the bytes parse *perfectly*
+  into the wrong value, silently, and Protobuf's
+  [`reserved`](https://protobuf.dev/programming-guides/proto3/#reserved)
+  exists specifically to forbid it.
+
+The honest summary that interviewers reward: **add optional fields
+freely; remove nothing; never repurpose an identifier; version the
+message when you must break**. And the discipline that makes it real:
+a schema registry ([Kafka Schema
+Registry](https://docs.confluent.io/platform/current/schema-registry/index.html)
+and its relatives) that *rejects* the publish of an incompatible
+schema, turning the rules from convention into enforcement.
+
+## The schema-change case studies
+
+Where this subject connects to the rest of the catalog:
+
+- **[Message queues](/system-design/fundamentals/message-queues-and-pubsub)**:
+  the event log is the long-lived contract, replayable, so events
+  written years ago must be readable by today's code: the
+  [event sourcing](/system-design/fundamentals/event-sourcing-and-cqrs)
+  page's "upcasters and tolerant readers" are this subject's
+  evolution rules applied to a replay.
+- **[APIs](/system-design/fundamentals/api-design)**: REST payloads
+  are the same contract (JSON, usually schema-less, which is why API
+  versioning exists as the escape hatch), and
+  [gRPC](/system-design/fundamentals/api-design)'s whole selling point
+  is that the schema is the contract, machine-checked.
+- **[Data lakes](/system-design/fundamentals/olap-vs-oltp)**:
+  parquet schemas evolve over years of archived files, and
+  "schema-on-read" is the lake's version of tolerant readers.
+
+## Choosing per boundary
+
+- **Public API, third parties, debugging-by-eyeball**: JSON (with a
+  schema if the contract is long-lived).
+- **Internal high-throughput, queues, long-lived logs**: the binary
+  schema family, with a registry enforcing compatibility.
+- **Cross-language internal calls**: either, but the code-generation
+  story of the schema family removes a whole class of drift.
+- **Configuration and documents**: text with schema (the git-diff-able
+  formats), the same trade at human scale.
+
+The connecting insight for everything on this site: serialization is
+where the [CAP](/system-design/fundamentals/cap-theorem-and-consistency-models)
+world's "coordination" hides. A schema you both descend from is
+coordination *by build time* rather than by runtime, and the entire
+compatibility discipline is the practice of needing *less* runtime
+coordination between independently deployed systems.
+
+## Related concepts
+
+- [API Design](/system-design/fundamentals/api-design): the REST and
+  gRPC contracts this page's formats carry.
+- [Message Queues & Pub/Sub](/system-design/fundamentals/message-queues-and-pubsub):
+  the long-lived log where compatibility matters most.
+- [Event Sourcing & CQRS](/system-design/fundamentals/event-sourcing-and-cqrs):
+  replaying years of events under today's code.
+- [Networking Basics](/system-design/fundamentals/networking-basics):
+  the transport underneath.
