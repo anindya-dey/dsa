@@ -1,0 +1,139 @@
+---
+title: "Range Sum Query - Mutable"
+difficulty: "Medium"
+variant: "Fenwick Tree"
+practiceLinks: []
+---
+
+## Problem
+
+Implement a class that supports two operations on an integer array:
+`update(index, value)` assigns `value` to the element at `index`, and
+`sumRange(left, right)` returns the sum of the elements in the inclusive
+range `[left, right]`.
+
+**Constraints**
+
+- `1 <= n <= 3 * 10^4`
+- Updates and queries can arrive in any order, up to 3 * 10^4 of each.
+
+**Example**
+
+```text
+init: nums = [1, 3, 5]
+sumRange(0, 2) -> 9
+update(1, 2)              // nums becomes [1, 2, 5]
+sumRange(0, 2) -> 8
+```
+
+## Brute force
+
+Store the array; `update` writes one element, `sumRange` walks the range.
+
+```cpp
+class NumArrayBrute {
+public:
+    explicit NumArrayBrute(std::vector<int> nums) : nums_(std::move(nums)) {}
+
+    void update(int index, int value) {
+        nums_[index] = value;            // O(1)
+    }
+
+    int sumRange(int left, int right) const {
+        int sum = 0;
+        for (int i = left; i <= right; ++i) {
+            sum += nums_[i];
+        }
+        return sum;
+    }
+
+private:
+    std::vector<int> nums_;
+};
+```
+
+Update is O(1) and queries are O(n): 3 * 10^4 queries over 3 * 10^4
+elements is ~10^9 operations, far too slow. The mirror-image fix
+([prefix sums](/dsa/patterns/prefix-sums-and-difference-arrays)) gives
+O(1) queries but makes every update O(n), which is the same total
+problem. This problem *exists* because of that tension, and the answer
+must make both operations fast.
+
+## Optimal: Fenwick tree
+
+The [Fenwick tree](/dsa/patterns/range-query-structures) is the minimal
+structure for interleaved point updates and range sums: each index stores
+the sum of a range whose length is its lowest set bit, and both operations
+walk a chain of such ranges, O(log n) steps each.
+
+```cpp
+class NumArray {
+public:
+    explicit NumArray(const std::vector<int>& nums)
+        : n_(static_cast<int>(nums.size())),
+          tree_(nums.size() + 1, 0),
+          values_(nums) {
+        for (int i = 0; i < n_; ++i) {
+            add(i + 1, values_[i]);      // build: each element once
+        }
+    }
+
+    void update(int index, int value) {
+        long long delta = value - values_[index];   // store the change
+        values_[index] = value;
+        add(index + 1, delta);
+    }
+
+    int sumRange(int left, int right) const {
+        return static_cast<int>(prefix(right + 1) - prefix(left));
+    }
+
+private:
+    void add(int i, long long delta) {
+        for (; i <= n_; i += i & (-i)) {
+            tree_[i] += delta;
+        }
+    }
+
+    long long prefix(int i) const {           // sum of nums[0..i-1]
+        long long sum = 0;
+        for (; i > 0; i -= i & (-i)) {
+            sum += tree_[i];
+        }
+        return sum;
+    }
+
+    int n_;
+    std::vector<long long> tree_;
+    std::vector<int> values_;
+};
+```
+
+Two details worth naming. `update` stores the *delta* rather than the
+value, because the Fenwick structure accumulates contributions: position
+i's entry holds the sum of values whose contributions reach it, so what you
+add to it is `new - old`. And `sumRange` is a difference of two prefix
+sums, `prefix(right+1) - prefix(left)`, which is why this works for sums
+(invertible aggregates) but the same structure cannot answer range-min.
+
+The `i & (-i)` idiom is the whole engine: for i = 12 (binary 1100), the
+lowest set bit is 4, so index 12 covers 4 elements ending at 12; walking
+`i -= i & (-i)` from any start visits exactly the ranges that tile the
+prefix 1..i. Two short loops, no recursion, no lazy anything, which is
+why the Fenwick tree is the default answer for this exact problem shape.
+
+## Complexity
+
+| Approach | update | sumRange | Build |
+| --- | --- | --- | --- |
+| Plain array | O(1) | O(n) | O(n) |
+| Prefix sums | O(n) | O(1) | O(n) |
+| Fenwick tree | O(log n) | O(log n) | O(n log n) |
+
+The segment tree is the general alternative (same complexity, handles
+non-invertible aggregates and range updates), but for pure point-update
+range-sum, the Fenwick tree is strictly simpler and faster in practice.
+This problem is the canonical instance of
+[range-query structures](/dsa/patterns/range-query-structures), and the
+one where the "which structure, and why" question has its cleanest
+answer.

@@ -1,0 +1,178 @@
+---
+title: "Range-Query Structures"
+summary: "Prefix sums answer static range questions; Fenwick trees and segment trees add updates; sparse tables trade flexibility for speed."
+---
+
+The [prefix sum](/dsa/patterns/prefix-sums-and-difference-arrays) answers
+any range-sum question in O(1), but it has a hard limit: it is static. Change
+one element and the whole table is stale. The moment a problem interleaves
+updates with range questions, you need a structure that answers *both*
+cheaply, and this pattern is the family of structures built for exactly
+that job. Each one makes a different trade between the cost of an update,
+the cost of a query, and what kinds of queries it can answer at all.
+
+## The problem being solved
+
+Formally: maintain an array under two operations.
+
+- `update(i, value)`: change one element (or add x to a range).
+- `query(l, r)`: compute some aggregate (sum, min, max, count) over a
+  range.
+
+A plain array answers updates in O(1) and queries in O(n); a prefix array
+answers queries in O(1) and updates in O(n). The structures below get
+*both* close to O(log n), which is the entire subject.
+
+## How to spot it
+
+- Updates and range queries **interleave** (the tell that rules out prefix
+  sums).
+- "Sum of range" / "min of range" under point or range updates.
+- "Count elements less than x seen so far", "how many in this value range"
+  (a Fenwick tree over values).
+- Queries about *intervals* ("how many booked intervals intersect"),
+  implemented as a tree over positions.
+
+## Fenwick tree (binary indexed tree): sums in a few lines
+
+The Fenwick tree is the minimal structure for this problem, and the one
+to reach for first. Its idea: each index i stores the aggregate of a
+range whose length is the lowest set bit of i. Index 6 (110 in binary)
+covers 6 elements, ending at itself; index 8 (1000) covers 8; the query
+"sum of first i elements" then walks a chain of prefixes, each step
+clearing the lowest bit.
+
+```cpp
+class FenwickTree {
+public:
+    explicit FenwickTree(int n) : tree_(n + 1, 0) {}
+
+    // Add delta to position i.
+    void add(int i, long long delta) {
+        for (++i; i < static_cast<int>(tree_.size()); i += i & (-i)) {
+            tree_[i] += delta;
+        }
+    }
+
+    // Sum of elements [0, i] inclusive.
+    long long prefixSum(int i) const {
+        long long sum = 0;
+        for (++i; i > 0; i -= i & (-i)) {
+            sum += tree_[i];
+        }
+        return sum;
+    }
+
+    long long rangeSum(int l, int r) const {
+        return prefixSum(r) - prefixSum(l - 1);
+    }
+
+private:
+    std::vector<long long> tree_;
+};
+```
+
+Two loops, both O(log n), and the `i & (-i)` trick (isolate the lowest
+set bit) is the entire implementation. Updates and prefix queries are both
+a handful of operations, so the constants are tiny, and in practice a
+Fenwick tree beats a segment tree for sums by a comfortable margin. Its
+limits are as important as its speed: it only works for **invertible**
+aggregates (sum, count) where a range answer can be built from two prefix
+answers, because the structure stores prefixes, not ranges. Min and max
+have no subtraction, so a Fenwick cannot answer a range-min query.
+
+The other classic Fenwick application is **frequency counting over
+values**: coordinate-compress the values, and a Fenwick over the value
+axis answers "how many elements seen so far are less than x" in O(log n),
+which is the machinery behind "count of smaller numbers after self" and
+inversion counting.
+
+## Segment tree: anything per range
+
+The segment tree stores the aggregate over *ranges* in a binary tree: the
+root covers everything, each node covers half of its parent, and leaves
+are elements. A range query walks down, composing the O(log n) nodes that
+together tile the query range, and an update changes one leaf and
+propagates up.
+
+```cpp
+class SegmentTree {
+public:
+    explicit SegmentTree(const std::vector<long long>& values)
+        : n_(static_cast<int>(values.size())), tree_(2 * values.size()) {
+        std::copy(values.begin(), values.end(), tree_.begin() + n_);
+        for (int i = n_ - 1; i > 0; --i) {
+            tree_[i] = tree_[2 * i] + tree_[2 * i + 1];   // sum parent
+        }
+    }
+
+    void update(int i, long long value) {              // point assign
+        for (i += n_, tree_[i] = value, i >>= 1; i > 0; i >>= 1) {
+            tree_[i] = tree_[2 * i] + tree_[2 * i + 1];
+        }
+    }
+
+    long long query(int l, int r) const {              // sum of [l, r)
+        long long result = 0;
+        for (l += n_, r += n_; l < r; l >>= 1, r >>= 1) {
+            if (l & 1) {
+                result += tree_[l++];
+            }
+            if (r & 1) {
+                result += tree_[--r];
+            }
+        }
+        return result;
+    }
+
+private:
+    int n_;
+    std::vector<long long> tree_;    // iterative form: node i at index i
+};
+```
+
+The cost is roughly double the memory and a heavier constant, and the
+payment is generality: change the combine operation (sum to min, gcd,
+matrix multiply) and the same skeleton works for any associative
+aggregate. Range *updates* (add x to every element of a range) need lazy
+propagation, a deferred-update scheme that pushes changes down only when
+needed, and it is the standard extension when the problem says "range
+add" rather than "point assign".
+
+## Sparse table: static, but O(1) queries
+
+If the data never changes after construction, pay more setup and buy
+faster queries: precompute the aggregate over every range whose length is
+a power of two (a sparse table), and answer any query as the combination
+of two overlapping precomputed ranges. For idempotent aggregates (min,
+max, gcd, where combining overlapping data is harmless), the two ranges
+may overlap, and queries are O(1). Construction is O(n log n) memory and
+time, and there are no updates at all: the structure is frozen.
+
+## Choosing between them
+
+- **Static, sum**: [prefix sums](/dsa/patterns/prefix-sums-and-difference-arrays).
+  Stop, do not build a tree.
+- **Static, min/max/gcd**: sparse table. O(1) queries.
+- **Updates + sum/count**: Fenwick tree. Smallest, fastest.
+- **Updates + min/max/gcd, or range updates, or complex queries**:
+  segment tree, with lazy propagation if updates touch ranges.
+
+A final honest note: these structures are heavy machinery, and interview
+answers using them are usually expected to state the *simpler* structure
+the problem rules out and why. "A prefix sum fails because updates
+interleave" is one sentence, and it is the sentence that justifies
+everything after it.
+
+## Related patterns
+
+- [Prefix Sums & Difference Arrays](/dsa/patterns/prefix-sums-and-difference-arrays)
+  are the static ancestor of this whole family, and the first thing to
+  rule out.
+- [Divide & Conquer](/dsa/patterns/divide-and-conquer) is the shape the
+  segment tree's combine step borrows.
+- [Heaps / Priority Queues](/dsa/patterns/heaps-and-priority-queues) answer
+  "extreme so far" without ranges; the two trade places in scheduling
+  problems.
+- [Design Data Structures](/dsa/patterns/design-data-structures) collects
+  these structures as build-it-yourself exercises.

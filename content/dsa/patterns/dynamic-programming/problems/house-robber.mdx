@@ -1,0 +1,100 @@
+---
+title: "House Robber"
+difficulty: "Medium"
+variant: "1D Sequence DP"
+practiceLinks: []
+---
+
+## Problem
+
+Given an array of non-negative integers representing the money in each
+house along a street, find the maximum you can rob without robbing two
+adjacent houses.
+
+**Constraints**
+
+- `1 <= n <= 100`
+- `0 <= nums[i] <= 400`
+
+**Example**
+
+```text
+Input:  nums = [2, 7, 9, 3, 1]
+Output: 12
+```
+
+Rob houses 0, 2, and 4: `2 + 9 + 1 = 12`.
+
+## Brute force
+
+Every house is a choice: rob it (and skip the next) or skip it. Enumerate
+all legal selections.
+
+```cpp
+int robBrute(const std::vector<int>& nums, int i) {
+    if (i >= static_cast<int>(nums.size())) {
+        return 0;
+    }
+    int robThis = nums[i] + robBrute(nums, i + 2);   // skip the neighbor
+    int skipThis = robBrute(nums, i + 1);
+    return std::max(robThis, skipThis);
+}
+```
+
+Each call branches into two, and the same "starting at house i with some
+prefix decided" state is re-derived along many paths: exponential. The
+overlapping is textbook: the answer for "houses from i onward" depends on
+nothing except i, so there are only n distinct questions, asked
+exponentially often.
+
+## Optimal: 1D DP with two variables
+
+The state is the position: `best[i]` = the most money robbable from houses
+0 through i. The recurrence: at house i, either you rob it (so house i-1 is
+untouched, and you add to `best[i-2]`) or you do not (you keep
+`best[i-1]`).
+
+```cpp
+int rob(const std::vector<int>& nums) {
+    int n = static_cast<int>(nums.size());
+    if (n == 1) {
+        return nums[0];
+    }
+
+    int twoBack = nums[0];                       // best[.. i-2]
+    int oneBack = std::max(nums[0], nums[1]);    // best[.. i-1]
+
+    for (int i = 2; i < n; ++i) {
+        int current = std::max(oneBack, twoBack + nums[i]);
+        twoBack = oneBack;
+        oneBack = current;
+    }
+    return oneBack;
+}
+```
+
+The two-variable version is the whole table compressed, and it works because
+the recurrence reads only positions i-1 and i-2: the sliding window *is*
+the memoization. When a DP's recurrence looks back a constant distance, the
+table can always be shrunk to that many variables, which is the standard
+space optimization from [dynamic programming](/dsa/patterns/dynamic-programming)
+applied mechanically.
+
+The extension worth knowing, House Robber II, puts the houses in a circle
+(the first and last are adjacent), and the answer is to solve the linear
+problem twice: once excluding the first house, once excluding the last,
+and take the better. The circular constraint cannot be expressed in the
+simple state, but it decomposes into two linear states.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Recursive without memo | exponential | O(n) stack |
+| Two-variable DP | O(n) | O(1) |
+
+This is the smallest complete example of 1D sequence DP: a state that is
+just a prefix, a recurrence that looks back a constant distance, and a
+greedy-looking choice that is *not* provable locally (which is why it needs
+the table, and why a pure greedy fails on inputs like `[2, 7, 9]` where
+taking the largest early number is wrong).

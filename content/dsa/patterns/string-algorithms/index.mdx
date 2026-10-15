@@ -1,0 +1,143 @@
+---
+title: "String Algorithms"
+summary: "Pattern matching beyond brute force: hashing a rolling window of the text, skipping the comparison, and KMP's trick of never re-reading characters you already matched."
+---
+
+Searching for one string inside another sounds solved: `text.find(pattern)`
+does it. But underneath that library call is a real algorithmic question,
+and it generalizes far past substring search. The naive approach compares
+the pattern at every position of the text, which is O(n·m), and the two
+classic answers to that, hashing and the failure function, are the tools
+this pattern is about. Both share one deep idea: **stop re-examining
+information you already have.** When a comparison fails, you know
+something about the characters you just looked at, and exploiting that
+knowledge is the difference between quadratic and linear.
+
+## How to spot it
+
+- "Find all occurrences of P in T", "does T contain P", "count the
+  overlaps".
+- "Longest palindromic substring", "count palindromic substrings"
+  (Manacher).
+- "Match with wildcards", "repeated substring pattern", "string rotation".
+- Massive text, or many patterns at once (which pushes toward hashing and
+  [tries](/dsa/patterns/trie-prefix-tree)).
+
+## Rabin-Karp: compare hashes instead of characters
+
+The idea: a hash of the pattern, and a hash of each m-length window of
+the text, computed *incrementally* as the window slides. If the window's
+hash equals the pattern's hash, the window is probably a match (verify,
+to handle collisions); if not, it is definitely not, and you skipped m
+comparisons.
+
+```cpp
+long long windowHash(char left, char right, long long current,
+                      long long base, long long mod) {
+    // current was the hash of the window ending just before `right`.
+    // Roll: subtract the leftmost character, append the new one.
+    long long updated = (current * base) % mod;       // shift up
+    updated = (updated + right) % mod;               // add new char
+    long long leftContribution =
+        (static_cast<long long>(left) * powerOfBase[window - 1]) % mod;
+    updated = (updated - leftContribution + mod) % mod;   // drop leftmost
+    return updated;
+}
+```
+
+The rolling step is the pattern's entire value: removing one character
+from the front and adding one to the back costs O(1), so hashing every
+window is O(n) total instead of O(n·m). Collisions mean a hash match
+must be verified character-by-character, so the worst case degrades to
+O(n·m), but with a good hash and a large modulus the expected behavior is
+O(n + m). Rabin-Karp is also the natural answer for *multiple* patterns
+of the same length (hash them all, compare against every window), and
+for 2-D matching, where the alternatives are far more complex.
+
+## KMP: the failure function
+
+KMP's observation is subtler: when a mismatch happens after matching
+several characters, those characters *are known*, so the naive restart
+throws away real information. The pattern itself tells you where to
+restart.
+
+Precompute, for each position i in the pattern, the **failure value**:
+the length of the longest proper prefix of the pattern that is also a
+suffix of the pattern's first i characters. That value answers the
+question "after a mismatch at position i, how much of the current window
+still matches?" and the answer is: the failure value, without re-reading
+any text characters.
+
+```cpp
+std::vector<int> buildFailureTable(const std::string& pattern) {
+    int m = static_cast<int>(pattern.size());
+    std::vector<int> fail(m, 0);
+    int k = 0;
+    for (int i = 1; i < m; ++i) {
+        while (k > 0 && pattern[i] != pattern[k]) {
+            k = fail[k - 1];              // fall back: reuse what matches
+        }
+        if (pattern[i] == pattern[k]) {
+            ++k;
+        }
+        fail[i] = k;
+    }
+    return fail;
+}
+
+std::vector<int> kmpSearch(const std::string& text,
+                           const std::string& pattern) {
+    std::vector<int> matches;
+    std::vector<int> fail = buildFailureTable(pattern);
+    int k = 0;
+    for (int i = 0; i < static_cast<int>(text.size()); ++i) {
+        while (k > 0 && text[i] != pattern[k]) {
+            k = fail[k - 1];              // shift pattern, not text pointer
+        }
+        if (text[i] == pattern[k]) {
+            ++k;
+        }
+        if (k == static_cast<int>(pattern.size())) {
+            matches.push_back(i - k + 1);   // found at this start
+            k = fail[k - 1];                 // continue for overlaps
+        }
+    }
+    return matches;
+}
+```
+
+Read `k` as "how many pattern characters are currently matched". A
+mismatch does not reset the text pointer or restart from the next
+position: it falls back to `fail[k-1]`, the amount that provably still
+matches, which is why the text is read exactly once and the whole search
+is O(n + m) *guaranteed*, not just expected. That guarantee, with no
+collision risk, is KMP's advantage over Rabin-Karp.
+
+## Manacher: palindromes in linear time
+
+The palindrome question ("longest palindromic substring") has the same
+waste in its naive form: expanding around each center re-reads the same
+characters repeatedly. Manacher's insight is that a palindrome contains
+smaller palindromes, so the radius of a palindrome centered near a known
+one can *start* from the known one's radius instead of from zero. It
+shares KMP's spirit exactly: never re-examine what a symmetry argument
+already told you.
+
+## When it doesn't fit
+
+For a *single* short search, the library's brute force is fine and
+constant factors favor it. If you need *prefix* structure (autocomplete,
+dictionaries), a [trie](/dsa/patterns/trie-prefix-tree) is the tool, not
+string matching. If you need *fuzzy* matching (edit distance, alignment),
+that is [2D sequence DP](/dsa/patterns/dynamic-programming), not
+linear-time search. And exact repeated substring queries at scale are an
+application for suffix arrays, which this page deliberately stops short
+of.
+
+## The takeaway
+
+Two tools, one idea. Rabin-Karp hashes windows so that positions can be
+skipped wholesale; KMP precomputes the pattern's own self-overlap so that
+mismatches skip ahead provably. Both replace "re-read what you matched"
+with "use what you already know", and that idea, more than either specific
+algorithm, is what this pattern wants you to carry away.

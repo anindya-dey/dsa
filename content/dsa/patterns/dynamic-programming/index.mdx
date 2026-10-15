@@ -1,0 +1,129 @@
+---
+title: "Dynamic Programming"
+summary: "Stop recomputing overlapping subproblems: cache each answer once, and build the full solution from small ones upward."
+---
+
+Compute Fibonacci naively and you discover something strange: `fib(50)`
+takes longer than `fib(49)` and `fib(48)` *combined*, and each of those
+recursively restarts work the other already did. Draw the call tree and the
+reason is visible: `fib(50)` needs `fib(48)` and `fib(49)`; `fib(49)` needs
+`fib(48)` and `fib(48)` again. The same subproblems appear over and over,
+and the recursion happily recomputes them every time.
+
+Dynamic programming is the response, and it is worth stating what it
+actually is rather than treating it as magic: **solve each distinct
+subproblem once, store the answer, and look it up instead of recomputing.**
+The exponential tree collapses because the tree only *looked* exponential;
+there were never more than n distinct questions in it, just asked in a
+wasteful order.
+
+## How to spot it
+
+- The problem asks for a **count** ("how many ways") or an **optimum**
+  ("minimum cost", "longest path") over choices.
+- A brute force would try every combination, and the combinations overlap:
+  two different prefixes of choices can lead to the same intermediate state.
+- The problem has a natural **state** you can name in a few variables:
+  position and remaining budget, or two string prefixes, or a set of chosen
+  items.
+- "It's like the smaller version of the same problem" appears when you try
+  to reason about it. That recursion is the definition.
+
+The formal requirements are **optimal substructure** (the best answer is
+built from best answers to smaller versions) and **overlapping
+subproblems** (those smaller versions repeat). The first gives you a
+correct recursion; the second makes caching it profitable.
+
+## The recipe: name the state, define the recurrence, choose a direction
+
+Every DP problem is solved by answering three questions in order.
+
+**1. What is the state?** The state is the minimal description of a
+subproblem. For Fibonacci it is one number: which Fibonacci index. For
+edit distance it is a pair of prefixes: "first i characters of word A,
+first j characters of word B". For knapsack it is "capacity remaining and
+which items are still under consideration". Getting the state right is
+most of the work, and the test is that the answer depends on nothing
+outside the state.
+
+**2. What is the recurrence?** How does the answer for a state build from
+answers of smaller states? For edit distance, the last characters either
+match (cost 0, recurse on both prefixes), or you insert, delete, or
+substitute (cost 1 each, recurse on the corresponding smaller state). The
+recurrence should read like a sentence: "the best answer here is the best
+over the choices I could make last."
+
+**3. Which direction do I compute?** Top-down with memoization follows the
+recursion and caches answers; it is usually easier to write and computes
+only reachable states. Bottom-up fills a table from the base cases
+upward; it has no recursion overhead and makes iteration order and space
+optimization visible. Both give the same answers; start top-down to
+discover the recurrence, then convert to bottom-up when you need the last
+trick.
+
+```cpp
+// Climbing stairs: how many ways to reach step n, taking 1 or 2 steps?
+long long countWays(int n) {
+    std::vector<long long> ways(n + 1, 0);
+    ways[0] = 1;                       // one way to stand at the bottom
+    ways[1] = 1;
+    for (int step = 2; step <= n; ++step) {
+        ways[step] = ways[step - 1] + ways[step - 2];   // the recurrence
+    }
+    return ways[n];
+}
+```
+
+The base cases deserve as much care as the recurrence. `ways[0] = 1` is
+the convention that "there is exactly one way to do nothing", and every
+empty-string, empty-set, or zero-capacity base case in DP follows the same
+reasoning: the empty subproblem has one answer, the trivial one.
+
+## The classic shapes
+
+The same recipe covers a handful of recurring state designs, and
+recognizing the shape is faster than re-deriving it:
+
+- **1D over a sequence**: house robber, climbing stairs, coin change.
+  State: position. Subproblem: best answer for a prefix.
+- **2D over two sequences**: edit distance, longest common subsequence.
+  State: a prefix pair. Subproblem: best answer aligning two prefixes.
+- **2D over a grid**: min path sum, unique paths. State: a cell.
+- **Knapsack**: state is (capacity, items considered). The 0/1 variant
+  skips each item; the unbounded variant allows reuse; the loop order
+  differs, which is the classic subtlety.
+- **Interval DP**: state is a subarray (i, j); palindrome partitioning,
+  burst balloons. Computed by increasing interval length.
+- **Bitmask DP**: state includes a subset as a bitmask; traveling salesman,
+  task assignment. Only viable while the set stays small, roughly 20
+  elements.
+
+## The two optimizations worth knowing
+
+**Space.** If each row of the table depends only on the previous row (or a
+small window), keep only that window. House robber needs two numbers, not
+an array; edit distance needs two rows. The rule: look at the recurrence,
+see which cells it reads, keep exactly those.
+
+**Reconstruction.** Sometimes you need the answer *itself*, not just its
+score ("which items", not "best value"). Store the choice made at each
+state and walk backward from the end, or store a parent pointer per cell.
+The second pass is cheap and always follows the same shape.
+
+## When it doesn't fit
+
+Greedy problems look like DP problems but have a property that makes
+caching unnecessary: one local choice is always safe, so no search over
+choices is needed (see [greedy algorithms](/dsa/patterns/greedy-algorithms)).
+If a problem has optimal substructure but *no* overlapping subproblems,
+plain divide and conquer is the answer. And if the state space explodes
+(the subset is large, the grid is huge in both dimensions), DP is
+exponential and something else, usually approximation or a different
+formulation, is needed.
+
+## The takeaway
+
+Name the state, write the recurrence, pick a direction, mind the base
+cases. Everything else in DP is a shape you will recognize on sight. When
+you can say "the answer for state X is the best over these smaller
+states", you have the problem, and the code is bookkeeping.

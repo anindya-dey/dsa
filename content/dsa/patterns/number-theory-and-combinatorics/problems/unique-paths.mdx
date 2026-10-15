@@ -1,0 +1,128 @@
+---
+title: "Unique Paths"
+difficulty: "Medium"
+variant: "Grid DP / Combinatorics"
+practiceLinks: []
+---
+
+## Problem
+
+A robot starts at the top-left cell of an `m x n` grid and wants to reach
+the bottom-right cell. It can only move right or down at each step.
+Return the number of distinct paths.
+
+**Constraints**
+
+- `1 <= m, n <= 100`
+
+**Example**
+
+```text
+Input:  m = 3, n = 7
+Output: 28
+```
+
+## Brute force
+
+Walk every path: from each cell, recurse right and down, counting
+arrivals at the corner.
+
+```cpp
+int uniquePathsBrute(int m, int n, int i = 0, int j = 0) {
+    if (i == m - 1 && j == n - 1) {
+        return 1;                        // arrived: one valid path
+    }
+    int paths = 0;
+    if (i + 1 < m) {
+        paths += uniquePathsBrute(m, n, i + 1, j);
+    }
+    if (j + 1 < n) {
+        paths += uniquePathsBrute(m, n, i, j + 1);
+    }
+    return paths;
+}
+```
+
+Exponential: the number of paths is itself exponential in m + n (it is
+`C(m + n - 2, m - 1)`), so enumerating them cannot be cheaper than
+counting them. The waste is total: the number of paths *from cell (i, j)*
+is recomputed for every prefix that reaches (i, j), and there are
+exponentially many of those prefixes.
+
+## Optimal: grid DP
+
+The state is the cell: `paths[i][j]` = number of paths from (i, j) to the
+corner, or equivalently from the corner to (i, j). The recurrence: you
+arrive at (i, j) either from above or from the left, so
+`paths[i][j] = paths[i-1][j] + paths[i][j-1]`, with the first row and
+column all 1 (only one straight path along each edge).
+
+```cpp
+int uniquePaths(int m, int n) {
+    std::vector<int> row(n, 1);          // first row: all 1
+    for (int i = 1; i < m; ++i) {
+        for (int j = 1; j < n; ++j) {
+            row[j] = row[j] + row[j - 1];   // new[j] = up + left
+        }
+    }
+    return row[n - 1];
+}
+```
+
+The single-row version is the standard [DP space
+optimization](/dsa/patterns/dynamic-programming): each row depends only on
+the row above (the old `row[j]`) and the cell to its left (the new
+`row[j-1]`), so one rolling row suffices. Correct and O(m * n), which is
+at most 10^4 operations here.
+
+## The closed form: it is also a counting problem
+
+There is a second answer that is faster and, more importantly, teaches
+the connection. Every path from corner to corner is a sequence of exactly
+`m - 1` downs and `n - 1` rights, in some order, and nothing else. So
+counting paths is counting the arrangements of a multiset:
+`(m + n - 2)` moves, of which `(m - 1)` are downs. That is the binomial
+coefficient:
+
+    paths = C(m + n - 2, m - 1)
+
+```cpp
+long long binomial(int n, int k) {       // exact for n <= 200 here
+    if (k > n - k) {
+        k = n - k;
+    }
+    long long result = 1;
+    for (int i = 0; i < k; ++i) {
+        result = result * (n - i) / (i + 1);   // divides exactly at each step
+    }
+    return result;
+}
+
+int uniquePathsMath(int m, int n) {
+    return static_cast<int>(binomial(m + n - 2, m - 1));
+}
+```
+
+O(min(m, n)) multiplications, no table at all. The division in that loop
+is exact at every step (the running product is always a binomial
+coefficient times something), which is why integer arithmetic works; for
+larger parameters, the modular version with
+[factorial tables](/dsa/patterns/number-theory-and-combinatorics) is the
+standard tool.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Walk every path | exponential | O(m + n) stack |
+| Grid DP, one row | O(m * n) | O(n) |
+| Binomial coefficient | O(min(m, n)) | O(1) |
+
+The two answers are both worth presenting, and the pairing is the lesson:
+this problem sits exactly on the boundary between
+[dynamic programming](/dsa/patterns/dynamic-programming) and
+[combinatorics](/dsa/patterns/number-theory-and-combinatorics). When the
+grid gains obstacles ("unique paths II"), the closed form dies (obstacles
+break the uniform counting) and DP carries the day; when it does not,
+counting is strictly better. Recognizing which side of that line a problem
+is on is the skill this problem teaches.

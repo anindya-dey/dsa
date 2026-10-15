@@ -1,0 +1,126 @@
+---
+title: "Design Data Structures"
+summary: "The implement-it-yourself interview family: caches, filters, ordered sets, and iterators, each a known structure rebuilt under time and memory limits."
+---
+
+A distinct family of interview problems does not ask you to solve
+something with a data structure. It asks you to **build the data
+structure**, from scratch, with named complexity requirements, and the
+art is knowing what the structure is *for* before you start writing it.
+These problems are the meeting point of everything else on the site:
+an LRU cache is a [hash map](/dsa/patterns/hash-based-structures) plus a
+[doubly linked list](/dsa/patterns/linked-list-manipulation); a
+[bloom filter](https://en.wikipedia.org/wiki/Bloom_filter) is hashing
+applied probabilistically; an ordered set is a
+[balanced tree](/dsa/patterns/binary-trees-and-bsts). Nothing new is
+invented here. The pattern is the composition, under constraints that
+rule out the lazy answer.
+
+## How to spot it
+
+The problem statement names the interface and the cost:
+
+- "Design a data structure that supports X, Y, Z in O(1)" (or O(log n)).
+- "Insert, delete, and getRandom in average O(1)".
+- "Add words, search with wildcards", "push, pop, and getMin".
+- The constant-time or logarithmic requirement is *the puzzle*: some
+  obvious implementation is ruled out by the complexity bound, and you
+  have to find the composition that survives it.
+
+The design process is always the same three questions, in order: what
+does each operation need to *know*, which single structure can know it,
+and what do I attach to that structure to answer the rest?
+
+## The core move: one structure answers one question
+
+Every design problem decomposes into "the operation needs to answer
+question Q about the current state", and the skill is matching questions
+to structures:
+
+- **"Where is it?"** (lookup by key): a hash map, O(1).
+- **"What order?"** (smallest, k-th, in between): a sorted or balanced
+  structure, a [heap](/dsa/patterns/heaps-and-priority-queues), or an
+  ordered tree, O(log n).
+- **"What is the extreme right now?"**: a heap, or two heaps.
+- **"What was touched most recently?"**: a linked list ordered by
+  recency, or a queue, with the hash map pointing into it.
+- **"Might it exist?"** (membership at scale, approximately): a bloom
+  filter, O(1) with false positives.
+
+The composed answer is almost always "structure A answers the hard
+question, structure B answers the other question, and they share entries
+so neither drifts out of sync". The LRU cache is the archetype:
+the hash map answers "where", the list answers "least recently used",
+and the map's values *are* list nodes so both questions resolve in one
+step each. That sharing, and keeping the two structures consistent under
+every operation, is where the bugs and the interview points live.
+
+## The discipline: state the invariant
+
+For each structure you build, write down the sentence that is true after
+every operation. For an LRU cache: "the list is ordered most-recent to
+least-recent, every key in the map is a node in the list, and every node
+in the list is a key in the map." For a bloom filter: "the i-th bit is set
+if and only if some inserted element's j-th hash landed on i" (which is
+one direction only, hence the false positives).
+
+The invariant sentence is not documentation; it is the correctness
+argument. Every operation's code should read as "restore the invariant",
+and every bug in these problems is a place where the code broke it: an
+entry removed from the map but not the list, a node moved without
+updating the pointer to it, a counter incremented past the capacity check.
+
+## Memory and probabilistic structures
+
+Two structures in this family deserve their introductions here, because
+they answer questions the exact structures cannot:
+
+**The bloom filter** answers "might this be in the set?" in O(1) time and
+a few bits per element, with false positives but no false negatives. It
+hashes each element k times and sets k bits; membership asks whether all k
+bits are set. The value is scale: storing 100 million strings exactly is
+gigabytes, and a bloom filter over them is a few hundred megabytes, at the
+cost of occasionally saying yes when the answer is no. "Definitely not
+there" in one probe is a *cache-avoidance* and *disk-avoidance* tool, and
+the false-positive rate is a tuned dial (more bits, more hashes, fewer
+lies).
+
+**The skip list** is the probabilistic answer to "ordered, logarithmic,
+and simpler than a balanced tree": layers of linked lists where each
+element appears in each higher layer with probability 1/2, giving expected
+O(log n) search by descending layers. It is worth knowing mostly because
+it shows ordered structure does not *require* rebalancing machinery, and
+because real systems (Redis sorted sets) use it.
+
+## When a design problem is really a hint
+
+Sometimes "design X" is a disguised pointer at a standard structure, and
+recognizing it saves the whole interview: "insert, delete, getRandom" in
+O(1) is an array plus a hash map (the array gives random indexing, the
+map gives locations, and delete swaps with the last element to keep the
+array compact); "min stack" is a
+[second stack](/dsa/patterns/stacks-and-queues/problems/min-stack) in
+lockstep; "LRU cache" is the map-plus-list above. If the problem is a
+known structure wearing a story, say so out loud, name the structure, and
+spend the interview on the parts the story adds.
+
+## The takeaway
+
+Match each question the interface asks to the structure that answers it,
+share entries between structures so they stay in sync, and write down the
+invariant sentence before writing code. Every problem in this family is
+a composition you can already build; the constraint in the problem
+statement is just telling you which composition.
+
+## Related patterns
+
+- [Hash-Based Structures](/dsa/patterns/hash-based-structures) answers
+  the lookup half of most designs here.
+- [Linked List Manipulation](/dsa/patterns/linked-list-manipulation)
+  is the pointer surgery the recency-ordering structures need.
+- [Heaps / Priority Queues](/dsa/patterns/heaps-and-priority-queues)
+  answer the extreme-under-updates half.
+- [Binary Trees & BSTs](/dsa/patterns/binary-trees-and-bsts) is the
+  ordered structure the logarithmic requirements point at.
+- [Stacks & Queues](/dsa/patterns/stacks-and-queues) covers the adapter
+  designs (min stack, queue from stacks).

@@ -1,0 +1,140 @@
+---
+title: "Implement strStr / Find the Index of the First Occurrence"
+difficulty: "Easy"
+variant: "Rabin-Karp"
+practiceLinks: []
+---
+
+## Problem
+
+Given two strings `needle` and `haystack`, return the index of the first
+occurrence of `needle` in `haystack`, or -1 if it is not present. (This is
+the classic "strStr" problem, restated.)
+
+**Constraints**
+
+- `0 <= needle.length <= 5 * 10^4`
+- `1 <= haystack.length <= 10^4`
+- Both consist of lowercase letters.
+
+**Example**
+
+```text
+Input:  haystack = "sadbutsad", needle = "sad"
+Output: 0
+```
+
+## Brute force
+
+Compare the needle against every window of the haystack.
+
+```cpp
+int strStrBrute(const std::string& haystack, const std::string& needle) {
+    int n = static_cast<int>(haystack.size());
+    int m = static_cast<int>(needle.size());
+    for (int i = 0; i + m <= n; ++i) {
+        int j = 0;
+        while (j < m && haystack[i + j] == needle[j]) {
+            ++j;
+        }
+        if (j == m) {
+            return i;                    // full match found
+        }
+    }
+    return -1;
+}
+```
+
+O(n · m): fine for these constraints, and for a single search this is
+what any library does (up to constant-factor tricks). The reason this
+problem exists as an interview question is that it is the smallest
+instance of the [string matching](/dsa/patterns/string-algorithms)
+family, and the tools that beat it generalize to problems where n·m is
+too slow.
+
+## Optimal: rolling hash (Rabin-Karp)
+
+Hash the needle once. Roll a hash across every m-length window of the
+haystack, updating it in O(1) per slide, and only verify windows whose
+hash matches.
+
+```cpp
+int strStr(const std::string& haystack, const std::string& needle) {
+    int n = static_cast<int>(haystack.size());
+    int m = static_cast<int>(needle.size());
+    if (m == 0) {
+        return 0;
+    }
+    if (m > n) {
+        return -1;
+    }
+
+    const long long base = 256;
+    const long long mod = 1'000'000'007LL;
+
+    // Hash of the needle and of the first window.
+    long long needleHash = 0;
+    long long windowHash = 0;
+    for (int i = 0; i < m; ++i) {
+        needleHash = (needleHash * base + needle[i]) % mod;
+        windowHash = (windowHash * base + haystack[i]) % mod;
+    }
+
+    // base^(m-1) % mod, for removing the leftmost character.
+    long long highOrder = 1;
+    for (int i = 0; i < m - 1; ++i) {
+        highOrder = (highOrder * base) % mod;
+    }
+
+    for (int i = m; i <= n; ++i) {          // window starting at i - m
+        if (windowHash == needleHash) {
+            int j = 0;                      // verify: hashes can collide
+            while (j < m && haystack[i - m + j] == needle[j]) {
+                ++j;
+            }
+            if (j == m) {
+                return i - m;
+            }
+        }
+        if (i < n) {                          // roll: drop left, add right
+            windowHash = (windowHash -
+                          haystack[i - m] * highOrder % mod + mod) % mod;
+            windowHash = (windowHash * base + haystack[i]) % mod;
+        }
+    }
+    return -1;
+}
+```
+
+Walk the rolling step, because it is the whole technique: the window
+hash treats the string as a number in base 256 (polynomial hash). Moving
+the window right by one means the leftmost character's contribution
+(`char * base^(m-1)`) must be subtracted, the rest shifts up one place
+(multiply by base), and the new character enters at the units place. All
+three steps are O(1) modulo a prime, so n windows cost O(n) total instead
+of O(n·m).
+
+The verification on hash equality is not optional paranoia: two different
+strings can share a hash (the mod collapses a huge space into a finite
+one), so a hash match is a *candidate*, and one character comparison pass
+makes the answer certain. With a large prime modulus, collisions are
+rare, so the expected total work is O(n + m), while the worst case
+(adversarial collisions) falls back to O(n·m). KMP's
+[failure function](/dsa/patterns/string-algorithms) gives the same
+matching with a *guaranteed* O(n + m) and no verification, at the cost of
+building the table first.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Compare every window | O(n · m) | O(1) |
+| Rolling hash | O(n + m) expected | O(1) |
+| KMP failure function | O(n + m) guaranteed | O(m) |
+
+For this problem, with a single short needle, the library answer is
+correct and simplest. This problem earns its place as the introduction to
+the pattern: the same rolling-hash skeleton, run against many patterns or
+over a stream, is exactly where hashing stops being a trick and starts
+being the tool (multi-pattern search, plagiarism detection, file
+chunking).

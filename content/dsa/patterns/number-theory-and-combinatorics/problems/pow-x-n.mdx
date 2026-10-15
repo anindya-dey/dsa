@@ -1,0 +1,130 @@
+---
+title: "Pow(x, n)"
+difficulty: "Medium"
+variant: "Fast Exponentiation"
+practiceLinks: []
+---
+
+## Problem
+
+Implement `myPow(double x, int n)`, which computes x raised to the power
+n. The exponent may be negative, in which case the result is 1 / x^|n|.
+
+**Constraints**
+
+- `-100.0 < x < 100.0`
+- `-2^31 <= n <= 2^31 - 1`
+- Either x is nonzero or n is positive.
+- Answers within 10^-4 of the true value are accepted.
+
+**Example**
+
+```text
+Input:  x = 2.00000, n = 10
+Output: 1024.00000
+
+Input:  x = 2.00000, n = -3
+Output: 0.12500
+```
+
+## Brute force
+
+Multiply x by itself |n| times.
+
+```cpp
+double myPowBrute(double x, int n) {
+    long long exponent = n;               // careful: |INT_MIN| overflows
+    if (exponent < 0) {
+        exponent = -exponent;
+    }
+    double result = 1.0;
+    for (long long i = 0; i < exponent; ++i) {
+        result *= x;
+    }
+    return n < 0 ? 1.0 / result : result;
+}
+```
+
+O(|n|) multiplications: up to 2 * 10^9 of them, far too slow, and it
+re-derives everything from scratch each time. The structure it ignores:
+`x^20` contains `x^10` squared, which contains `x^5` squared, and so on,
+all the way down in about 30 halvings.
+
+## Optimal: exponentiation by squaring
+
+The recurrence: `x^n = (x^(n/2))^2` if n is even, and `x * x^(n-1)` if n
+is odd, with base case `x^0 = 1`. Each even step halves the exponent, so
+the depth is O(log n), and each odd step immediately becomes even
+(subtracting one), so the total work is O(log n) multiplications.
+
+```cpp
+double myPow(double x, int n) {
+    long long exponent = n;               // long long: |INT_MIN| breaks int
+    if (exponent < 0) {
+        x = 1.0 / x;
+        exponent = -exponent;
+    }
+    return power(x, exponent);
+}
+
+double power(double x, long long n) {
+    if (n == 0) {
+        return 1.0;
+    }
+    double half = power(x, n / 2);        // one recursive call, reused
+    if (n % 2 == 0) {
+        return half * half;
+    }
+    return half * half * x;              // odd: one extra factor
+}
+```
+
+The single most common bug in this problem is not the recursion: it is
+the negative-exponent handling at the top. `n` can be exactly INT_MIN
+(-2^31), whose absolute value **overflows int** (max 2^31 - 1), so
+negating inside an int is undefined behavior. Promoting to `long long`
+before negating is the fix, and it is the detail that separates a
+correct answer from one that passes most tests.
+
+The iterative version, worth knowing because it removes the recursion and
+shows where the bits of the exponent go:
+
+```cpp
+double powerIterative(double x, long long n) {
+    double result = 1.0;
+    while (n > 0) {
+        if (n & 1) {                       // this binary digit is set
+            result *= x;
+        }
+        x *= x;                           // square for the next digit
+        n >>= 1;
+    }
+    return result;
+}
+```
+
+Read that as processing the exponent's *binary digits*: each set bit of
+n contributes one power of x^(2^position) to the product, and the squaring
+chain computes those powers on the fly. It is the same algorithm, with
+the recursion unrolled bottom-up, and both are exactly O(log n)
+multiplications.
+
+For modular integer exponentiation (the version this problem's technique
+is usually actually used for), the same skeleton with a `% m` after every
+multiplication computes `a^b mod m` without overflow, and that variant is
+covered in [number theory](/dsa/patterns/number-theory-and-combinatorics).
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Repeated multiplication | O(\|n\|) | O(1) |
+| Exponentiation by squaring | O(log \|n\|) | O(log \|n\|) stack, O(1) iterative |
+
+This is the smallest complete example of the
+[divide and conquer](/dsa/patterns/divide-and-conquer) shape applied to
+arithmetic: halve the problem, solve one half, and combine. It appears
+everywhere exponents do (matrix powers for recurrences, modular powers for
+cryptography-flavored problems), and the two details that trip people
+(INT_MIN negation, and using the *same* half-result twice instead of
+recursing twice) are both fixed above.

@@ -1,0 +1,109 @@
+---
+title: "Coin Change"
+difficulty: "Medium"
+variant: "Unbounded Knapsack"
+practiceLinks: []
+---
+
+## Problem
+
+Given an array of coin denominations `coins` and an integer `amount`, return
+the fewest number of coins needed to make up that amount. Each coin may be
+used any number of times. If the amount cannot be made, return -1.
+
+**Constraints**
+
+- `1 <= coins.length <= 12`
+- `1 <= coins[i] <= 2^31 - 1`
+- `0 <= amount <= 10^4`
+
+**Example**
+
+```text
+Input:  coins = [1, 2, 5], amount = 11
+Output: 3
+```
+
+Eleven is one 5 and three 2s: `11 = 5 + 2 + 2 + 2` uses 4 coins, but
+`11 = 5 + 5 + 1` uses 3.
+
+## Brute force
+
+For each amount, try every coin, take the best.
+
+```cpp
+int coinChangeBrute(const std::vector<int>& coins, int amount) {
+    if (amount == 0) {
+        return 0;                        // zero coins needed
+    }
+    if (amount < 0) {
+        return -1;                       // overshot: not a valid path
+    }
+    int best = std::numeric_limits<int>::max();
+    for (int coin : coins) {
+        int sub = coinChangeBrute(coins, amount - coin);
+        if (sub != -1) {
+            best = std::min(best, sub + 1);
+        }
+    }
+    return best == std::numeric_limits<int>::max() ? -1 : best;
+}
+```
+
+Correct, and hopeless: the same remaining amount is reached by many
+different coin orders, and each restarts the same
+subproblem from scratch. For `coins = [1, 2, 5]` and a moderate amount, the call tree grows exponentially
+(roughly 3^depth). The overlapping subproblems are staring at us: only
+`amount + 1` distinct questions exist ("fewest coins for value v"), but the
+recursion asks them in an exponential order.
+
+## Optimal: bottom-up DP over the amounts
+
+The state is the remaining amount: `best[v]` = fewest coins that make
+value v. The recurrence: to make v, the *last* coin was some `c`, so
+`best[v] = best[v - c] + 1` over all coins c that fit. Base case:
+`best[0] = 0`, the one way to make nothing.
+
+```cpp
+int coinChange(const std::vector<int>& coins, int amount) {
+    const int INF = std::numeric_limits<int>::max();
+    std::vector<int> best(amount + 1, INF);
+    best[0] = 0;                        // zero coins make zero
+
+    for (int value = 1; value <= amount; ++value) {
+        for (int coin : coins) {
+            if (coin <= value && best[value - coin] != INF) {
+                best[value] = std::min(best[value], best[value - coin] + 1);
+            }
+        }
+    }
+    return best[amount] == INF ? -1 : best[amount];
+}
+```
+
+Two details in that loop carry the correctness. The order is increasing
+value, so when computing `best[value]`, every `best[value - coin]` is
+already final; that is what makes one pass enough. And the INF sentinel
+means "unreachable", distinguishing "cannot make this value" from "made
+with zero coins", which is the difference between returning -1 correctly
+and returning a garbage small number.
+
+A greedy alternative, "always take the largest coin that fits", is faster
+but wrong in general: `coins = [1, 3, 4]`, `amount = 6` gives `4 + 1 + 1`
+(3 coins) greedily, but `3 + 3` (2 coins) optimally. Greedy works only
+for coin systems with a special structure (canonical systems), and testing
+for that structure is harder than just running the DP.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Recursive without memo | exponential | O(amount) stack |
+| Bottom-up DP | O(amount · coins) | O(amount) |
+
+This is the **unbounded knapsack** shape (each item reusable any number of
+times), the canonical 1D [dynamic programming](/dsa/patterns/dynamic-programming)
+problem. The same skeleton with a different recurrence solves "how many
+ways" instead of "fewest coins", and the 0/1 knapsack variant, where each
+item is used at most once, changes the loop order: iterate items in the
+outer loop and capacity *descending*, so each item is only counted once.

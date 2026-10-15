@@ -1,0 +1,128 @@
+---
+title: "Partition Labels"
+difficulty: "Medium"
+variant: "Greedy Intervals"
+practiceLinks: []
+---
+
+## Problem
+
+Partition a string into as many parts as possible so that each letter
+appears in at most one part, and return the list of part sizes.
+
+**Constraints**
+
+- `1 <= s.length <= 500`
+- `s` consists of lowercase English letters.
+
+**Example**
+
+```text
+Input:  s = "ababcbacadefegdehijhklij"
+Output: [9, 7, 8]
+```
+
+The parts are `"ababcbaca"`, `"defegde"`, `"hijhklij"`: every letter stays
+inside one part.
+
+## Brute force
+
+For each cut position, check whether any letter crosses it (appears on
+both sides); greedily extend the first part to the earliest legal cut,
+then recurse on the rest.
+
+```cpp
+std::vector<int> partitionLabelsBrute(const std::string& s) {
+    std::vector<int> result;
+    int start = 0;
+    while (start < static_cast<int>(s.size())) {
+        int end = start;
+        bool extended = true;
+        while (extended) {                 // fixpoint: extend until stable
+            extended = false;
+            for (int i = start; i <= end; ++i) {
+                for (int j = end + 1;
+                     j < static_cast<int>(s.size()); ++j) {
+                    if (s[i] == s[j]) {     // letter crosses: extend
+                        end = j;
+                        extended = true;
+                        break;
+                    }
+                }
+                if (extended) {
+                    break;
+                }
+            }
+        }
+        result.push_back(end - start + 1);
+        start = end + 1;
+    }
+    return result;
+}
+```
+
+Cubic-ish in the string length with terrible constants, because "does any
+letter cross this cut" is re-derived from scratch after every extension.
+The structure it keeps missing: each letter defines a *range* (first to last
+occurrence), and the whole problem is about overlapping ranges.
+
+## Optimal: each letter is an interval, then merge greedily
+
+The reformulation: a letter must stay in one part, so a part containing
+that letter's *first* occurrence must extend at least to its *last*
+occurrence. Each letter is therefore an interval
+[first occurrence, last occurrence], and a part is a maximal group of
+letters whose intervals all overlap, which is exactly the connected
+component of overlapping intervals.
+
+So: precompute each letter's last occurrence (one pass), then sweep the
+string, extending the current part's end to the last occurrence of every
+letter inside it, and cut when the sweep position reaches that end.
+
+```cpp
+std::vector<int> partitionLabels(const std::string& s) {
+    int n = static_cast<int>(s.size());
+    int last[26] = {};
+    for (int i = 0; i < n; ++i) {
+        last[s[i] - 'a'] = i;              // last occurrence of each letter
+    }
+
+    std::vector<int> result;
+    int start = 0;
+    int end = 0;
+    for (int i = 0; i < n; ++i) {
+        end = std::max(end, last[s[i] - 'a']);   // letter's interval extends
+        if (i == end) {                    // no interval crosses here: cut
+            result.push_back(end - start + 1);
+            start = end + 1;
+        }
+    }
+    return result;
+}
+```
+
+The greedy decision is the cut: cutting at the earliest position where no
+letter's interval crosses is optimal, because any later cut would only
+merge parts (fewer parts) without being forced. Formally: the earliest
+legal cut is where the current interval group's component ends, and
+component boundaries are forced by the problem's own constraints, so there
+is nothing to trade away. That is the same "the boundary is forced"
+reasoning as [merge intervals](/dsa/patterns/intervals-and-sweep-line),
+and this problem is best understood as merge-intervals in disguise, with
+intervals derived from letters rather than given as pairs.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Extend and re-check | O(n²) or worse | O(1) |
+| Last-occurrence + sweep | O(n) | O(1) (26 slots) |
+
+This is the cleanest bridge between two patterns: the *shape* is
+[intervals](/dsa/patterns/intervals-and-sweep-line) (components of
+overlapping ranges), and the *decision* is
+[greedy](/dsa/patterns/greedy-algorithms) (cut at the earliest forced
+boundary). Problems that look like string manipulation but are secretly
+interval problems are common, and the tell is always the same: some
+element "must stay together", which is an interval constraint on its
+positions.

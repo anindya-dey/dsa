@@ -1,0 +1,145 @@
+---
+title: "Time-Based Key-Value Store"
+difficulty: "Medium"
+variant: "Binary Search over Time"
+practiceLinks: []
+---
+
+## Problem
+
+Implement a key-value store supporting two operations:
+`set(key, value, timestamp)` stores the value at the given timestamp, and
+`get(key, timestamp)` returns the value associated with `key` at that
+    moment, meaning the value with the **greatest timestamp `<=` the query
+timestamp**. Set calls are strictly increasing in timestamp per key.
+
+**Constraints**
+
+- `1 <= key.length, value.length <= 100`
+- `1 <= timestamp <= 10^7`
+- At most 2 * 10^5 calls; `get` is only called with a timestamp that has a
+  valid answer.
+
+**Example**
+
+```text
+set("foo", "bar", 1)
+set("foo", "bar2", 3)
+get("foo", 3)  -> "bar2"
+get("foo", 2)  -> "bar"      // latest value set at or before time 2
+get("foo", 4)  -> "bar2"
+```
+
+## Brute force
+
+Store every `(timestamp, value)` pair per key, and on `get`, scan all of
+them for the greatest timestamp at or below the query.
+
+```cpp
+class TimeMapBrute {
+public:
+    void set(const std::string& key, const std::string& value,
+             int timestamp) {
+        entries_[key].push_back({timestamp, value});
+    }
+
+    std::string get(const std::string& key, int timestamp) const {
+        auto it = entries_.find(key);
+        if (it == entries_.end()) {
+            return "";
+        }
+        std::string best;
+        int bestTime = -1;
+        for (const auto& [time, value] : it->second) {
+            if (time <= timestamp && time > bestTime) {
+                bestTime = time;
+                best = value;
+            }
+        }
+        return best;
+    }
+
+private:
+    std::unordered_map<std::string,
+        std::vector<std::pair<int, std::string>>> entries_;
+};
+```
+
+Every `get` scans the key's whole history: O(1) for `set`, O(n) for
+`get`, quadratic in the worst workload. The waste is structural: the
+per-key entries are appended in **increasing timestamp order** (the problem
+states it), so the list is already sorted, and scanning a sorted list for
+a boundary is the one thing [binary
+search](/dsa/patterns/binary-search-variants) exists to prevent.
+
+## Optimal: sorted vector per key, upper-bound lookup
+
+Keep the same map, and treat each per-key vector as the sorted array it
+already is. `get` becomes: binary search for the **first timestamp
+strictly greater** than the query, then step back one, which is exactly
+what `std::upper_bound` computes.
+
+```cpp
+class TimeMap {
+public:
+    void set(const std::string& key, const std::string& value,
+             int timestamp) {
+        entries_[key].push_back({timestamp, value});   // appended in order
+    }
+
+    std::string get(const std::string& key, int timestamp) const {
+        auto it = entries_.find(key);
+        if (it == entries_.end() || it->second.empty()) {
+            return "";
+        }
+        const auto& history = it->second;
+        // First entry with timestamp > query: one before it is the answer.
+        auto upper = std::upper_bound(
+            history.begin(), history.end(), timestamp,
+            [](int query, const std::pair<int, std::string>& entry) {
+                return query < entry.first;       // compare query vs entry
+            });
+        if (upper == history.begin()) {
+            return "";                    // every entry is after the query
+        }
+        return (upper - 1)->second;
+    }
+
+private:
+    std::unordered_map<std::string,
+        std::vector<std::pair<int, std::string>>> entries_;
+};
+```
+
+The boundary choice is the whole problem, so it is worth being precise
+about which bound it is. The wanted entry is the *last* with
+`timestamp <= query`, which is the element *before* the first entry with
+`timestamp > query`. That "first strictly greater" position is
+`upper_bound`; the "first greater-or-equal" position (`lower_bound`) would
+step back onto the wrong element whenever an exact match exists. This is
+the same lower/upper-bound distinction as
+[first and last position](/dsa/patterns/binary-search-variants/problems/first-and-last-position-in-sorted-array),
+applied to a rolling store instead of a static array.
+
+Note what the design quietly relies on: the problem guarantees `set`
+calls arrive in increasing timestamp order, so appending *keeps* each
+vector sorted with no sorting ever performed. If that guarantee were
+removed, the design would need a sorted insertion (O(n) per set) or a
+different structure (a [balanced tree](/dsa/patterns/binary-trees-and-bsts)
+or skip list), and stating that dependency out loud is the difference
+between a correct answer and one that is accidentally correct.
+
+## Complexity
+
+| Operation | Brute force | Optimal |
+| --- | --- | --- |
+| set | O(1) | O(1) |
+| get | O(n) per key's history | O(log n) |
+
+This problem is the canonical "binary search hidden in a design
+question": the interface looks like a cache or a database, but the load-
+bearing part is recognizing that a sorted-by-construction vector plus an
+upper-bound lookup answers it. It is the same pattern as
+[binary search on sorted data](/dsa/patterns/binary-search-variants),
+wearing a [design data structures](/dsa/patterns/design-data-structures)
+costume.

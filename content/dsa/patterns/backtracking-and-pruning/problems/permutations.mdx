@@ -1,0 +1,125 @@
+---
+title: "Permutations"
+difficulty: "Medium"
+variant: "Pick Each Position"
+practiceLinks: []
+---
+
+## Problem
+
+Given an array of distinct integers `nums`, return all possible
+permutations. Order within each permutation matters; the set of outputs
+must not contain duplicates.
+
+**Constraints**
+
+- `1 <= n <= 6`
+- `-10 <= nums[i] <= 10`
+- All elements are distinct.
+
+**Example**
+
+```text
+Input:  nums = [1, 2, 3]
+Output: [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]
+```
+
+Six permutations for three elements: 3! = 6.
+
+## Brute force
+
+Generate permutations by repeatedly inserting each element at each
+position, deduplicating the results. Or use the standard library, which
+does exactly this walk:
+
+```cpp
+std::vector<std::vector<int>> permutationsStd(
+        std::vector<int> nums) {
+    std::vector<std::vector<int>> result;
+    std::sort(nums.begin(), nums.end());
+    do {
+        result.push_back(nums);
+    } while (std::next_permutation(nums.begin(), nums.end()));
+    return result;
+}
+```
+
+Perfectly correct and O(n · n!) (which is optimal: the output has that
+many elements). What it does not give you is the *walk*: you cannot see
+which decisions produced which permutation, you cannot prune mid-arrangement,
+and you cannot stop at the first arrangement satisfying a constraint. For
+enumeration alone it is fine; for anything with constraints, you need the
+explicit tree.
+
+## The pattern: choose which element goes in each slot
+
+The decision is different from
+[subsets](/dsa/patterns/backtracking-and-pruning/problems/subsets): not
+"include or skip this element" but "which not-yet-used element fills the
+next position". A `used` bitmask tracks the elements already placed, and
+the undo is clearing the bit and popping the slot.
+
+```cpp
+void permute(const std::vector<int>& nums, std::vector<int>& current,
+             std::vector<bool>& used,
+             std::vector<std::vector<int>>& result) {
+    if (current.size() == nums.size()) {
+        result.push_back(current);       // every slot filled
+        return;
+    }
+    for (int i = 0; i < static_cast<int>(nums.size()); ++i) {
+        if (used[i]) {
+            continue;                     // already placed earlier
+        }
+        used[i] = true;                   // decide: element i goes here
+        current.push_back(nums[i]);
+        permute(nums, current, used, result);
+        current.pop_back();               // undo both halves
+        used[i] = false;
+    }
+}
+
+std::vector<std::vector<int>> permutations(
+        const std::vector<int>& nums) {
+    std::vector<std::vector<int>> result;
+    std::vector<int> current;
+    std::vector<bool> used(nums.size(), false);
+    permute(nums, current, used, result);
+    return result;
+}
+```
+
+Note there are two pieces of state to undo, the slot (`current`) and the
+availability (`used`), and the undo must reverse both. That is the
+general lesson: whatever the `apply` touches, the `undo` must restore, and
+a missed half-undo is the classic bug in this family (a permutation
+appearing twice, or an element vanishing from later branches).
+
+The in-place-swap variant is the memory-tighter alternative worth knowing:
+swap each element into position `depth`, recurse on the rest, and swap it
+back. It avoids the `used` array entirely, at the cost of being harder to
+reason about when constraints reference positions.
+
+## With duplicates
+
+When the input may contain duplicate values, the tree above produces the
+same permutation multiple times (`[1a, 2, 1b]` and `[1b, 2, 1a]` are the
+same output). The fix is a pruning rule, and it is the best one-line example
+of what pruning is *for*: **skip an element if it equals the previous
+element and the previous one is not currently used.** That condition permits
+the duplicate only in one canonical order (the earlier copy first), so each
+distinct permutation is produced exactly once. Sort first so equal elements
+are adjacent, or the rule cannot see them.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Any correct enumeration | O(n · n!) | O(n) per permutation |
+| Backtracking walk | O(n · n!) | O(n) recursion + output |
+
+The output dominates, so no approach beats n · n!. The value of the
+backtracking form is the decision points: it is the skeleton that
+constraint problems (n-queens, sudoku, arrangement puzzles) hang their
+validity checks on, as described in
+[backtracking](/dsa/patterns/backtracking-and-pruning).

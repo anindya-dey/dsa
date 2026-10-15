@@ -1,0 +1,108 @@
+---
+title: "Repeated Substring Pattern"
+difficulty: "Easy"
+variant: "Rotation / Self-Overlap"
+practiceLinks: []
+---
+
+## Problem
+
+Given a string `s`, return whether it can be constructed by taking a
+substring of it and appending multiple copies of that substring together.
+The substring must be a proper substring (shorter than the whole).
+
+**Constraints**
+
+- `1 <= s.length <= 10^4`
+- `s` consists of lowercase English letters.
+
+**Example**
+
+```text
+Input:  s = "abab"
+Output: true    // "ab" + "ab"
+
+Input:  s = "aba"
+Output: false
+```
+
+## Brute force
+
+For every length that divides n, extract the prefix of that length and
+check whether n copies of it reproduce the string.
+
+```cpp
+bool repeatedSubstringPatternBrute(const std::string& s) {
+    int n = static_cast<int>(s.size());
+    for (int length = 1; length * 2 <= n; ++length) {   // proper substring
+        if (n % length != 0) {
+            continue;                    // must divide n evenly
+        }
+        bool matches = true;
+        for (int i = 0; i < n && matches; ++i) {
+            if (s[i] != s[i % length]) {
+                matches = false;
+            }
+        }
+        if (matches) {
+            return true;
+        }
+    }
+    return false;
+}
+```
+
+O(n · d(n)) where d(n) is the number of divisors: correct, usually fast,
+and hard to beat in clarity. Its worst case is O(n · sqrt(n))-ish, which
+for 10^4 is fine. The reason to know the alternatives is the *structure*
+they expose, which is the actual content of this problem.
+
+## Optimal: the doubling trick
+
+The elegant one-liner: **`s` is made of repeated copies if and only if
+`s` appears inside `(s + s)` at some position other than 0 and n.**
+
+```cpp
+bool repeatedSubstringPattern(const std::string& s) {
+    std::string doubled = s + s;
+    std::string middle = doubled.substr(1, doubled.size() - 2);
+    return middle.find(s) != std::string::npos;
+}
+```
+
+Why does that work? If `s = p * k` for some pattern p repeated k times,
+then `s + s = p * (2k)`, and the second copy of s begins at offset |p|,
+which is strictly inside the string, so a search finds s at a nonzero
+position. Conversely, if s occurs inside `s+s` at some offset t with
+0 < t < n, then the characters at positions i and i + t are equal for
+every i (both occurrences of s overlap in the doubled string), which
+forces s to be periodic with period t, and a periodic string with period
+t < n is exactly repeated copies of its length-t prefix.
+
+Trimming the first and last character before searching
+(`substr(1, size - 2)`) is the standard safeguard: it guarantees the match
+you find is a *real* rotation rather than the trivial copy at offset 0,
+so the found index necessarily corresponds to a nonempty prefix period.
+
+There is also a KMP-based version worth naming: compute the pattern's
+[failure table](/dsa/patterns/string-algorithms); the last entry `f` is
+the length of the longest proper prefix that is also a suffix, and the
+string is periodic if and only if `f > 0` and `n % (n - f) == 0`. That is
+the same theorem stated in failure-function language: `n - f` is the
+smallest candidate period, and it must divide n. It is the faster answer
+in theory (O(n) with a small constant, no library search) and the one that
+generalizes, e.g. to "find the smallest period of a string".
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Divisor scan | O(n · sqrt(n)) worst | O(1) |
+| Doubling trick | O(n) expected | O(n) |
+| Failure function (KMP) | O(n) guaranteed | O(n) |
+
+This problem is on the [string algorithms](/dsa/patterns/string-algorithms)
+page because it is the smallest example of the self-overlap family: the
+answer is a statement about the string's own periodicity, and the tools
+(rotation via doubling, the failure function) are the standard
+periodicity instruments.

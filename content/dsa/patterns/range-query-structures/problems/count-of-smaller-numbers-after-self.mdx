@@ -1,0 +1,142 @@
+---
+title: "Count of Smaller Numbers After Self"
+difficulty: "Hard"
+variant: "Fenwick Tree over Values"
+practiceLinks: []
+---
+
+## Problem
+
+Given an integer array `nums`, return an array `answer` where
+`answer[i]` is the number of elements to the right of index i that are
+strictly smaller than `nums[i]`.
+
+**Constraints**
+
+- `1 <= n <= 10^5`
+- `-10^4 <= nums[i] <= 10^4`
+
+**Example**
+
+```text
+Input:  nums = [5, 2, 6, 1]
+Output: [2, 1, 1, 0]
+```
+
+To the right of 5 there are 2 and 1 (two smaller); to the right of 2
+there is 1; to the right of 6 there is 1; nothing is to the right of 1.
+
+## Brute force
+
+For each element, count the smaller elements after it.
+
+```cpp
+std::vector<int> countSmallerBrute(const std::vector<int>& nums) {
+    int n = static_cast<int>(nums.size());
+    std::vector<int> answer(n, 0);
+    for (int i = 0; i < n; ++i) {
+        for (int j = i + 1; j < n; ++j) {
+            if (nums[j] < nums[i]) {
+                ++answer[i];
+            }
+        }
+    }
+    return answer;
+}
+```
+
+O(n²): 10^10 comparisons at the limits, far too slow. And the waste is
+structural: every element compares itself against every element after it,
+re-deriving "how many below x are in this suffix" from scratch each time.
+
+## Optimal: sweep from the right, count with a Fenwick tree
+
+The reformulation: `answer[i]` asks "among the elements after position i,
+how many are less than nums[i]?" Sweep **from the right**, inserting each
+element into a structure that answers "how many inserted values are less
+than x" in O(log n). When you reach position i, everything after it is
+already inserted, so the query is exactly the count you need.
+
+A [Fenwick tree](/dsa/patterns/range-query-structures) does that count
+naturally, but it indexes *positions*, so index it by **value** instead:
+coordinate-compress the values to a small range (sort, assign ranks), and
+let the Fenwick tree count occurrences per rank. "How many values less
+than x" becomes "prefix sum over ranks below rank(x)".
+
+```cpp
+class FenwickTree {
+public:
+    explicit FenwickTree(int n) : tree_(n + 1, 0) {}
+    void add(int i, int delta) {
+        for (++i; i < static_cast<int>(tree_.size()); i += i & (-i)) {
+            tree_[i] += delta;
+        }
+    }
+    long long prefix(int i) const {          // count of ranks [0..i]
+        long long sum = 0;
+        for (++i; i > 0; i -= i & (-i)) {
+            sum += tree_[i];
+        }
+        return sum;
+    }
+private:
+    std::vector<long long> tree_;
+};
+
+std::vector<int> countSmaller(const std::vector<int>& nums) {
+    int n = static_cast<int>(nums.size());
+
+    // Coordinate compression: value -> dense rank.
+    std::vector<int> sorted = nums;
+    std::sort(sorted.begin(), sorted.end());
+    sorted.erase(std::unique(sorted.begin(), sorted.end()), sorted.end());
+    auto rank = [&](int value) {
+        return static_cast<int>(
+            std::lower_bound(sorted.begin(), sorted.end(), value) -
+            sorted.begin());
+    };
+
+    FenwickTree counts(static_cast<int>(sorted.size()));
+    std::vector<int> answer(n);
+    for (int i = n - 1; i >= 0; --i) {       // right to left
+        int r = rank(nums[i]);
+        answer[i] = static_cast<int>(counts.prefix(r - 1));   // below r
+        counts.add(r, 1);                     // insert this value
+    }
+    return answer;
+}
+```
+
+Walk the sweep: processing `[5, 2, 6, 1]` from the right, when we reach 5
+the tree holds {2, 6, 1}, and `prefix(rank(5) - 1)` counts the inserted
+ranks strictly below 5: exactly 2 and 1, so `answer[0] = 2`. The Fenwick
+tree is a frequency table over the *value axis* here, not positions, and
+that axis switch is the entire idea: "count smaller elements" is a prefix
+sum question when you index by value.
+
+The coordinate compression is what keeps the tree small: values span
+2 * 10^4 + 1 possible numbers, which compresses to at most n distinct
+ranks. Without compression (or with a huge value range), the tree would
+need to span the value space, and the memory blows up; compression is the
+standard first move whenever a Fenwick tree indexes values.
+
+Two alternatives worth being able to name. A **merge-sort-based** solution
+counts, during each merge, how many right-half elements jump past each
+left element, accumulating the answer by index: the classic
+"count inversions" machinery, applied per-element. And a
+**BST-with-rank** solution (an order-statistics tree, or a policy of
+inserting into a sorted structure and binary-searching) does the same job
+with the same complexity. All three are O(n log n); the Fenwick version is
+the most mechanical to write, which is why it is the standard answer.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Compare every pair | O(n²) | O(1) |
+| Right sweep + Fenwick over ranks | O(n log n) | O(n) |
+
+This is the canonical "Fenwick tree over values" problem, and it is the
+bridge from [range-query structures](/dsa/patterns/range-query-structures)
+to order statistics: inversions, "k-th smallest in a range", and
+"how many between two values" are all this same axis-switched tree.

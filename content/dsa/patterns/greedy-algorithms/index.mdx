@@ -1,0 +1,116 @@
+---
+title: "Greedy Algorithms"
+summary: "Make the locally best choice at every step and never reconsider it, which is sometimes provably optimal, sometimes a trap, and always worth knowing which."
+---
+
+A greedy algorithm makes one choice at a time, and at each step takes the
+option that looks best *right now*, never revisiting the decision. That
+sounds reckless, and often it is: for most problems, local best choices do
+not add up to a global best answer. But for a specific family of problems
+they provably do, and when a problem is in that family, greedy beats
+[dynamic programming](/dsa/patterns/dynamic-programming) on speed and
+simplicity by an enormous margin. So the discipline is not "use greedy
+when it works" but **recognize when greedy is provably safe, and prove it
+when you claim it**.
+
+## How to spot it
+
+- "Minimum number of X to cover / achieve Y": fewest intervals to cover,
+  fewest coins, minimum platforms.
+- "Maximum you can get with one pass": max activities you can attend, max
+  non-overlapping meetings, best schedule.
+- Sorting the input suggests the structure: many greedy proofs begin "sort
+  by X, then take in order".
+- A DP formulation exists but the state collapses: each choice turns out
+  not to interact, so the table is unnecessary.
+
+The tell for a greedy problem is that **the best local choice never needs
+to be undone**. If you can argue that some optimal solution always
+contains your greedy first move, you are in greedy territory.
+
+## The proof technique: exchange arguments
+
+The way you *prove* a greedy algorithm correct is the exchange argument,
+and it is worth internalizing because it is the actual skill of this
+pattern.
+
+Take any optimal solution. Show that you can *exchange* some piece of it
+for your greedy choice, without making the solution worse. Then the greedy
+choice appears in some optimal solution, so starting with it loses
+nothing, and by induction the whole greedy sequence is optimal.
+
+For interval scheduling ("attend the most non-overlapping meetings"):
+sort by end time, and take each meeting that does not conflict. Exchange
+argument: consider any optimal schedule, and its first meeting. If that
+meeting does not end earliest, swap it for the earliest-ending one: the
+swap cannot create a conflict (the replacement ends no later than what it
+replaced), so the schedule stays legal and the same size. So the
+earliest-ending meeting is in *some* optimal schedule, and the induction
+takes over.
+
+```cpp
+// Maximum number of non-overlapping activities.
+int maxActivities(std::vector<std::pair<int, int>> activities) {
+    std::sort(activities.begin(), activities.end(),
+              [](const auto& a, const auto& b) {
+                  return a.second < b.second;       // earliest end first
+              });
+
+    int chosen = 0;
+    int lastEnd = std::numeric_limits<int>::min();
+    for (auto [start, end] : activities) {
+        if (start >= lastEnd) {                     // no conflict: take it
+            ++chosen;
+            lastEnd = end;
+        }
+    }
+    return chosen;
+}
+```
+
+The sort key is the proof's residue: "earliest end" is what the exchange
+argument licenses, and sorting by start time instead (which *feels* just
+as natural) is wrong, and fails on a long early meeting that blocks two
+short later ones.
+
+## The classic proven-greedy families
+
+- **Interval scheduling**: earliest end time first.
+- **Huffman coding**: repeatedly merge the two least frequent symbols.
+  The proof that the least frequent pair are siblings *somewhere* in some
+  optimal tree is the canonical exchange argument.
+- **Minimum spanning tree** via [Kruskal](/dsa/patterns/advanced-graphs):
+  cheapest edge that does not form a cycle, provable by the cut property.
+- **Dijkstra**, seen as a greedy: finalize the closest unsettled node,
+  safe because [weights are non-negative](/dsa/patterns/graph-specializations).
+- **Fractional knapsack**: take items by value density, which works
+  *only* because fractions are allowed. The 0/1 knapsack does not permit
+  the exchange and needs DP, and the pair is the classic illustration of
+  where the boundary runs.
+- **Jump game / gas station**: the farthest reachable point so far, with
+  proofs by induction on reachability.
+
+## When greedy fails
+
+The failures are as instructive as the successes, and the canonical pair
+is coin change. For canonical coin systems (real currency: 1, 5, 10, 25),
+largest-coin-first greedy is optimal. For `coins = [1, 3, 4]` and
+`amount = 6`, greedy gives `4 + 1 + 1` (three coins) while `3 + 3` (two
+coins) is better: the local choice (the biggest coin that fits) forecloses
+the global optimum, and no exchange can repair it. That is the signature
+of a greedy failure: **a good local choice that removes better global
+options from the board.**
+
+The diagnostic question: "can I imagine a situation where taking the best
+choice now forces me into a worse position later?" If yes, greedy needs a
+proof at minimum, and more likely the problem needs DP, which exists
+precisely to remember every alternative rather than commit to one.
+
+## The takeaway
+
+Greedy is a claim, not a technique: "this local rule is globally safe".
+Write the rule, write the exchange argument that licenses it, and if the
+argument does not come, assume the problem is a DP in disguise. When the
+argument does come, you get the fastest and simplest version of the
+solution, and that payoff is why this pattern is worth its proof-first
+discipline.

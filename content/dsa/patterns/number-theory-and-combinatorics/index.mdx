@@ -1,0 +1,157 @@
+---
+title: "Number Theory & Combinatorics"
+summary: "Primes, GCD, modular arithmetic, and counting without enumerating: the math toolkit that turns TLEs into arithmetic."
+---
+
+A family of problems does not need clever data structures at all. They
+need arithmetic: primes and divisibility, greatest common divisors,
+modular arithmetic, and combinatorial counting. The algorithms are short,
+the speed comes from mathematics rather than structure, and the pattern's
+real content is a set of facts and identities that keep reappearing.
+Almost every tool on this page fits in a few lines, and each one turns a
+"brute force it and pray" solution into a closed-form or near-linear
+answer.
+
+## How to spot it
+
+- Large counts with a small answer space ("how many ways modulo 10^9+7"):
+  combinatorics with modular arithmetic.
+- "How many primes / how many divisors / largest prime factor": sieve
+  territory.
+- "Is x divisible by y", "reduce this fraction", "smallest multiple":
+  GCD and its identities.
+- Powers that overflow (`a^b mod m` with b up to 10^18):
+  fast exponentiation.
+- Huge factorials or binomials requested modulo a prime: the modular
+  division trick.
+
+## Primes and the sieve
+
+The primality question, "is n prime", answers in O(sqrt n) by trial
+division (test divisors up to sqrt n, and there is no smaller correct
+bound without heavy machinery). But the questions "which of these n
+numbers are prime" or "the smallest prime factor of everything up to N"
+are answered wholesale by the **sieve of Eratosthenes**: mark every
+multiple of each prime, starting from p², and what remains unmarked is
+prime. Sieving to N is O(N log log N), essentially linear, and one sieve
+answers every primality and factorization question below N.
+
+```cpp
+std::vector<int> smallestPrimeFactor(int n) {       // linear sieve
+    std::vector<int> spf(n + 1, 0);
+    for (int i = 2; i <= n; ++i) {
+        if (spf[i] == 0) {
+            spf[i] = i;                    // i is prime
+        }
+        for (int j = 2; i * j <= n && j <= spf[i]; ++j) {
+            if (spf[i * j] == 0) {
+                spf[i * j] = j;            // smallest prime factor
+            }
+        }
+    }
+    return spf;
+}
+```
+
+Storing the *smallest prime factor* per number (not just a prime flag)
+upgrades the sieve into a factorization machine: divide n by spf[n]
+repeatedly and you get its full prime factorization in O(log n) steps,
+with no per-number trial division.
+
+## GCD and the identities
+
+The Euclidean algorithm computes gcd(a, b) as gcd(b, a mod b), which
+shrinks fast: O(log min(a, b)) steps. The identities around it are the
+real tools:
+
+- `lcm(a, b) = a / gcd(a, b) * b` (divide *before* multiplying, to avoid
+  overflow).
+- Bezout: `gcd(a, b)` is the smallest positive value of `ax + by` over
+  integers x, y, which is why "solve ax ≡ c (mod b)" and "smallest chunk
+  size that splits two lengths" are all gcd questions.
+- gcd of many numbers: fold. And `gcd(a, b) * lcm(a, b) = a * b`.
+
+## Modular arithmetic
+
+Most counting answers are requested modulo a large prime (10^9 + 7), and
+the rules are the pattern's grammar. Addition, subtraction, and
+multiplication all work "mod m" directly, keeping every intermediate
+value small: `(a + b) mod m`, `a * b mod m`, and the subtraction
+`((a - b) % m + m) % m` (that `+ m` is the classic bug fix, since C++
+modulo of a negative number is negative).
+
+The two non-obvious operations:
+
+**Fast exponentiation** computes `a^b mod m` in O(log b) by repeated
+squaring: `a^b = (a^(b/2))^2` (times a if b is odd), so a 10^18 exponent is
+40 squarings. This is the answer every time a problem says "power" with a
+large exponent.
+
+```cpp
+long long powerMod(long long base, long long exponent, long long mod) {
+    long long result = 1;
+    base %= mod;
+    while (exponent > 0) {
+        if (exponent & 1) {
+            result = result * base % mod;
+        }
+        base = base * base % mod;
+        exponent >>= 1;
+    }
+    return result;
+}
+```
+
+**Modular inverse** is the substitute for division. Division does not
+work modulo m in general (there is no fraction bar), so "divide by x"
+becomes "multiply by the inverse of x", the number y with
+`x * y ≡ 1 (mod m)`. When m is prime, **Fermat's little theorem** gives it
+directly: `x^(m-1) ≡ 1`, so `x^(m-2) ≡ x^-1`, one fast-power call. That is
+why the modulus in competitive settings is prime, and why "n choose k mod
+p" is computed as `factorials` times two inverses rather than any actual
+division.
+
+## Combinatorics
+
+The counting tools, all built on the modular machinery above:
+
+- **n choose k** ("which k of n"): the Pascal recurrence
+  `C(n, k) = C(n-1, k) + C(n-1, k-1)` gives a table, or the factorial
+  formula `n! / (k! (n-k)!)` with modular inverses gives one value fast.
+- **Permutations** P(n, k) = n! / (n-k)!: order matters.
+- **Stars and bars** ("distribute n identical items into k bins"):
+  `C(n + k - 1, k - 1)`, the identity that solves every "how many ways to
+  make change / split / distribute" question.
+- **Catalan numbers** ("how many balanced arrangements"): the answer to
+  valid parentheses, binary trees, polygon triangulations, mountain
+  ranges, all of which are secretly the same problem, via the recurrence
+  or the closed form `C(n) = C(2n, n) / (n + 1)`.
+
+The precompute pattern for factorials deserves a line: build
+`fact[0..n]` and one inverse-factorial table (a single inverse per
+element, computed backwards with `inv[i] = inv[i+1] * (i+1) % m`), and
+every binomial is then one multiplication. That table trick turns "n
+choose k mod p" queries from O(n) each into O(1) each.
+
+## When it doesn't fit
+
+If the answer is requested *exactly* (not modulo), the numbers are the
+limiting factor: factorials past ~20 overflow 64-bit, and the closed-form
+tools stop applying. If the counting question has *interdependence*
+(choose, then the choice changes what is available), it is
+[dynamic programming](/dsa/patterns/dynamic-programming) over a state, not
+a formula: combinatorics counts independent choices, DP counts constrained
+ones. And "count the divisors of n" for a single n is O(sqrt n) trial
+division, no sieve needed, since building one to answer a single question
+is the classic over-engineering.
+
+## Related patterns
+
+- [Bit Manipulation](/dsa/patterns/bit-manipulation) is the binary
+  sibling of this arithmetic family, and bitmask DP uses both.
+- [Dynamic Programming](/dsa/patterns/dynamic-programming) is where
+  constrained counting lives, when the formulas stop applying.
+- [Sorting & Selection](/dsa/patterns/sorting-and-selection) supplies the
+  sorted arrays that coordinate compression and rank queries need.
+- [Hash-Based Structures](/dsa/patterns/hash-based-structures) pairs with
+  factorization for "count divisors across a whole array" problems.

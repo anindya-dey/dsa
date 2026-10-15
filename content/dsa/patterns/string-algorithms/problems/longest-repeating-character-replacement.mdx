@@ -1,0 +1,120 @@
+---
+title: "Longest Repeating Character Replacement"
+difficulty: "Medium"
+variant: "Sliding Window + Frequency"
+practiceLinks: []
+---
+
+## Problem
+
+Given a string `s` and an integer `k`, return the length of the longest
+substring containing only one distinct letter after performing at most `k`
+replacements. A replacement changes any character into any other.
+
+**Constraints**
+
+- `1 <= s.length <= 10^5`
+- `0 <= k <= s.length`
+- `s` consists of uppercase English letters.
+
+**Example**
+
+```text
+Input:  s = "AABABBA", k = 1
+Output: 4
+```
+
+Replacing the 'A' at index 0 with 'B' (or the 'B' at index 4 with 'A')
+gives "BBBB" or "AABA", both length 4 with one distinct letter.
+
+## Brute force
+
+Check every substring: count its letters, and see whether the count of the
+most frequent letter plus k covers the length.
+
+```cpp
+int characterReplacementBrute(const std::string& s, int k) {
+    int n = static_cast<int>(s.size());
+    int best = 0;
+    for (int i = 0; i < n; ++i) {
+        int counts[26] = {};
+        for (int j = i; j < n; ++j) {
+            ++counts[s[j] - 'A'];
+            int length = j - i + 1;
+            int maxFreq = *std::max_element(std::begin(counts),
+                                            std::end(counts));
+            if (maxFreq + k >= length) {
+                best = std::max(best, length);
+            }
+        }
+    }
+    return best;
+}
+```
+
+O(n²) with an alphabet scan inside: too slow for 10^5, and it re-counts
+overlapping substrings from scratch at every start.
+
+## Optimal: sliding window, one condition
+
+The reformulation is the key. A window of length L is fixable
+(count of most frequent letter + k >= L) exactly when the number of
+*non-majority* characters in it is at most k. And that condition is
+maintainable incrementally: a [sliding window](/dsa/patterns/sliding-window)
+with a frequency count per letter and a running maximum.
+
+```cpp
+int characterReplacement(const std::string& s, int k) {
+    int n = static_cast<int>(s.size());
+    int counts[26] = {};
+    int maxFreq = 0;
+    int left = 0;
+    int best = 0;
+
+    for (int right = 0; right < n; ++right) {
+        ++counts[s[right] - 'A'];
+        maxFreq = std::max(maxFreq, counts[s[right] - 'A']);
+
+        // If the window has more than k non-majority chars, shrink.
+        while ((right - left + 1) - maxFreq > k) {
+            --counts[s[left] - 'A'];
+            ++left;
+        }
+        best = std::max(best, right - left + 1);
+    }
+    return best;
+}
+```
+
+The subtle point that makes this correct, and that separates this problem
+from the standard window template: **`maxFreq` is allowed to be stale**.
+When the window shrinks, `maxFreq` is not recomputed; it may hold a
+maximum from a larger window. That is safe because `best` only ever
+needs the *historical* maximum: a window with a truly valid
+`(length - maxFreq <= k)` was recorded when `maxFreq` was fresh, and the
+stale value only means some later windows are evaluated against a
+stronger condition than necessary, which shrinks them without ever
+invalidating a recorded answer. The consequence is that the inner `while`
+runs at most n times total and `maxFreq` never needs the O(26)
+recomputation, keeping the whole algorithm O(n).
+
+If you prefer a version with no staleness argument, recomputing `maxFreq`
+from the 26 counts on each shrink is also correct and still fast in
+practice (26 per step); the stale-maxFreq version is the one interviewers
+expect you to be able to *justify*, which is the real content of this
+problem.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Every substring, recount | O(n² · 26) | O(1) |
+| Sliding window with running max | O(n) | O(26) |
+
+This problem is the bridge between
+[sliding windows](/dsa/patterns/sliding-window) and frequency counting: the
+window condition is not "at most k distinct" but "at most k *non-majority*",
+which is what makes a frequency table plus a maximum the whole state. The
+same skeleton (window + count of what you are allowed to fix) appears in
+"max consecutive ones with k flips" and "longest substring with at most k
+replacements", which are the same problem wearing different clothes.

@@ -1,0 +1,167 @@
+---
+title: "Design HashMap"
+difficulty: "Easy"
+variant: "Buckets and Chaining"
+practiceLinks: []
+---
+
+## Problem
+
+Implement a hash map *without* using the built-in hash-map library:
+`put(key, value)`, `get(key)` returning the value or -1, and
+`remove(key)`. Keys and values are integers in `[0, 10^6]`.
+
+**Constraints**
+
+- `0 <= key, value <= 10^6`
+- At most 10^4 calls.
+- The built-in hash-map libraries are off limits.
+
+**Example**
+
+```text
+put(1, 1)
+put(2, 2)
+get(1) -> 1
+get(3) -> -1
+put(2, 1)      // overwrite
+get(2) -> 1
+remove(2)
+get(2) -> -1
+```
+
+## Brute force
+
+A giant array of size 10^6 + 1, one slot per possible key: `put` and
+`get` and `remove` are all a single array access.
+
+```cpp
+class FixedArrayMap {
+public:
+    FixedArrayMap() : slots_(1000001, -1) {}
+
+    void put(int key, int value) { slots_[key] = value; }
+    int get(int key) const { return slots_[key]; }
+    void remove(int key) { slots_[key] = -1; }
+
+private:
+    std::vector<int> slots_;
+};
+```
+
+O(1) per operation, genuinely correct, and a perfectly reasonable first
+answer to name. Its limits are what make it a "brute force" here rather
+than the answer: it spends O(max key) memory **whether or not the keys
+are used** (10^4 calls can occupy 10^6 slots of allocated space), and it
+only works at all because the key space is small and dense. Negative
+keys, sparse keys, or string keys, and the design collapses; a real hash
+map must pay for what it *stores*, not for what *might* be stored.
+
+## Optimal: hash to buckets, chain the collisions
+
+The standard implementation: an array of buckets, a hash function mapping
+each key to a bucket index, and each bucket holding a small list of
+`(key, value)` pairs, so that colliding keys share the bucket without
+displacing each other (separate chaining).
+
+```cpp
+class MyHashMap {
+public:
+    MyHashMap() : buckets_(kBuckets, nullptr) {}
+
+    void put(int key, int value) {
+        int index = bucketOf(key);
+        for (Node* node = buckets_[index]; node != nullptr;
+             node = node->next) {
+            if (node->key == key) {
+                node->value = value;            // existing: overwrite
+                return;
+            }
+        }
+        buckets_[index] = new Node{key, value, buckets_[index]};
+    }
+
+    int get(int key) const {
+        for (Node* node = buckets_[bucketOf(key)]; node != nullptr;
+             node = node->next) {
+            if (node->key == key) {
+                return node->value;
+            }
+        }
+        return -1;
+    }
+
+    void remove(int key) {
+        int index = bucketOf(key);
+        Node* node = buckets_[index];
+        Node* prev = nullptr;
+        while (node != nullptr) {
+            if (node->key == key) {
+                if (prev == nullptr) {
+                    buckets_[index] = node->next;
+                } else {
+                    prev->next = node->next;
+                }
+                delete node;
+                return;
+            }
+            prev = node;
+            node = node->next;
+        }
+    }
+
+private:
+    struct Node {
+        int key;
+        int value;
+        Node* next;
+    };
+
+    static constexpr int kBuckets = 1024;        // ~10 load factor max
+
+    int bucketOf(int key) const {
+        return (key % kBuckets + kBuckets) % kBuckets;   // safe for negatives
+    }
+
+    std::vector<Node*> buckets_;
+};
+```
+
+Three details carry the design. The **hash function** here is just
+`key % kBuckets`, with the `+ kBuckets` making it safe for negative keys
+(C++ modulo of a negative is negative). The **bucket count** is fixed at
+a size that keeps the expected chain short: with 10^4 calls against 1024
+buckets, the expected chain is ~10 nodes, so every operation is expected
+O(1), which is what "average O(1)" means for a hash map. And the
+**remove** walks with a `prev` pointer because unlinking a singly linked
+node needs the node before it, the same pointer discipline as any
+[linked list](/dsa/patterns/linked-list-manipulation) deletion.
+
+The chaining choice itself is the design decision worth stating out
+loud. The alternative, **open addressing** (probe the next slots on a
+collision), is denser in memory and faster in practice, but it needs a
+deletion marker (tombstones) so that probes past a deleted slot keep
+searching, and it degrades badly as the table fills. Chaining degrades
+gracefully (long chains under a bad hash, but never catastrophic), which
+is why the standard library's `unordered_map` is allowed to use it, and
+why it is the right first answer for "build a hash map".
+
+What this problem is *really* testing is whether you can explain the
+[underlying structure](/dsa/patterns/hash-based-structures): why the
+buckets exist, what a collision is, what the load factor means, and why
+rebuilding-and-rehashing (not shown here, needed when the table grows)
+keeps the average O(1) promise. The code is short; the model is the
+content.
+
+## Complexity
+
+| Approach | Time per op | Space |
+| --- | --- | --- |
+| Fixed array | O(1) | O(max key) always |
+| Chained buckets | O(1) expected | O(stored entries) |
+
+Expected O(1) per operation with O(n) space for n stored entries, versus
+the array's O(max key) space. The trade is exactly the
+[space-for-speed](/dsa/patterns/hash-based-structures) trade in reverse:
+the array pays memory for guaranteed speed, the hash map pays hash
+collisions for proportional memory.

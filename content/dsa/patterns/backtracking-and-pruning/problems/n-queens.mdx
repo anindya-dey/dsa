@@ -1,0 +1,115 @@
+---
+title: "N-Queens"
+difficulty: "Hard"
+variant: "Pruned Backtracking"
+practiceLinks: []
+---
+
+## Problem
+
+Place `n` queens on an `n x n` chessboard so that no two queens attack each
+other (no shared row, column, or diagonal). Return the number of distinct
+solutions, or all boards, depending on the variant.
+
+**Constraints**
+
+- `1 <= n <= 9`
+
+**Example**
+
+```text
+Input:  n = 4
+Output: 2 boards, e.g.
+[".Q..",
+ "...Q",
+ "Q...",
+ "..Q."]
+```
+
+## Brute force
+
+Enumerate every placement of n queens on n² squares, filter the valid
+ones. The count of placements is "n² choose n", which for n = 8 is about
+2.9 * 10^14: hopeless. A tighter naive version enumerates arrangements
+with one queen per row (still 8^8 ≈ 1.7 * 10^7 for n = 8), which is
+walkable for small n but re-derives invalid columns and diagonals over and
+over.
+
+## The pattern: one decision per row, pruned by attack lines
+
+The key simplification: **each row holds exactly one queen** (two queens
+in a row always attack each other), so the search is "which column for
+each row, in order", one decision per row. That alone shrinks the space to
+n^n, and the pruning does the rest.
+
+At each row, try each column, and reject it if it shares a column or
+diagonal with any earlier queen. The test is the pattern: a queen at row
+r, column c attacks column c forever (same column) and the squares where
+row - col or row + col match (the two diagonal families), so three
+booleans per column count the whole conflict state.
+
+```cpp
+class Solution {
+public:
+    int totalNQueens(int n) {
+        cols_.assign(n, false);
+        diag1_.assign(2 * n, false);      // row + col
+        diag2_.assign(2 * n, false);      // row - col + n
+        count_ = 0;
+        place(n, 0);
+        return count_;
+    }
+
+private:
+    void place(int n, int row) {
+        if (row == n) {
+            ++count_;                     // every row filled legally
+            return;
+        }
+        for (int col = 0; col < n; ++col) {
+            int d1 = row + col;
+            int d2 = row - col + n;
+            if (cols_[col] || diag1_[d1] || diag2_[d2]) {
+                continue;                 // prune: attacked square
+            }
+            cols_[col] = diag1_[d1] = diag2_[d2] = true;   // decide
+            place(n, row + 1);
+            cols_[col] = diag1_[d1] = diag2_[d2] = false;  // undo
+        }
+    }
+
+    std::vector<bool> cols_;
+    std::vector<bool> diag1_;
+    std::vector<bool> diag2_;
+    int count_;
+};
+```
+
+Two things make this fast rather than merely correct. First, the conflict
+test is O(1) per square: the diagonal families are lines of constant
+`row + col` and `row - col`, so two boolean arrays indexed by those values
+answer "is this diagonal occupied" without scanning earlier queens.
+Second, the pruning is *early*: an invalid queen at row 2 kills every
+completion of rows 3 through n-1, so a bad early decision costs three
+booleans rather than thousands of boards.
+
+The symmetry optimization worth mentioning: reflecting a solution across
+the vertical axis gives another solution, so for counting you can fix the
+first row's queen to the left half and double, halving the search. Not
+required, but it is the kind of observation that shows you understand the
+*tree* rather than the code.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Enumerate all placements | ~n² choose n, hopeless | - |
+| One queen per row, no pruning | O(n^n) | O(n) |
+| Row-by-row with attack pruning | O(n!) worst, far less in practice | O(n) |
+
+The honest bound is "at most n!" (the pruned tree is a subset of the
+permutation tree), and the practical count is far below it: n = 8 explores
+a few thousand nodes, not millions. This problem is the canonical
+demonstration of pruning's value, the hardest standard entry in
+[backtracking](/dsa/patterns/backtracking-and-pruning), and the template
+for every "arrange objects under mutual constraints" puzzle since.

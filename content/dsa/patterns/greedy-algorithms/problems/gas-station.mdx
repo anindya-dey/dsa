@@ -1,0 +1,128 @@
+---
+title: "Gas Station"
+difficulty: "Medium"
+variant: "Greedy with a Key Lemma"
+practiceLinks: []
+---
+
+## Problem
+
+There are `n` gas stations along a circular route, where station i has
+`gas[i]` gas and the next station is `cost[i]` away. Starting with an empty
+tank at some station (your choice), return the starting station index from
+which you can travel the full circuit clockwise once, or -1 if impossible.
+It is guaranteed the total gas equals or exceeds the total cost when a
+solution exists.
+
+**Constraints**
+
+- `1 <= n <= 10^5`
+- `1 <= gas[i], cost[i] <= 10^4`
+
+**Example**
+
+```text
+Input:  gas = [1, 2, 3, 4, 5], cost = [3, 4, 5, 1, 2]
+Output: 3
+```
+
+Starting at station 3, the tank stays non-negative
+(`+4-1=3`, `+5-2=6`, `+1-3=4`, `+2-4=2`, `+3-5=0`) around the loop.
+
+## Brute force
+
+Try every station as the start, and simulate the circuit from each.
+
+```cpp
+int canCompleteCircuitBrute(const std::vector<int>& gas,
+                            const std::vector<int>& cost) {
+    int n = static_cast<int>(gas.size());
+    for (int start = 0; start < n; ++start) {
+        int tank = 0;
+        bool ok = true;
+        for (int step = 0; step < n; ++step) {
+            int station = (start + step) % n;
+            tank += gas[station] - cost[station];
+            if (tank < 0) {
+                ok = false;              // ran dry: this start fails
+                break;
+            }
+        }
+        if (ok) {
+            return start;
+        }
+    }
+    return -1;
+}
+```
+
+O(n²): 10^10 steps at the limits, far too slow. The waste is total: every
+failing start re-walks stations that every other failing start already
+walked.
+
+## Optimal: one pass, with a lemma
+
+The greedy structure rests on one lemma, which is the whole problem: **if
+you start at station A and first run out of gas at station B (strictly
+past A), then no station in between A and B can be a valid start either.**
+
+Why: somewhere in A..B the tank dipped below its running value, and any
+start inside that range inherits a tank *at most as high* as the one that
+just failed. Formally, if `A + ... + k < 0` for some k between A and B,
+then starting at any station j in (A, k] gives you a tank of
+`(j + ... + k) = (A + ... + k) - (A + ... + j-1)`, which is *at most* the
+failed prefix (the removed part was non-negative as long as you survived
+it). So the entire stretch A..B is disqualified at once, and the next
+candidate is B + 1.
+
+```cpp
+int canCompleteCircuit(const std::vector<int>& gas,
+                       const std::vector<int>& cost) {
+    int n = static_cast<int>(gas.size());
+    int tank = 0;                       // tank since the candidate start
+    int total = 0;                      // tank over the whole circuit
+    int start = 0;
+
+    for (int i = 0; i < n; ++i) {
+        int delta = gas[i] - cost[i];
+        tank += delta;
+        total += delta;
+        if (tank < 0) {                 // ran dry: everything up to i
+            start = i + 1;              // is disqualified by the lemma
+            tank = 0;
+        }
+    }
+    return total >= 0 ? start : -1;
+}
+```
+
+Walk the logic: `tank` is the fuel since the current candidate `start`;
+when it dips negative at station i, the lemma disqualifies every start
+from `start` through i, so the next candidate is i+1 with a fresh tank.
+`total` tracks the whole-circuit balance, and at the end, if the total is
+non-negative, the surviving candidate is the answer.
+
+The subtle correctness point: why does the surviving candidate not need
+re-verification? Because the stations *after* the candidate were each
+survived with a tank that started *lower* (at 0, not at the candidate's
+carry-over balance), so starting with any accumulated surplus only makes
+the wrap-around easier. The final loop past the candidate was already
+walked under worse conditions than the wrap-around will face. That is the
+proof, and it is an exchange argument in
+[greedy](/dsa/patterns/greedy-algorithms) form: the lemma exchanges a
+failed stretch for a single skip.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Try every start | O(n²) | O(1) |
+| One pass with the lemma | O(n) | O(1) |
+
+This problem is the canonical "greedy with a key lemma" example: the
+algorithm is three lines, but the license to skip the disqualified stretch
+is a real argument, and stating it is what the problem is actually
+testing. The same shape (batch-disqualify on first failure) appears in
+[merge intervals](/dsa/patterns/intervals-and-sweep-line) and in jump-game
+variants, wherever a failing prefix kills a whole range of candidates at
+once.

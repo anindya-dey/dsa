@@ -1,0 +1,123 @@
+---
+title: "Subsets"
+difficulty: "Medium"
+variant: "Include or Skip"
+practiceLinks: []
+---
+
+## Problem
+
+Given an integer array `nums` of unique elements, return all possible
+subsets (the power set). The solution set must not contain duplicate
+subsets, and order does not matter.
+
+**Constraints**
+
+- `1 <= n <= 10`
+- `-10 <= nums[i] <= 10`
+- All elements are unique.
+
+**Example**
+
+```text
+Input:  nums = [1, 2, 3]
+Output: [[], [1], [2], [1,2], [3], [1,3], [2,3], [1,2,3]]
+```
+
+Eight subsets for three elements: 2³, each element in or out.
+
+## Brute force
+
+The honest brute force is exactly the backtracking solution without
+recognizing the structure; the real contrast is with the *bitmask*
+enumeration, which is the direct interpretation of "each element in or
+out".
+
+```cpp
+std::vector<std::vector<int>> subsetsBitmask(
+        const std::vector<int>& nums) {
+    int n = static_cast<int>(nums.size());
+    std::vector<std::vector<int>> result;
+    for (int mask = 0; mask < (1 << n); ++mask) {
+        std::vector<int> subset;
+        for (int i = 0; i < n; ++i) {
+            if (mask & (1 << i)) {
+                subset.push_back(nums[i]);
+            }
+        }
+        result.push_back(std::move(subset));
+    }
+    return result;
+}
+```
+
+This works and is O(n · 2^n), which is optimal (there *are* 2^n subsets).
+It is worth knowing, and it is the clearest proof that the answer count is
+2^n. Its limitation is that it only handles include-or-skip spaces: the
+moment the problem adds an ordering or a constraint (permutations,
+duplicates, a sum limit), the mask cannot express it, and you need the
+general walk.
+
+## The pattern: one decision per element
+
+The backtracking version makes the structure explicit: at each element,
+two branches, and the shared candidate is extended then retracted.
+
+```cpp
+void subsetsBacktrack(const std::vector<int>& nums, int index,
+                       std::vector<int>& current,
+                       std::vector<std::vector<int>>& result) {
+    if (index == static_cast<int>(nums.size())) {
+        result.push_back(current);       // every element decided: record
+        return;
+    }
+    subsetsBacktrack(nums, index + 1, current, result);   // skip
+    current.push_back(nums[index]);                      // include
+    subsetsBacktrack(nums, index + 1, current, result);
+    current.pop_back();                                  // undo include
+}
+```
+
+Walk `[1, 2, 3]` by hand to see the rhythm: the walk descends skipping 1
+and 2 and 3 (recording `[]`), then backtracks one level and includes 3
+(`[3]`), then two levels for `[2]` and `[2,3]`, and so on. The `pop_back`
+is what lets the same `current` vector serve all eight leaves: without
+the undo, each branch would inherit the previous branch's choices, and
+the recorded subsets would be garbage.
+
+The variant with a loop instead of skip/include branches is worth knowing
+too, because it generalizes to combinations ("subsets of size k") with a
+one-line change: iterate options from the current index forward, so
+selections are always built in order and `{1,3}` is produced once rather
+than twice.
+
+```cpp
+void combinations(const std::vector<int>& nums, int start, int k,
+                  std::vector<int>& current,
+                  std::vector<std::vector<int>>& result) {
+    if (current.size() == k) {
+        result.push_back(current);
+        return;
+    }
+    for (int i = start; i < static_cast<int>(nums.size()); ++i) {
+        current.push_back(nums[i]);
+        combinations(nums, i + 1, k, current, result);
+        current.pop_back();
+    }
+}
+```
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Bitmask enumeration | O(n · 2^n) | O(n) per subset |
+| Backtracking walk | O(n · 2^n) | O(n) recursion + output |
+
+Both are optimal in the sense that the output alone is size n · 2^n. This
+problem is the entry point to the whole
+[backtracking](/dsa/patterns/backtracking-and-pruning) family: permutations
+are the same tree with "which element next" decisions, combination sum adds
+a pruning condition, and n-queens adds a validity check on each placement.
+The template is identical across all of them; only the decision and the
+prune change.

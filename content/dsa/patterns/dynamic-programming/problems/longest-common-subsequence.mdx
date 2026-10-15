@@ -1,0 +1,113 @@
+---
+title: "Longest Common Subsequence"
+difficulty: "Medium"
+variant: "2D Sequence DP"
+practiceLinks: []
+---
+
+## Problem
+
+Given two strings `text1` and `text2`, return the length of their longest
+common subsequence: the longest sequence that appears in both strings in
+the same relative order, not necessarily contiguous. If there is no common
+subsequence, return 0.
+
+**Constraints**
+
+- `1 <= text1.length, text2.length <= 1000`
+- Strings consist of lowercase English letters.
+
+**Example**
+
+```text
+Input:  text1 = "abcde", text2 = "ace"
+Output: 3
+```
+
+The common subsequence `"ace"` appears in both (a, c, e in order), and
+nothing longer does.
+
+## Brute force
+
+Match prefixes character by character: for each pair of positions, either
+the characters match (extend and recurse on both remainders) or they do not
+(recurse skipping one side, then the other, and keep the better).
+
+```cpp
+int lcsBrute(const std::string& a, int i, const std::string& b, int j) {
+    if (i == static_cast<int>(a.size()) ||
+        j == static_cast<int>(b.size())) {
+        return 0;
+    }
+    if (a[i] == b[j]) {
+        return 1 + lcsBrute(a, i + 1, b, j + 1);
+    }
+    return std::max(lcsBrute(a, i + 1, b, j), lcsBrute(a, i, b, j + 1));
+}
+```
+
+Exponential in the worst case: every mismatch branches into two recursive
+calls, and the same `(i, j)` pair is reached by many different paths. Two
+strings of length n have n² distinct position pairs, so at most n²
+*distinct* questions exist, asked in a catastrophically wasteful order.
+
+## Optimal: 2D DP over prefix pairs
+
+The state is the pair of prefixes: `best[i][j]` is the length of the
+longest common subsequence of the first i characters of `text1` and the
+first j characters of `text2`. The recurrence follows the brute force's
+logic, but each pair is computed once.
+
+- Base: `best[0][j] = best[i][0] = 0`, since an empty prefix shares nothing.
+- If `text1[i-1] == text2[j-1]`, those characters can end a common
+  subsequence: `best[i][j] = best[i-1][j-1] + 1`.
+- Otherwise, one of the two characters is not in the answer, so skip it:
+  `best[i][j] = max(best[i-1][j], best[i][j-1])`.
+
+```cpp
+int longestCommonSubsequence(const std::string& text1,
+                             const std::string& text2) {
+    int m = static_cast<int>(text1.size());
+    int n = static_cast<int>(text2.size());
+    std::vector<std::vector<int>> best(m + 1, std::vector<int>(n + 1, 0));
+
+    for (int i = 1; i <= m; ++i) {
+        for (int j = 1; j <= n; ++j) {
+            if (text1[i - 1] == text2[j - 1]) {
+                best[i][j] = best[i - 1][j - 1] + 1;
+            } else {
+                best[i][j] =
+                    std::max(best[i - 1][j], best[i][j - 1]);
+            }
+        }
+    }
+    return best[m][n];
+}
+```
+
+The match case deserves a second look, because it is where people go
+wrong. On a match, why not also consider `max(best[i-1][j],
+best[i][j-1])`? Because those cells are provably no larger:
+`best[i-1][j-1] + 1` beats or equals both (dropping a matching character
+from a common subsequence never helps). So taking the match is always
+safe, which is what makes this recurrence tight.
+
+Reconstruction of the actual subsequence (not just its length) follows the
+same walk backward: from `(m, n)`, if the characters match, that character
+is in the answer and both indices step back; otherwise step toward
+whichever of `best[i-1][j]` and `best[i][j-1]` produced the current value.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Recursive without memo | exponential | O(n) stack |
+| 2D DP | O(m · n) | O(m · n), O(min(m,n)) with two rows |
+
+The space optimization is worth naming: each row depends only on the row
+above (and diagonally), so two rows suffice, and iterating over the
+shorter string keeps the rows small. This is the canonical 2D
+[sequence DP](/dsa/patterns/dynamic-programming) shape, and the same
+skeleton with a tweaked recurrence gives edit distance, longest common
+substring (contiguous: reset to 0 on mismatch), and minimum ASCII delete
+cost.

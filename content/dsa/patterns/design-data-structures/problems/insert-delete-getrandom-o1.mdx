@@ -1,0 +1,124 @@
+---
+title: "Insert Delete GetRandom O(1)"
+difficulty: "Medium"
+variant: "Array + Hash Map"
+practiceLinks: []
+---
+
+## Problem
+
+Implement a set-like structure supporting `insert(val)` (returns true if
+the value was not already present), `remove(val)`, and `getRandom()`
+returning a uniform random element, all in average O(1).
+
+**Constraints**
+
+- `-2^31 <= val <= 2^31 - 1`
+- At most 2 * 10^5 calls; `getRandom` is only called with at least one
+  element present.
+
+**Example**
+
+```text
+insert(1) -> true
+insert(2) -> true
+getRandom() -> 1 or 2, uniformly
+remove(1) -> true
+getRandom() -> always 2
+```
+
+## Brute force
+
+Store the elements in a hash set. Insert and remove are O(1), but
+`getRandom` has no support at all: hash sets keep no indexable order, so
+"pick uniformly" degenerates into copying the set into a vector and
+indexing randomly, which is O(n) per call.
+
+The seemingly better fix, a plain `std::vector` for random indexing,
+breaks the other direction: `remove` on a vector is O(n) (find the
+element, shift everything after it), so the complexity bound dies there
+instead. The problem is engineered so neither half-structure survives
+alone, which is the whole point: **the answer must compose two
+structures, each answering the question the other cannot.**
+
+## Optimal: array for indexing, map for locations
+
+Keep a vector of elements (for O(1) uniform sampling) and a hash map from
+value to its index in the vector (for O(1) location). Insert appends to
+both. Remove is the load-bearing trick: **swap the removed element with
+the vector's last element before popping**, so the pop is at the end and
+nothing shifts, with the map entry for the swapped-in element updated to
+its new index.
+
+```cpp
+class RandomizedSet {
+public:
+    RandomizedSet() = default;
+
+    bool insert(int val) {
+        if (position_.count(val)) {
+            return false;                       // already present
+        }
+        position_[val] = static_cast<int>(values_.size());
+        values_.push_back(val);
+        return true;
+    }
+
+    bool remove(int val) {
+        auto it = position_.find(val);
+        if (it == position_.end()) {
+            return false;
+        }
+        int index = it->second;
+        int lastIndex = static_cast<int>(values_.size()) - 1;
+        int lastValue = values_[lastIndex];
+
+        values_[index] = lastValue;             // overwrite target with last
+        position_[lastValue] = index;           // fix the map for the moved one
+        values_.pop_back();                     // remove from the end only
+        position_.erase(it);
+        return true;
+    }
+
+    int getRandom() {
+        std::uniform_int_distribution<int> dist(
+            0, static_cast<int>(values_.size()) - 1);
+        return values_[dist(rng_)];
+    }
+
+private:
+    std::vector<int> values_;                    // for uniform sampling
+    std::unordered_map<int, int> position_;      // value -> index in values_
+    std::mt19937 rng_{std::random_device{}()};
+};
+```
+
+Walk the remove to see why the invariant holds. The two structures must
+agree after every operation: every value in the vector is a key in the
+map, and every map key's index points at that value. The swap maintains
+both at once: `values_[index] = lastValue` moves the surviving element,
+`position_[lastValue] = index` records where it went, and only then is
+the value erased from both. Removing the map entry *before* moving the
+last element (or forgetting the `position_[lastValue]` update when
+index == lastIndex) is the classic bug in this problem, and it leaves the
+map pointing at a popped slot.
+
+The edge case hides in plain sight: when the element being removed *is*
+the last element, the "swap" is a self-swap, which the code handles
+naturally (the assignments are redundant but harmless, and the erase
+removes the entry before the pop makes it dangling). Tracing that case
+explicitly in an interview is worth the thirty seconds.
+
+## Complexity
+
+| Operation | Cost | Why |
+| --- | --- | --- |
+| insert | O(1) average | one map insert, one vector push |
+| remove | O(1) average | one map lookup, swap, two erases |
+| getRandom | O(1) | uniform index into a vector |
+
+Space is O(n), the two structures holding each element once. This is the
+canonical [design data structures](/dsa/patterns/design-data-structures)
+problem: two structures, each answering one question, kept in sync by one
+swap trick, with the complexity bound doing the work of ruling out every
+single-structure answer.

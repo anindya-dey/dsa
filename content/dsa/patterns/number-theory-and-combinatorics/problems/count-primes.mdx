@@ -1,0 +1,124 @@
+---
+title: "Count Primes"
+difficulty: "Medium"
+variant: "Sieve of Eratosthenes"
+practiceLinks: []
+---
+
+## Problem
+
+Count all prime numbers strictly less than a given integer `n`.
+
+**Constraints**
+
+- `0 <= n <= 5 * 10^6`
+
+**Example**
+
+```text
+Input:  n = 10
+Output: 4
+```
+
+The primes below 10 are 2, 3, 5, 7.
+
+## Brute force
+
+Test each number below n for primality by trial division.
+
+```cpp
+bool isPrime(int x) {
+    if (x < 2) {
+        return false;
+    }
+    for (int d = 2; d * d <= x; ++d) {
+        if (x % d == 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+int countPrimesBrute(int n) {
+    int count = 0;
+    for (int x = 2; x < n; ++x) {
+        if (isPrime(x)) {
+            ++count;
+        }
+    }
+    return count;
+}
+```
+
+O(n · sqrt n): for n = 5 * 10^6 that is on the order of 10^10 divisions,
+far too slow. The waste is glaring in hindsight: while testing 999983,
+the loop already *proved* that 999977 was prime, and separately proved
+that 999959's divisors do not divide it, and so on. Every composite below
+n gets discovered many times by many callers.
+
+## Optimal: the sieve
+
+The sieve of Eratosthenes does not test numbers one at a time. It starts
+from the fact that 2 is prime, and therefore **every multiple of 2 is
+composite**, crossing them all off in one stroke. Then 3, then 5, and
+each unmarked number reached is prime, because nothing smaller divides it
+(if something did, it would have been crossed off).
+
+```cpp
+int countPrimes(int n) {
+    if (n < 3) {
+        return n > 2 ? 0 : 0;    // no primes below 2; below 3 only 2
+    }
+    std::vector<char> isComposite(n, 0);    // char: 5MB, not 5MB * 8
+    int count = 0;
+    for (int p = 2; p < n; ++p) {
+        if (!isComposite[p]) {
+            ++count;                        // unmarked: prime
+            if (static_cast<long long>(p) * p < n) {
+                for (long long multiple = 1LL * p * p;
+                     multiple < n;
+                     multiple += p) {
+                    isComposite[multiple] = 1;
+                }
+            }
+        }
+    }
+    return count;
+}
+```
+
+Three implementation details carry the correctness and the speed. First,
+the marking loop starts at **p²**, not 2p: any smaller multiple of p,
+say k*p with k < p, has a prime factor smaller than p (namely the factors
+of k), so it was already crossed off when that smaller prime was
+processed. Starting at 2p re-does work, and starting at p² is the
+standard optimization that makes the inner loops cheap. Second, the outer
+loop can stop at sqrt(n) entirely (or rely on the `p*p < n` guard, as
+here, which does the same thing without a second loop bound): past
+sqrt(n), there are no multiples left to mark for the first time.
+
+Third, the memory choice matters at this scale: a `std::vector<bool>`
+is bit-packed and slow to write through, and a `vector<int>` is 8x the
+memory. A `vector<char>` is the practical middle ground (one byte per
+number, 5MB at the constraint limit), and bitsets are worth it only when
+the range grows another order of magnitude.
+
+The total cost is the sum over primes p < n of n/p markings, which is
+n times the sum of reciprocals of primes: the famous O(n log log n),
+essentially linear in practice. For contrast, the per-number trial
+division is O(n * sqrt n / log n)-ish even with the prime-only
+optimization, which is two orders of magnitude worse at this n.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Trial division per number | O(n * sqrt n) | O(1) |
+| Sieve of Eratosthenes | O(n log log n) | O(n) |
+
+This problem is the entry point to
+[number theory](/dsa/patterns/number-theory-and-combinatorics): the sieve
+is the tool whenever primality or factorization is needed for *many*
+numbers at once, and the smallest-prime-factor variant (storing the
+crossing-off prime rather than a flag) upgrades it into a per-number
+factorization machine.

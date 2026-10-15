@@ -1,0 +1,111 @@
+---
+title: "Jump Game"
+difficulty: "Medium"
+variant: "Greedy Reachability"
+practiceLinks: []
+---
+
+## Problem
+
+You start at index 0 of a non-negative integer array `nums`, where
+`nums[i]` is the maximum jump length from that position (you may jump any
+distance from 1 to that value, or stay). Return whether you can reach the
+last index.
+
+**Constraints**
+
+- `1 <= n <= 10^4`
+- `0 <= nums[i] <= 10^5`
+
+**Example**
+
+```text
+Input:  nums = [2, 3, 1, 1, 4]
+Output: true    // 0 -> 1 -> 3 -> 4 (or 0 -> 2 -> 3 -> 4)
+
+Input:  nums = [3, 2, 1, 0, 4]
+Output: false   // whatever you do, you land on index 3 and cannot leave
+```
+
+## Brute force
+
+From every reachable position, try every jump length, and explore.
+
+```cpp
+bool canJumpBrute(const std::vector<int>& nums) {
+    int n = static_cast<int>(nums.size());
+    std::vector<bool> reachable(n, false);
+    reachable[0] = true;
+
+    for (int i = 0; i < n; ++i) {
+        if (!reachable[i]) {
+            continue;
+        }
+        for (int jump = 1; jump <= nums[i] && i + jump < n; ++jump) {
+            reachable[i + jump] = true;
+        }
+    }
+    return reachable[n - 1];
+}
+```
+
+O(n · max jump): 10^4 positions times up to 10^5 jump lengths is 10^9
+work, too slow at the limits. The waste is that reachability is being
+computed square-by-square when it has a simpler global structure.
+
+## Optimal: track the farthest reachable index
+
+The greedy observation: you do not care *which* path reaches far, only
+*whether some path does*. So track one number, `farthest`, the maximum
+index reachable so far, and sweep left to right: each position i is
+reachable exactly when `i <= farthest`, and each reachable position extends
+farthest to i + nums[i].
+
+```cpp
+bool canJump(const std::vector<int>& nums) {
+    int n = static_cast<int>(nums.size());
+    int farthest = 0;
+
+    for (int i = 0; i < n; ++i) {
+        if (i > farthest) {
+            return false;              // a gap: nothing reaches here
+        }
+        farthest = std::max(farthest, i + nums[i]);
+    }
+    return true;
+}
+```
+
+Why is the single number enough? Because reachability is *monotone*: if
+some path reaches index j, then every index below j is on that path's
+route (you can always jump shorter). So the set of reachable indices is
+always a prefix `0..farthest`, and updating the prefix boundary as you
+sweep is the entire problem. That is the exchange-argument spirit of
+[greedy algorithms](/dsa/patterns/greedy-algorithms): the local choice
+("extend farthest") is safe because no alternative ever reaches further.
+
+The failure case makes the mechanism visible: in `[3, 2, 1, 0, 4]`, the
+sweep reaches `farthest = 3`, and index 4 is beyond it, so the loop
+returns false the moment it stands on an unreachable index.
+
+The follow-up, Jump Game II ("minimum jumps to reach the end"), is the
+same sweep grouped into layers: the current jump's range is
+`farthest_{layer}` to `farthest_{layer + 1}`, and you count how many
+layers the end falls in. It is
+[level-order BFS](/dsa/patterns/binary-trees-and-bsts/problems/binary-tree-level-order-traversal)
+disguised as a greedy, which is exactly the relationship you would expect
+between reachability and breadth-first search.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Explore every jump | O(n · maxJump) | O(n) |
+| Farthest-index sweep | O(n) | O(1) |
+
+This is the cleanest example of greedy *reachability*: replacing an
+exhaustive search over paths with one accumulated maximum, because the
+property being tracked is monotone. The same one-number sweep solves the
+gas-station problem ("can you complete the circuit") and video-stitching
+("cover the interval with fewest clips"), which are the same reachability
+structure with the interval framing.

@@ -1,0 +1,128 @@
+---
+title: "Backtracking & Pruning"
+summary: "Explore every candidate by building it one decision at a time, and undo each decision on the way back so the same slots can be reused."
+---
+
+Backtracking is [recursion](/dsa/patterns/recursion-and-math) turned into a
+search. The idea: to enumerate all possibilities, build a candidate
+**one decision at a time**, and when you reach a dead end or a complete
+candidate, *undo* the last decision and try the next one. The "undo" is the
+name of the pattern: you walk down a tree of choices, and on the way back
+up, you erase what you did so the same slots can be tried with different
+values.
+
+The reason this is a distinct pattern and not just "recursion" is the
+state-sharing trick. A naive enumeration constructs a fresh copy of the
+candidate for every branch. Backtracking instead keeps **one shared
+candidate** and mutates it in place: append a choice, recurse, pop the
+choice. The same array serves every path through the tree, which is where
+the memory and cache efficiency comes from, and also where the bugs come
+from (forget to undo, and later branches see the previous path's ghost).
+
+## How to spot it
+
+- The problem asks to **enumerate**: "return all subsets", "all
+  permutations", "all valid boards", "all combinations".
+- Or to **find any** satisfying assignment: n-queens, sudoku, crossword
+  filling, word break.
+- The candidate is built by a sequence of decisions, and each decision
+  constrains the later ones.
+- The search space is too large to materialize but small enough to walk:
+  you need the answers, not a data structure holding them all.
+
+The classic signature is exponential search space with a "build, check,
+undo" rhythm, and constraints that can reject a partial candidate early.
+
+## The template
+
+Every backtracking solution is the same three-part shape:
+
+```cpp
+void backtrack(State& candidate, Choices& options) {
+    if (isComplete(candidate)) {
+        record(candidate);               // a full answer: save it
+        return;
+    }
+    for (choice : optionsAtThisStep(candidate)) {
+        if (!isValid(candidate, choice)) {
+            continue;                     // prune: this branch is dead
+        }
+        apply(candidate, choice);         // decide
+        backtrack(candidate, options);   // explore deeper
+        undo(candidate, choice);         // undo: the pattern's name
+    }
+}
+```
+
+The three lines `apply`, `recurse`, `undo` are the entire pattern, and
+getting the undo right is where most bugs live. If the state is an array
+being appended to, undo is `pop_back`. If it is a visited set, undo is
+`erase`. If it is a bitmask, undo is clearing the bit. Whatever it is, it
+must exactly reverse `apply`, or the next branch starts from a corrupted
+candidate.
+
+## Subsets and permutations: the two canonical enumerations
+
+**Subsets** ("every selection of elements") chooses, at each element,
+whether to include it, giving 2^n leaves. **Permutations** ("every
+ordering") chooses, at each position, which remaining element goes there,
+giving n! leaves. And **combinations** ("every selection of k, order
+irrelevant) is subsets with a size limit, with the crucial detail that you
+never go *backwards* in the options list: iterate from the last chosen
+index forward, which is what makes `{a, b}` and `{b, a}` the same answer
+rather than two.
+
+```cpp
+// All subsets of nums, via include-or-skip decisions.
+void subsets(const std::vector<int>& nums, int index,
+             std::vector<int>& current,
+             std::vector<std::vector<int>>& result) {
+    if (index == static_cast<int>(nums.size())) {
+        result.push_back(current);       // a complete selection
+        return;
+    }
+    subsets(nums, index + 1, current, result);      // skip nums[index]
+    current.push_back(nums[index]);                  // include it
+    subsets(nums, index + 1, current, result);
+    current.pop_back();                              // undo
+}
+```
+
+## Pruning: cutting the tree before it grows
+
+The power of backtracking is not the walk, it is **not walking the dead
+branches**. Pruning is any check that rejects a partial candidate before
+extending it, and the earlier the rejection, the more of the subtree you
+skip.
+
+- N-Queens: a square attacking an earlier queen kills the whole
+  arrangement of queens above it, so never place her.
+- Sudoku: a cell with no legal digit means the earlier fills are wrong;
+  backtrack immediately rather than continuing.
+- Combination Sum with a sorted array: once the running sum exceeds the
+  target, every later element (which is at least as large) also exceeds it;
+  break the loop rather than recursing.
+
+Good pruning turns exponential into *practically* exponential-but-tiny,
+and it is where the interview points are: the difference between a correct
+solution and a fast one is almost always the pruning rule, stated out
+loud, with a reason.
+
+## When it doesn't fit
+
+If the problem asks for the *count* of solutions rather than the solutions
+themselves, [dynamic programming](/dsa/patterns/dynamic-programming) is
+usually the better tool: counting does not need the actual candidates, so
+the whole walk can be collapsed into a table. If the choices have no
+interaction (each element decides independently), a simple loop or
+[greedy](/dsa/patterns/greedy-algorithms) pass does it. And if the pruning
+cannot reject early (constraints only become checkable at the end), you
+are enumerating, not backtracking, and the complexity is the honest
+exponential.
+
+## The takeaway
+
+Backtracking is a depth-first walk over a tree of decisions, with an undo
+step that lets one shared candidate serve every path. Write the template
+once, get the apply/undo symmetric, and then invest everything in the
+pruning rules: that is where the speed lives.
