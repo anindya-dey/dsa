@@ -1,0 +1,163 @@
+---
+title: "Word Ladder"
+difficulty: "Hard"
+variant: "BFS Shortest Path"
+practiceLinks: []
+---
+
+## Problem
+
+Given two words `beginWord` and `endWord` and a dictionary `wordList`,
+return the length of the shortest transformation sequence from
+`beginWord` to `endWord` in which each step changes exactly one letter
+and every intermediate word must be in the dictionary. Return 0 if no
+such sequence exists.
+
+**Constraints**
+
+- `1 <= beginWord.length <= 10`
+- All words are lowercase English letters.
+- `beginWord != endWord`
+- `wordList` has at most 5000 words.
+
+**Example**
+
+```text
+Input:  beginWord = "hit", endWord = "cog",
+        wordList = ["hot", "dot", "dog", "lot", "log", "cog"]
+Output: 5
+```
+
+The shortest ladder: hit -> hot -> dot -> dog -> cog.
+
+## Brute force
+
+Try every transformation recursively: at each word, generate all
+one-letter variants that are in the dictionary and not yet on the
+current path.
+
+```cpp
+int ladderBrute(const std::string& current, const std::string& endWord,
+                std::unordered_set<std::string>& dictionary,
+                std::unordered_set<std::string>& path) {
+    if (current == endWord) {
+        return static_cast<int>(path.size());
+    }
+    int best = 0;
+    for (int i = 0; i < static_cast<int>(current.size()); ++i) {
+        for (char c = 'a'; c <= 'z'; ++c) {
+            std::string next = current;
+            next[i] = c;
+            if (dictionary.count(next) && !path.count(next)) {
+                path.insert(next);
+                int result = ladderBrute(next, endWord, dictionary, path);
+                path.erase(next);
+                if (result != 0 &&
+                    (best == 0 || result < best)) {
+                    best = result;
+                }
+            }
+        }
+    }
+    return best;
+}
+```
+
+Exponential: it explores every ordering of dictionary words, and the
+shortest path question is drowned in enumeration. The structural miss
+is total: a *shortest* question over an implicit graph is
+[BFS](/dsa/patterns/graph-traversals), and this problem never asks
+why that is.
+
+## The reformulation: states are words, edges are one-letter changes
+
+The graph: vertices are words (beginWord plus every dictionary word),
+and an edge connects two words that differ by exactly one letter. The
+question "shortest transformation sequence" is then *exactly*
+"shortest path in an unweighted graph", which is BFS's definition, and
+the recognition of that mapping is the entire problem.
+
+```cpp
+int ladderLength(const std::string& beginWord,
+                  const std::string& endWord,
+                  const std::vector<std::string>& wordList) {
+    std::unordered_set<std::string> dictionary(wordList.begin(),
+                                               wordList.end());
+    if (!dictionary.count(endWord)) {
+        return 0;                        // target is not a vertex: unreachable
+    }
+
+    std::queue<std::string> frontier;
+    frontier.push(beginWord);
+    int steps = 1;                        // beginWord counts as the first word
+    std::unordered_set<std::string> visited{beginWord};
+
+    while (!frontier.empty()) {
+        int levelSize = static_cast<int>(frontier.size());
+        for (int i = 0; i < levelSize; ++i) {   // one BFS level = one ladder step
+            std::string current = frontier.front();
+            frontier.pop();
+            for (int position = 0;
+                 position < static_cast<int>(current.size());
+                 ++position) {
+                char original = current[position];
+                for (char c = 'a'; c <= 'z'; ++c) {
+                    if (c == original) {
+                        continue;          // must change exactly one letter
+                    }
+                    current[position] = c;
+                    if (current == endWord) {
+                        return steps + 1;  // found: one more word than steps
+                    }
+                    if (dictionary.count(current) &&
+                        !visited.count(current)) {
+                        visited.insert(current);
+                        frontier.push(current);
+                    }
+                }
+                current[position] = original;   // undo, next position
+            }
+        }
+        ++steps;
+    }
+    return 0;                             // exhausted: no ladder
+}
+```
+
+Three design decisions carry it. **Level-granular BFS**
+(`levelSize` snapshot, same as
+[level order traversal](/dsa/patterns/binary-trees-and-bsts/problems/binary-tree-level-order-traversal)):
+each level is exactly one transformation step, so the level count is the
+ladder length, which is why the answer comes out as `steps + 1` (edges
+plus one, since the length counts words). **Marking on enqueue**
+(visited when pushed, not when popped): the same
+[discipline](/dsa/patterns/graph-traversals) as every BFS, preventing
+a word from entering the frontier twice. And the **neighbor generation
+trick**: rather than comparing every dictionary word against the current
+word (O(n * L) per word, which is 5000 comparisons per step), generate
+all L * 26 variants and check membership, which is O(26L) per word:
+*generating* candidates beats *searching* for them, and the choice
+matters at this dictionary size.
+
+The bidirectional optimization, worth naming as the standard follow-up:
+search from `beginWord` *and* `endWord` simultaneously, expanding the
+smaller frontier each round, and meet in the middle. For a branching
+factor b and distance d, one-directional explores O(b^d) nodes and
+bidirectional explores O(2 * b^(d/2)), which on this problem is a real
+asymptotic win (the meet-in-the-middle idea, in its natural habitat).
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Recursive enumeration | exponential | O(n) path |
+| BFS by levels | O(n * L * 26) = O(n * L) | O(n * L) |
+| Bidirectional BFS | O(2 * b^(d/2)) nodes | same |
+
+Where n is the dictionary size and L the word length: every word is
+enqueued at most once, and each costs 26L variant checks. This is the
+canonical "implicit graph" problem, and the lesson is the
+[state-space modeling](/dsa/patterns/graph-traversals) move: puzzles
+(words, locks, chess positions, poured jugs) are graphs in disguise,
+the states are the vertices, the moves are the edges, and "minimum
+moves" is BFS, always.

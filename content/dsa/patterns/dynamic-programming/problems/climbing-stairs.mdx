@@ -1,0 +1,82 @@
+---
+title: "Climbing Stairs"
+difficulty: "Easy"
+variant: "1D DP"
+practiceLinks: []
+---
+
+## Problem
+
+You are climbing a staircase with `n` steps. Each move advances either 1
+or 2 steps. Return the number of distinct ways to reach the top.
+
+**Constraints**
+
+- `1 <= n <= 45`
+
+**Example**
+
+```text
+Input:  n = 3
+Output: 3
+```
+
+The three ways: 1+1+1, 1+2, 2+1.
+
+## Brute force
+
+Recurse over the two choices.
+
+```cpp
+int climbBrute(int n) {
+    if (n <= 1) {
+        return 1;                       // top reached (or overshot into it)
+    }
+    return climbBrute(n - 1) + climbBrute(n - 2);   // step 1 or step 2
+}
+```
+
+Exponential: the same subproblem ("ways from step k") is recomputed
+along many paths, and `ways(n)` is only *counted*, never remembered.
+The classic observation hiding in plain sight: this is Fibonacci with
+a story attached.
+
+## Optimal: build the table
+
+The state is the step: `ways[i]` = number of paths that reach step i.
+The recurrence: your *last* move was 1 or 2 steps, so
+`ways[i] = ways[i-1] + ways[i-2]`, with `ways[0] = 1` (one way to stand
+at the bottom: do nothing).
+
+```cpp
+int climbStairs(int n) {
+    int previous = 1;                  // ways[0]
+    int current = 1;                   // ways[1]
+    for (int i = 2; i <= n; ++i) {
+        int next = previous + current;
+        previous = current;
+        current = next;
+    }
+    return current;
+}
+```
+
+O(n) time, O(1) space: the table compressed to its two-cell window
+because the recurrence reads only the last two values, the same
+compression as [house robber](/dsa/patterns/dynamic-programming/problems/house-robber)
+and the standard first exercise in
+[DP](/dsa/patterns/dynamic-programming) space optimization.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Recursive, no memo | O(φ^n) | O(n) stack |
+| Two-variable loop | O(n) | O(1) |
+
+This is the smallest count-DP that is *not* trivial: the answer is a
+count (so [backtracking](/dsa/patterns/backtracking-and-pruning) would
+enumerate it exponentially), the choices are independent of position
+(so no pruning applies), and the recursion overlaps (so caching wins).
+Those three properties are the fingerprint of every DP problem, and
+this is the cleanest one to point at.

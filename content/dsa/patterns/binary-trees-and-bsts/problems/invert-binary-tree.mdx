@@ -1,0 +1,117 @@
+---
+title: "Invert Binary Tree"
+difficulty: "Easy"
+variant: "Preorder Recursion"
+practiceLinks: []
+---
+
+## Problem
+
+Given the root of a binary tree, invert it: every node's left and right
+subtrees are swapped, so the tree is its mirror image. Return the root.
+
+**Constraints**
+
+- The tree has between 0 and 100 nodes.
+- `-100 <= Node.val <= 100`
+
+**Example**
+
+```text
+Input:     4
+          / \
+         2   7
+        / \ / \
+       1  3 6  9
+Output:    4
+          / \
+         7   2
+        / \ / \
+       9  6 3  1
+```
+
+## Brute force
+
+There is no meaningful brute force: the tree must be touched once per
+node, and any traversal does that. The honest alternative presentation
+is an **iterative** version (an explicit stack), which is worth
+writing once as the generic "iterative tree traversal" template:
+
+```cpp
+TreeNode* invertIterative(TreeNode* root) {
+    if (root == nullptr) {
+        return root;
+    }
+    std::stack<TreeNode*> stack;
+    stack.push(root);
+    while (!stack.empty()) {
+        TreeNode* node = stack.top();
+        stack.pop();
+        std::swap(node->left, node->right);   // process on the way down
+        if (node->left != nullptr) {
+            stack.push(node->left);
+        }
+        if (node->right != nullptr) {
+            stack.push(node->right);
+        }
+    }
+    return root;
+}
+```
+
+Same O(n), no recursion, and it works on trees too deep for the call
+stack. The recursive version is the *canonical* form though, and it is
+the cleanest possible demonstration of the tree-recursion contract.
+
+## The pattern: the contract is the whole solution
+
+```cpp
+TreeNode* invertTree(TreeNode* root) {
+    if (root == nullptr) {
+        return root;                    // empty subtree: already inverted
+    }
+    std::swap(root->left, root->right); // one step of work at this node
+    invertTree(root->left);              // trust the recursion for both sides
+    invertTree(root->right);
+    return root;
+}
+```
+
+The contract: `invertTree(node)` returns the inverted subtree rooted
+at node. The step is a single swap, and the recursive calls are
+trusted completely: their subtrees are inverted because that is what
+the contract says, and this node's work is exactly its own swap. That
+is the [tree recursion](/dsa/patterns/binary-trees-and-bsts) template
+in its minimal form, and this problem is the standard first example of
+it precisely because the "step" is one line.
+
+The ordering choice, worth noticing on this problem because it is
+usually invisible: the swap *before* the recursion is a **preorder**
+operation (process on the way down), and the swap *after* would be
+**postorder** (on the way up). Both are correct here, which is a good
+check of understanding: preorder swaps this node's children and then
+descends into (the new, already-swapped) subtrees; postorder inverts
+the subtrees first and then swaps the (now-inverted) children. The
+result is the same tree because the operations commute, and finding
+*a* problem where the order *matters* (serialize/deserialize, where
+the read order must match the write order) is the standard follow-up
+probe.
+
+The "famous" trivia (the Homebrew author's Google rejection anecdote)
+is not the lesson; the lesson is that this is the
+[smallest non-trivial instance](/dsa/patterns/recursion-and-math) of
+"define what a call returns, write the one line of work, trust the
+rest", and that every harder tree problem is this shape plus a
+combine step.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Recursive (any order) | O(n) | O(h) stack |
+| Iterative with explicit stack | O(n) | O(h) |
+
+Where h is the tree height: O(log n) balanced, O(n) skewed. Every
+node is touched exactly once, and nothing is computed twice, which is
+why this problem, unlike most "easy" tree problems, is genuinely the
+asymptotic floor: there is nothing to improve.

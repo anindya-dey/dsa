@@ -1,0 +1,150 @@
+---
+title: "Combination Sum"
+difficulty: "Medium"
+variant: "Backtracking with Reuse"
+practiceLinks: []
+---
+
+## Problem
+
+Given an array of distinct integers `candidates` and a target, return
+all **unique combinations** of `candidates` (each usable an unlimited
+number of times) that sum to the target. Combinations must be unique
+regardless of ordering.
+
+**Constraints**
+
+- `1 <= candidates.length <= 30`
+- `2 <= candidates[i] <= 40`
+- `1 <= target <= 40`
+- All elements are distinct.
+
+**Example**
+
+```text
+Input:  candidates = [2, 3, 6, 7], target = 7
+Output: [[2, 2, 3], [7]]
+```
+
+## Brute force
+
+The honest enumeration: for every number of each candidate (0 to
+target/candidate), check every combination.
+
+```cpp
+void combinationSumBrute(const std::vector<int>& candidates,
+                         int index, int target,
+                         std::vector<int>& current,
+                         std::vector<std::vector<int>>& result) {
+    if (target == 0) {
+        result.push_back(current);       // sum reached exactly
+        return;
+    }
+    if (index == static_cast<int>(candidates.size())) {
+        return;                         // out of candidates, sum unmet
+    }
+    int candidate = candidates[index];
+    for (int count = 0; count * candidate <= target; ++count) {
+        combinationSumBrute(candidates, index + 1,
+                            target - count * candidate, current, result);
+        current.push_back(candidate);    // one more copy of this candidate
+    }
+    for (int count = 0; count * candidate <= target; ++count) {
+        current.pop_back();              // undo the whole block
+    }
+}
+```
+
+Exponential with a heavy undo: the correct-but-clunky version, and the
+reason it is "brute" here is not the complexity (the output is
+exponential, nothing saves that) but that it *re-derives* sums from
+scratch instead of extending them one candidate at a time, and that
+its deduplication strategy (counting copies per candidate) is doing
+work the natural formulation gets for free.
+
+## Optimal: extend the prefix, never look backward
+
+The standard [backtracking](/dsa/patterns/backtracking-and-pruning)
+formulation: at each step, choose the *next* element to append from
+the candidates **at or after** the current position, and recurse with
+the remaining target. Never looking backward is what makes
+combinations (not permutations) fall out: `[2, 3]` is produced once,
+in sorted order, because 3 can only be chosen *after* 2.
+
+```cpp
+void backtrack(const std::vector<int>& candidates,
+               int start, int target,
+               std::vector<int>& current,
+               std::vector<std::vector<int>>& result) {
+    if (target == 0) {
+        result.push_back(current);       // exact sum: a complete combination
+        return;
+    }
+    if (target < 0) {
+        return;                           // overshot: this branch is dead
+    }
+    for (int i = start;
+         i < static_cast<int>(candidates.size()); ++i) {
+        current.push_back(candidates[i]);       // decide: take candidate i
+        backtrack(candidates, i, target - candidates[i],
+                  current, result);              // i (not i+1): may reuse it
+        current.pop_back();                       // undo: try the next candidate
+    }
+}
+
+std::vector<std::vector<int>> combinationSum(
+        const std::vector<int>& candidates, int target) {
+    std::vector<std::vector<int>> result;
+    std::vector<int> current;
+    backtrack(candidates, 0, target, current, result);
+    return result;
+}
+```
+
+Two decisions carry the design, and both are the general
+[backtracking template](/dsa/patterns/backtracking-and-pruning) made
+concrete:
+
+- **`i`, not `i + 1`, in the recursive call** is what allows reuse of
+  the same candidate (the unlimited-times rule): the child may choose
+  `candidates[i]` again. The 0/1 variant of this problem
+  (combination-sum II, with duplicates in the input) passes `i + 1`
+  *and* skips equal consecutive values, and the pairing of the two
+  versions is the cleanest demonstration of how the loop-start
+  parameter encodes the reuse rule.
+- **`target < 0` as the prune** (return on overshot) is what keeps the
+  walk from exploring dead branches: because every candidate is
+  positive, an exceeded target can never recover, so the branch dies
+  at the first overshoot rather than at every leaf below it. This is
+  the pruning rule from the pattern page ("kill the branch before
+  growing it") in its smallest form.
+
+A further pruning refinement worth naming: **sort the candidates
+first, and `break` the loop when `candidates[i] > target`**. Since
+the array is ascending, every later candidate also exceeds the
+remaining target, so one comparison kills the rest of the loop body,
+which matters when candidates are dense and targets are small.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Copy-count enumeration | exponential, heavier constants | O(n) |
+| Prefix extension with prune | exponential in output size | O(target/min) recursion |
+
+The honest bound for any correct solution is exponential (the output
+itself is exponential: `candidates = [2]`, `target = 40` yields one
+answer, but `candidates = [1..40]`, `target = 40` yields partition-
+number-many answers), so the analysis conversation is about the
+*pruning* and the *constants*: the prefix extension visits only
+prefix-valid partial combinations, and the target prune kills
+branches at their first divergence.
+
+This is the canonical second problem in
+[backtracking](/dsa/patterns/backtracking-and-pruning) after
+[subsets](/dsa/patterns/backtracking-and-pruning/problems/subsets):
+same apply-recurse-undo, with the "sorted order prevents duplicates"
+and "loop start encodes reuse" decisions layered on, and the natural
+stepping stone to [word break](/dsa/patterns/dynamic-programming/problems/word-break)'s
+DP version (when the question is *count* or *exists* rather than
+*enumerate*).

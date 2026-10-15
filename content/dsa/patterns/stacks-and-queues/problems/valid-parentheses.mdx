@@ -1,0 +1,121 @@
+---
+title: "Valid Parentheses"
+difficulty: "Easy"
+variant: "Stack Matching"
+practiceLinks: []
+---
+
+## Problem
+
+Given a string `s` containing only the characters `()[]{}`, determine
+whether the input is valid: brackets closed by the correct type, in
+the correct order, every opener matched.
+
+**Constraints**
+
+- `1 <= s.length <= 10^4`
+- `s` consists of parentheses only.
+
+**Example**
+
+```text
+Input:  s = "()[]{}"
+Output: true
+
+Input:  s = "([)]"
+Output: false    // interleaved: wrong order
+```
+
+## Brute force
+
+Repeatedly remove adjacent matched pairs `()`, `[]`, `{}` from the
+string until no more can be removed; the string is valid exactly when
+nothing remains.
+
+```cpp
+bool isValidBrute(std::string s) {
+    bool changed = true;
+    while (changed) {
+        changed = false;
+        for (const std::string& pair : {"()", "[]", "{}"}) {
+            size_t position;
+            while ((position = s.find(pair)) != std::string::npos) {
+                s.erase(position, 2);     // remove one matched pair
+                changed = true;
+            }
+        }
+    }
+    return s.empty();
+}
+```
+
+Correct, and a genuinely interesting algorithm (it is the
+[repeated-substring](/dsa/patterns/string-algorithms/problems/repeated-substring-pattern)
+style of "reduce by local rewriting"), but each pass rescans the whole
+string: O(n²) worst case, and it misses the structural insight
+entirely, which is that *matching is what a stack does*.
+
+## The pattern: the stack is the "still unresolved" set
+
+The recognition move: whenever a closing bracket appears, it must
+match the **most recently opened, still-unmatched** bracket. That
+phrase ("most recent still unresolved") is the definition of a stack
+top, and writing it down is the whole solution.
+
+```cpp
+bool isValid(const std::string& s) {
+    std::stack<char> open;
+    for (char c : s) {
+        if (c == '(' || c == '[' || c == '{') {
+            open.push(c);                 // opener: unresolved, remember it
+        } else {
+            if (open.empty()) {
+                return false;            // closer with nothing open
+            }
+            char top = open.top();
+            bool matches = (c == ')' && top == '(') ||
+                           (c == ']' && top == '[') ||
+                           (c == '}' && top == '{');
+            if (!matches) {
+                return false;            // wrong partner
+            }
+            open.pop();                  // resolved: forget it
+        }
+    }
+    return open.empty();                 // everything must be resolved
+}
+```
+
+The three failure checks are the entire problem, and each corresponds
+to a way nesting can break: a closer with nothing open (the stack is
+empty when a `)` arrives), a wrong partner (a `)` on a `[`), and an
+opener never closed (the stack is non-empty at the end). Every invalid
+string fails exactly one of these at its first violated position,
+and every valid string passes all three, which is a completeness
+argument worth being able to sketch: the stack's contents are always
+precisely the currently-unresolved openers, so a valid string empties
+it and an invalid one is caught at its first violation.
+
+This is the archetype problem of the
+[stacks and queues](/dsa/patterns/stacks-and-queues) pattern: nesting
+*is* last-in-first-out, and every nesting problem (HTML tags,
+directory paths, [decode string](/dsa/patterns/stacks-and-queues/problems/decode-string)'s
+brackets, expression evaluation) is this solution with a different
+payload. The recognizer, worth drilling until it is reflexive:
+**"must match the most recent unresolved" means stack**, and the
+reflex fires on sight.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Pair removal passes | O(n²) | O(n) |
+| Stack matching | O(n) | O(n) worst (all openers) |
+
+One pass, one comparison per character, and O(n) stack space in the
+worst case (`"((((("` holds every opener). This is the smallest
+complete example of the matching family and the standard first
+problem in the [stack pattern](/dsa/patterns/stacks-and-queues), with
+[decode string](/dsa/patterns/stacks-and-queues/problems/decode-string)
+as its harder sibling: the same stack, holding *suspended contexts*
+instead of single characters.

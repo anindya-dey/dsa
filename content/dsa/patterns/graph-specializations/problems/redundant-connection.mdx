@@ -1,0 +1,158 @@
+---
+title: "Redundant Connection"
+difficulty: "Medium"
+variant: "Union-Find"
+practiceLinks: []
+---
+
+## Problem
+
+A tree (connected, acyclic) with `n` nodes labeled 1..n had one extra
+edge added, and the result is given as an edge list `edges` of length
+n. Return the edge that, when removed, restores a tree: specifically,
+the last edge in the list that, if removed, leaves a valid tree.
+
+**Constraints**
+
+- `3 <= n <= 1000`
+- No repeated edges; the answer exists and is unique.
+
+**Example**
+
+```text
+Input:  edges = [[1,2],[1,3],[2,3]]
+Output: [2, 3]     // the last edge that closes a cycle
+```
+
+## Brute force
+
+For each edge (from last to first), remove it, and check whether the
+remaining graph is a tree (connected, acyclic): a full connectivity
+check per candidate edge.
+
+```cpp
+bool formsTreeWithout(const std::vector<std::vector<int>>& edges,
+                      int skip) {
+    int n = static_cast<int>(edges.size());
+    std::vector<std::vector<int>> adj(n + 1);
+    int used = 0;
+    for (int i = 0; i < n; ++i) {
+        if (i == skip) {
+            continue;                    // candidate removed
+        }
+        adj[edges[i][0]].push_back(edges[i][1]);
+        adj[edges[i][1]].push_back(edges[i][0]);
+        ++used;
+    }
+    // Connected and acyclic with n-1 edges means a tree: check by
+    // BFS count (n-1 edges on n nodes + connected = acyclic).
+    std::vector<char> seen(n + 1, 0);
+    std::queue<int> frontier;
+    frontier.push(1);
+    seen[1] = 1;
+    int count = 1;
+    while (!frontier.empty()) {
+        int node = frontier.front();
+        frontier.pop();
+        for (int next : adj[node]) {
+            if (!seen[next]) {
+                seen[next] = 1;
+                ++count;
+                frontier.push(next);
+            }
+        }
+    }
+    return count == n && used == n - 1;
+}
+```
+
+O(n) per candidate, O(n²) overall: works at these constraints, and
+misses the structural observation that makes it one pass.
+
+## Optimal: union-find, the cycle as it forms
+
+The reframe: adding edges to an empty n-node forest, **the first edge
+that connects two already-connected nodes is the cycle-closer**,
+because "already connected" means that edge closes a cycle, and every
+earlier edge was fine when added (it connected two components).
+
+```cpp
+class DisjointSet {
+public:
+    explicit DisjointSet(int n) : parent_(n), rank_(n, 0) {
+        std::iota(parent_.begin(), parent_.end(), 0);
+    }
+    int find(int x) {
+        return parent_[x] == x
+            ? x
+            : parent_[x] = find(parent_[x]);   // path compression inline
+    }
+    bool unite(int a, int b) {
+        int ra = find(a);
+        int rb = find(b);
+        if (ra == rb) {
+            return false;                // already same component: cycle!
+        }
+        if (rank_[ra] < rank_[rb]) {
+            std::swap(ra, rb);            // union by rank
+        }
+        parent_[rb] = ra;
+        if (rank_[ra] == rank_[rb]) {
+            ++rank_[ra];
+        }
+        return true;
+    }
+private:
+    std::vector<int> parent_;
+    std::vector<int> rank_;
+};
+
+std::vector<int> findRedundantConnection(
+        const std::vector<std::vector<int>>& edges) {
+    DisjointSet ds(edges.size() + 1);
+    for (const auto& edge : edges) {
+        if (!ds.unite(edge[0], edge[1])) {
+            return edge;                  // first failure = the answer
+        }
+    }
+    return {};                            // unreachable: one edge must close
+}
+```
+
+Why the *first* failing edge is *the* answer, which is the problem's
+one subtle claim: the problem asks for the *last* edge whose removal
+restores a tree, and the union-find answer is the *first* edge that
+closes a cycle. These agree because removing the cycle-closer from
+the full graph leaves exactly the edges added before it, which were
+all tree edges when added (and adding tree edges to a forest keeps it
+a forest), so the graph minus the first cycle-closer is acyclic; it
+is also connected (the n-1 earlier edges connected n nodes), so it is
+a tree, and no *later* edge can be the unique answer because a later
+edge's removal still leaves the cycle the first closer created. One
+argument, stated once, and it is the interview's actual content.
+
+This is the canonical incremental-connectivity use of
+[union-find](/dsa/patterns/graph-specializations): edges arriving one
+at a time, cycle detection as a *byproduct* of the merge test, and
+no traversal of anything. The contrast with the
+[per-candidate BFS](#brute-force) is the pattern's whole selling
+point: connectivity questions about *dynamic* edge sets are the
+structure's home turf, where the
+[traversal](/dsa/patterns/graph-traversals) answers would rebuild the
+world per query.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Remove-and-check per edge | O(n²) | O(n) |
+| Union-find, one pass | O(n * α(n)) ≈ O(n) | O(n) |
+
+Each edge is one `unite` call (near-constant), and the answer is
+found on the failing call. This problem is the standard union-find
+interview (with [number of connected
+components](/dsa/patterns/graph-specializations/problems/number-of-connected-components)
+as its simpler sibling), and the natural bridge into Kruskal's
+minimum spanning tree from [advanced
+graphs](/dsa/patterns/advanced-graphs), where "does this edge close a
+cycle" is asked for *every* edge of a sorted list.

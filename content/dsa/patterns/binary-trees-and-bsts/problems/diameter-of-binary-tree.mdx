@@ -1,0 +1,124 @@
+---
+title: "Diameter of Binary Tree"
+difficulty: "Easy"
+variant: "Return One Thing, Track Another"
+practiceLinks: []
+---
+
+## Problem
+
+Given the root of a binary tree, return the **diameter**: the length (in
+edges) of the longest path between any two nodes in the tree. The path
+may or may not pass through the root.
+
+**Constraints**
+
+- The tree has between 1 and 10^4 nodes.
+- `-100 <= Node.val <= 100`
+
+**Example**
+
+```text
+Input:     1
+          / \
+         2   3
+        / \
+       4   5
+Output: 3
+```
+
+The longest path is 4 -> 2 -> 5... no: 4 -> 2 -> 1... The answer is the
+path 4 -> 2 -> 1 -> 3 (or 5 -> 2 -> 1 -> 3): 3 edges.
+
+## Brute force
+
+For every node, compute the deepest path down its left side and its
+right side, and the best node is the one maximizing their sum.
+
+```cpp
+int depth(TreeNode* node) {              // height, recomputed each call
+    if (node == nullptr) {
+        return 0;
+    }
+    return 1 + std::max(depth(node->left), depth(node->right));
+}
+
+int diameterBrute(TreeNode* root) {
+    if (root == nullptr) {
+        return 0;
+    }
+    int throughRoot = depth(root->left) + depth(root->right);
+    return std::max({throughRoot,
+                     diameterBrute(root->left),
+                     diameterBrute(root->right)});
+}
+```
+
+Correct, and O(n²) on a skewed tree: each node's pair-of-depths costs
+a full subtree walk, and depth recomputes what every ancestor's call
+already computed. The waste is textbook
+[tree recursion](/dsa/patterns/binary-trees-and-bsts): the answer for
+a node needs exactly the same information as the answer for its
+parent, and it is being thrown away.
+
+## Optimal: one recursive contract, two outputs
+
+The reframe: a single DFS can compute *both* things at once. The
+recurrence's contract: `height(node)` returns the height of the
+subtree. The diameter is *not* a return value, because a diameter
+"path" cannot extend upward past its apex: it is the *sum* of two
+downward heights at the apex node, which is a local observation.
+
+```cpp
+class Solution {
+public:
+    int diameterOfBinaryTree(TreeNode* root) {
+        best_ = 0;
+        height(root);
+        return best_;
+    }
+
+private:
+    int height(TreeNode* node) {
+        if (node == nullptr) {
+            return 0;                    // empty subtree: height 0
+        }
+        int left = height(node->left);
+        int right = height(node->right);
+        best_ = std::max(best_, left + right);   // apex candidate: path through node
+        return 1 + std::max(left, right);        // upward: my height
+    }
+
+    int best_ = 0;
+};
+```
+
+The two lines do different jobs, and separating them *is* the pattern:
+`best_ = max(best_, left + right)` is the **global answer update**
+(the best path with apex at this node is its two child heights, edge
+counted), and `return 1 + max(...)` is the **value for the parent**
+(the single downward path that can extend). Every node is considered
+once as an apex, so every possible path is considered (any path's apex
+is some node, and its length is exactly two subtree heights), and the
+answer is correct by construction.
+
+This is the canonical "return one thing, track another" problem from
+the [tree pattern](/dsa/patterns/binary-trees-and-bsts): the skill is
+realizing the *global* answer passes *through* the nodes rather than
+composing from a returned value, and it is the template for the whole
+family (maximum path sum, longest univalue path, most frequent
+subtree sum), each of which changes the combine rule but not the
+shape.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Depth per node | O(n²) worst | O(n) stack |
+| Single DFS, global best | O(n) | O(n) stack |
+
+Every node is visited once, each contributing O(1) work. This is the
+smallest problem where the *contract design* (what does the recursive
+call return, and what does it update) is the entire difficulty, which
+is exactly why it anchors the "return one thing, track another"
+lesson.

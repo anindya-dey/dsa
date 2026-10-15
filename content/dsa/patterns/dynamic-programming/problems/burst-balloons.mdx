@@ -1,0 +1,137 @@
+---
+title: "Burst Balloons"
+difficulty: "Hard"
+variant: "Interval DP"
+practiceLinks: []
+---
+
+## Problem
+
+Given `n` balloons arranged in a row, indexed 0 to n-1, each marked with
+`nums[i]` coins. Burst balloon i to earn `nums[left] * nums[i] *
+nums[right]` coins, where left and right are the *current* adjacent
+neighbors (after previous bursts removed any balloons between them).
+Return the maximum coins you can collect by bursting all balloons.
+
+**Constraints**
+
+- `1 <= n <= 300`
+- `0 <= nums[i] <= 100`
+
+**Example**
+
+```text
+Input:  nums = [3, 1, 5, 8]
+Output: 167
+```
+
+Burst 1 (3*1*5=15), 5 (3*5*8=120), 3 (1*3*8=24), 8 (1*8*1=8): total 167.
+
+## Brute force
+
+Try every balloon as the first burst, and recurse on the remaining
+subproblem.
+
+```cpp
+int maxCoinsBrute(std::vector<int> nums) {
+    if (nums.empty()) {
+        return 0;
+    }
+    int best = 0;
+    for (int i = 0; i < static_cast<int>(nums.size()); ++i) {
+        long long left = (i == 0) ? 1 : nums[i - 1];
+        long long right = (i + 1 == static_cast<int>(nums.size()))
+            ? 1 : nums[i + 1];
+        std::vector<int> rest;
+        for (int j = 0; j < static_cast<int>(nums.size()); ++j) {
+            if (j != i) {
+                rest.push_back(nums[j]);   // rebuild the shrunken array
+            }
+        }
+        best = std::max(best, static_cast<int>(left * nums[i] * right)
+                                 + maxCoinsBrute(rest));
+    }
+    return best;
+}
+```
+
+Exponential, and worse than the usual enumeration: each level copies
+arrays, and the "subproblem" (an arbitrary surviving subset in order)
+has no cheap representation. The reframe that fixes it is the canonical
+hard step of this whole pattern.
+
+## Optimal: think about the *last* burst
+
+The reformulation that makes the problem a DP: **think about which
+balloon in an interval bursts last, not first.**
+
+If balloon k is the *last* burst of the interval `(l, r)` (exclusive
+boundaries, with virtual 1s padding the array's ends), then while k
+is alive, every other balloon in the interval bursts entirely within
+`(l, k)` or entirely within `(k, r)`: nothing can cross k, because k
+is still standing. So the two sub-intervals are *independent* given k,
+and the last-burst value is computable:
+`nums[l] * nums[k] * nums[r]` (l and r are k's neighbors by then).
+
+```cpp
+int maxCoins(const std::vector<int>& nums) {
+    int n = static_cast<int>(nums.size());
+    std::vector<int> padded(n + 2, 1);
+    for (int i = 0; i < n; ++i) {
+        padded[i + 1] = nums[i];
+    }
+    int m = n + 2;
+
+    // best[l][r] = max coins from bursting everything strictly inside (l, r)
+    std::vector<std::vector<int>> best(m, std::vector<int>(m, 0));
+
+    for (int length = 2; length <= m; ++length) {          // interval size
+        for (int l = 0; l + length - 1 < m; ++l) {
+            int r = l + length - 1;
+            for (int k = l + 1; k < r; ++k) {              // last burst inside
+                int sub = best[l][k] + best[k][r]
+                       + padded[l] * padded[k] * padded[r];
+                best[l][r] = std::max(best[l][r], sub);
+            }
+        }
+    }
+    return best[0][m - 1];
+}
+```
+
+Three decisions carry the design. The **virtual padding** (the 1s at
+both ends) removes every boundary case: the first balloon's left
+neighbor and the last balloon's right neighbor are always defined,
+and the final answer is simply `best[0][n+1]` over the whole padded
+array. The **exclusive-boundary state** `(l, r)` means "burst
+everything strictly between l and r", which is what makes the
+sub-intervals independent, since the boundary balloons themselves stay
+alive to serve as neighbors. And the **loop order is interval length**
+(smallest intervals first), which is the signature of
+[interval DP](/dsa/patterns/dynamic-programming): a state depends on
+its *sub-intervals*, so those must be computed first.
+
+Why "last burst" rather than "first": bursting first splits the
+interval in a way that depends on *which* neighbors survive (the
+subproblem's boundaries change with every later burst), so
+sub-problems overlap messily. Bursting last fixes the boundaries *now*
+(l and r are permanent, alive, and known), so the split is clean.
+That reversal, "choose the operation that makes the pieces
+independent", is the same move as
+[different ways to add parentheses](/dsa/patterns/divide-and-conquer/problems/different-ways-to-add-parentheses)
+picking the outermost operator, and it is the general trick behind
+most hard interval DPs.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Enumerate first bursts | exponential | O(n) + copies |
+| Interval DP over last bursts | O(n³) | O(n²) |
+
+With n = 300, n³ is 27 million, fine. This is the canonical interval
+DP: palindrome partitioning, matrix chain multiplication, and
+[remove boxes](https://leetcode.com/problems/remove-boxes/) are the
+same "pick the last operation, split, combine" skeleton with different
+combine rules, and this problem is the best-drilled example of the
+reversal that unlocks all of them.

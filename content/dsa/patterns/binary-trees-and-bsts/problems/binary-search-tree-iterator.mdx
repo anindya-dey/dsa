@@ -1,0 +1,154 @@
+---
+title: "Binary Search Tree Iterator"
+difficulty: "Medium"
+variant: "Controlled Inorder"
+practiceLinks: []
+---
+
+## Problem
+
+Implement an iterator over a BST: `BSTIterator(root)` initializes with
+the root, `next()` returns the next smallest number in the tree, and
+`hasNext()` returns whether one exists. The operations must use O(h)
+memory, where h is the tree height (and amortized O(1) time per call).
+
+**Constraints**
+
+- The tree has between 1 and 10^5 nodes.
+- `0 <= Node.val <= 10^6`
+- At most 10^5 calls, in any interleaving of next and hasNext.
+
+**Example**
+
+```text
+init:    7
+        / \
+       3  15
+         / \
+        9  20
+next() -> 3
+next() -> 7
+hasNext() -> true
+next() -> 9
+```
+
+## Brute force
+
+Flatten the entire tree at construction: an
+[inorder walk](/dsa/patterns/binary-trees-and-bsts) collects all values
+into a vector, and the iterator is an index into it.
+
+```cpp
+class BSTIteratorFlatten {
+public:
+    explicit BSTIteratorFlatten(TreeNode* root) {
+        collect(root);                   // entire tree, up front
+    }
+
+    int next() {
+        return values_[index_++];      // O(1), but the memory is spent
+    }
+
+    bool hasNext() const {
+        return index_ < static_cast<int>(values_.size());
+    }
+
+private:
+    void collect(TreeNode* node) {
+        if (node == nullptr) {
+            return;
+        }
+        collect(node->left);
+        values_.push_back(node->value);
+        collect(node->right);
+    }
+    std::vector<int> values_;
+    int index_ = 0;
+};
+```
+
+Perfectly correct, O(n) memory, and it violates the requirement in
+the most instructive way possible: it pays for the *whole* answer
+before answering *anything*. The constraint (O(h) memory) is the
+problem's whole point, and it is a general one: **laziness as a memory
+strategy**. An iterator's contract is "produce values on demand",
+and nothing in the contract requires producing them all at once.
+
+## Optimal: the explicit inorder stack, paused
+
+The fix is the [iterative inorder traversal](/dsa/patterns/binary-trees-and-bsts),
+*frozen mid-walk*: a stack holding exactly the path from the root
+down to the next-smallest node (the leftmost spine, initially), and
+`next()` resuming the walk for one step.
+
+```cpp
+class BSTIterator {
+public:
+    explicit BSTIterator(TreeNode* root) {
+        pushLeft(root);                 // the leftmost spine: next values
+    }
+
+    int next() {
+        TreeNode* node = stack_.top();  // the next-smallest node
+        stack_.pop();
+        int value = node->value;
+        if (node->right != nullptr) {   // inorder: after node, its right subtree
+            pushLeft(node->right);      // push that subtree's leftmost spine
+        }
+        return value;
+    }
+
+    bool hasNext() const {
+        return !stack_.empty();
+    }
+
+private:
+    void pushLeft(TreeNode* node) {
+        for (; node != nullptr; node = node->left) {
+            stack_.push(node);           // every node on the way to the minimum
+        }
+    }
+
+    std::stack<TreeNode*> stack_;
+};
+```
+
+Read the invariant off the stack: at every moment, the top is the
+next-smallest unvisited node, and the rest of the stack is the chain
+of its ancestors-left-of-it. `next()` pops it, emits it, and if it has
+a right child, pushes *that* subtree's left spine (because in inorder,
+everything in the right subtree comes after this node and before
+anything above it).
+
+The **memory bound falls out structurally**: the stack never holds
+more than one root-to-node path (the left spine, plus spines pushed
+as the walk descends right), which is O(h), and the *time* is
+amortized O(1) because every node is pushed exactly once and popped
+exactly once across the whole iteration (the same argument as the
+[monotonic stack](/dsa/patterns/monotonic-structures) linear bound:
+each element enters and leaves once, so n operations cost O(n)).
+
+The design lesson worth stating out loud, because it is the transfer:
+the iterator is the **generator pattern** applied to a tree: the
+recursive traversal's *call stack* has been made explicit and
+*pausable*, which is what an iterator is, and the same transformation
+turns any recursive producer into an on-demand one. The same trick
+answers "stream the k largest", "iterate a tree on a UI thread", and
+every "process this structure lazily" question, and it is the bridge
+between the [recursion](/dsa/patterns/recursion-and-math) page and the
+iterative world.
+
+## Complexity
+
+| Approach | Memory | Time |
+| --- | --- | --- |
+| Flatten at construction | O(n) | O(1) per next(), O(n) init |
+| Paused inorder stack | O(h) | O(1) amortized per next() |
+
+The constraint set (10^5 nodes, O(h) memory) is the hint: with h at
+worst n, the *guarantee* only matters on balanced trees, and the
+amortized bound is what makes the worst case (one deep spine, iterated
+across 10^5 calls) honest. This is the standard senior-tier tree
+problem: no new concepts, just the discipline of an invariant, an
+amortized argument, and one design decision (laziness) doing all the
+work.

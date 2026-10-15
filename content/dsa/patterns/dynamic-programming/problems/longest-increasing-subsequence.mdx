@@ -1,0 +1,110 @@
+---
+title: "Longest Increasing Subsequence"
+difficulty: "Medium"
+variant: "1D DP / Patience"
+practiceLinks: []
+---
+
+## Problem
+
+Given an integer array `nums`, return the length of the longest strictly
+increasing subsequence. A subsequence keeps relative order but need not
+be contiguous.
+
+**Constraints**
+
+- `1 <= n <= 2500`
+- `-10^4 <= nums[i] <= 10^4`
+
+**Example**
+
+```text
+Input:  nums = [10, 9, 2, 5, 3, 7, 101, 18]
+Output: 4
+```
+
+The subsequence `[2, 3, 7, 18]` (or `[2, 3, 7, 101]`).
+
+## Brute force: O(n²) DP
+
+The state is the position: `best[i]` = length of the longest increasing
+subsequence *ending at* i. The recurrence: extend any earlier subsequence
+whose last element is smaller.
+
+```cpp
+int lengthOfLISQuadratic(const std::vector<int>& nums) {
+    int n = static_cast<int>(nums.size());
+    std::vector<int> best(n, 1);        // every element alone is length 1
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < i; ++j) {
+            if (nums[j] < nums[i]) {
+                best[i] = std::max(best[i], best[j] + 1);
+            }
+        }
+    }
+    return *std::max_element(best.begin(), best.end());
+}
+```
+
+O(n²): 6 million operations at the limit, passes comfortably, and it is
+the answer worth presenting first because the state ("ends at i") is the
+insight. But n is suspiciously small (2500, not 10^5), which is the
+constraint-set's hint that a faster answer exists.
+
+## Optimal: binary search on a patience pile
+
+The O(n log n) answer rests on a different piece of state: for each
+length L, track `tails[L]` = the *smallest possible tail* of any
+increasing subsequence of length L. That array has a property worth
+deriving: **it is always sorted** (a longer subsequence's tail must be
+bigger, or the shorter one would extend instead), so `tails` can be
+maintained with binary search.
+
+```cpp
+int lengthOfLIS(const std::vector<int>& nums) {
+    std::vector<int> tails;             // tails[L] = min tail of length L+1
+    for (int value : nums) {
+        // First tail that is >= value: replace it (we found a smaller
+        // tail for that length). If none, extend the whole list.
+        auto position = std::lower_bound(tails.begin(), tails.end(), value);
+        if (position == tails.end()) {
+            tails.push_back(value);     // value extends every subsequence
+        } else {
+            *position = value;         // strictly smaller tail for this length
+        }
+    }
+    return static_cast<int>(tails.size());
+}
+```
+
+Why the replacement is safe: `tails[L]` is a *record*, not a
+subsequence. Replacing a tail with a smaller value does not break any
+existing subsequence of that length (it only means the next element now
+has more options), and it is exactly what keeps future extensions
+maximal. The invariant: after processing each element, `tails` is
+sorted, and `tails[L]` is achievable. The answer is the pile count,
+which is why this is the patience-sorting/patience-solitaire
+connection worth naming.
+
+Two details in the code are load-bearing: `lower_bound` (first >=)
+not `upper_bound` (first >), because the problem asks for *strictly*
+increasing (equal values replace rather than extend, which keeps
+lengths honest); and the `position == end` case (an element larger than
+every tail) is the only way the list grows, so the final size is the
+LIS length.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| DP over "ends at i" | O(n²) | O(n) |
+| Binary search on tails | O(n log n) | O(n) |
+
+This is the canonical second step in 1D
+[DP](/dsa/patterns/dynamic-programming): after the count-and-fibonacci
+problems, the state stops being "prefix" and becomes "ends here", and
+after that, the tails trick shows that a DP table's *auxiliary
+information* (min tail per length) can be maintained faster than the
+table itself. The same problem reappears as [Russian doll
+envelopes](https://leetcode.com/problems/russian-doll-envelopes/)
+(2D LIS after sorting one dimension), which is the standard follow-up.

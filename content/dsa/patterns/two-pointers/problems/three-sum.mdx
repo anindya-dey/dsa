@@ -1,0 +1,132 @@
+---
+title: "3Sum"
+difficulty: "Medium"
+variant: "Converging + Sort"
+practiceLinks: []
+---
+
+## Problem
+
+Given an integer array `nums`, return all triplets `[nums[i], nums[j],
+nums[k]]` with `i != j != k` such that the values sum to zero. The
+solution set must not contain duplicate triplets.
+
+**Constraints**
+
+- `0 <= n <= 3000`
+- `-10^5 <= nums[i] <= 10^5`
+
+**Example**
+
+```text
+Input:  nums = [-1, 0, 1, 2, -1, -4]
+Output: [[-1, -1, 2], [-1, 0, 1]]
+```
+
+## Brute force
+
+Three nested loops, plus deduplication.
+
+```cpp
+std::vector<std::vector<int>> threeSumBrute(
+        const std::vector<int>& nums) {
+    std::set<std::vector<int>> unique;            // dedupe by sorted triplet
+    int n = static_cast<int>(nums.size());
+    for (int i = 0; i < n; ++i) {
+        for (int j = i + 1; j < n; ++j) {
+            for (int k = j + 1; k < n; ++k) {
+                if (nums[i] + nums[j] + nums[k] == 0) {
+                    std::vector<int> trip = {nums[i], nums[j], nums[k]};
+                    std::sort(trip.begin(), trip.end());
+                    unique.insert(trip);           // set dedupes
+                }
+            }
+        }
+    }
+    return {unique.begin(), unique.end()};
+}
+```
+
+O(n³) with a sort and a set per hit: 2.7 * 10^10 inner iterations at
+the limit, hopeless. The waste is layered: every pair rescans the whole
+rest of the array for its complement (the [two-sum](/dsa/patterns/hash-based-structures/problems/two-sum)
+lesson, not applied), and every duplicate triplet is *found* four
+times and deduplicated afterward rather than not being enumerated at
+all.
+
+## Optimal: fix one element, two-pointer the rest
+
+The reframe: sort the array. Then for each index i (the smallest
+element of a candidate triplet), the remaining problem is exactly
+[two-sum on a sorted array](/dsa/patterns/two-pointers), which
+converging pointers solve in O(n): left and right ends of the region
+after i, moving inward based on whether the pair sum is too small or
+too large.
+
+```cpp
+std::vector<std::vector<int>> threeSum(std::vector<int> nums) {
+    std::sort(nums.begin(), nums.end());
+    std::vector<std::vector<int>> result;
+    int n = static_cast<int>(nums.size());
+
+    for (int i = 0; i < n && nums[i] <= 0; ++i) {   // smallest element must be <= 0
+        if (i > 0 && nums[i] == nums[i - 1]) {
+            continue;                    // same smallest: same triplets found already
+        }
+        int left = i + 1;
+        int right = n - 1;
+        while (left < right) {
+            int sum = nums[i] + nums[left] + nums[right];
+            if (sum < 0) {
+                ++left;                  // too small: need larger values
+            } else if (sum > 0) {
+                --right;                 // too large: need smaller values
+            } else {
+                result.push_back({nums[i], nums[left], nums[right]});
+                ++left;
+                --right;
+                while (left < right && nums[left] == nums[left - 1]) {
+                    ++left;              // skip duplicate left values
+                }
+                while (left < right && nums[right] == nums[right + 1]) {
+                    --right;            // skip duplicate right values
+                }
+            }
+        }
+    }
+    return result;
+}
+```
+
+The deduplication is the entire problem, and each guard exists to
+enumerate each triplet *exactly once* rather than to filter
+afterwards: `nums[i] == nums[i-1]` skips repeating an outer element
+(the triplet starting at that value was already fully enumerated), and
+the post-match skips advance past runs of equal inner values so the
+same pair is not re-found. Getting these wrong produces the classic
+partial solutions (missing `[-1, -1, 2]` because the *first* -1 was
+consumed, or 600 duplicate triplets on an all-zero array), and the
+"enumerate once, dedupe never" discipline is the transferable skill.
+
+The early-exit line (`nums[i] <= 0`) is worth a sentence: a triplet
+summing to zero on a sorted array must have its smallest element at
+most 0 (if all three were positive the sum would be), so the outer
+loop can stop at the first positive value: a small optimization that
+also *proves* the loop bounds are honest.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Triple loop + set dedupe | O(n³) | O(number of triplets) |
+| Sort + two-pointer | O(n²) + O(n log n) | O(output) |
+
+O(n²) is the known best for this problem (there is a matching
+lower-bound argument in the comparison model, and the 4-sum extension
+is O(n³) by the same layering). This is the canonical
+[converging pointers](/dsa/patterns/two-pointers) problem after
+[container with most water](/dsa/patterns/two-pointers/problems/container-with-most-water):
+the sort converts "find a pair with a complement" into the
+converging shape, the fixed element reduces k-sum to 2-sum, and the
+n-sum family generalizes by exactly this recursion (sort, fix one,
+recurse on the remainder).

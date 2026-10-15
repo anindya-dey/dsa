@@ -1,0 +1,144 @@
+---
+title: "Spiral Matrix"
+difficulty: "Medium"
+variant: "Layer Traversal"
+practiceLinks: []
+---
+
+## Problem
+
+Given an `m x n` matrix, return all elements in **spiral order**:
+clockwise from the top-left, outer ring first, then the next ring
+inward.
+
+**Constraints**
+
+- `1 <= m, n <= 10`
+- `-100 <= matrix[i][j] <= 100`
+
+**Example**
+
+```text
+Input:  matrix = [[1, 2, 3],
+                  [4, 5, 6],
+                  [7, 8, 9]]
+Output: [1, 2, 3, 6, 9, 8, 7, 4, 5]
+```
+
+## Brute force
+
+The naive spiral walks a direction until hitting a visited cell or a
+wall, then turns right (the "turtle with a compass" version): a
+direction array, a visited matrix, and turn-on-collision.
+
+```cpp
+std::vector<int> spiralOrderTurtle(
+        std::vector<std::vector<int>>& matrix) {
+    int m = static_cast<int>(matrix.size());
+    int n = static_cast<int>(matrix[0].size());
+    std::vector<std::vector<char>> visited(m, std::vector<char>(n, 0));
+    int dr[] = {0, 1, 0, -1};           // right, down, left, up
+    int dc[] = {1, 0, -1, 0};
+    int direction = 0;
+    int row = 0;
+    int col = 0;
+    std::vector<int> result;
+
+    for (int step = 0; step < m * n; ++step) {
+        result.push_back(matrix[row][col]);
+        visited[row][col] = 1;
+        int nr = row + dr[direction];
+        int nc = col + dc[direction];
+        if (nr < 0 || nr >= m || nc < 0 || nc >= n ||
+            visited[nr][nc]) {          // wall or visited: turn right
+            direction = (direction + 1) % 4;
+        }
+        row += dr[direction];
+        col += dc[direction];
+    }
+    return result;
+}
+```
+
+Correct, O(mn) time and O(mn) extra memory for the visited matrix, and
+it generalizes (this exact loop answers
+[rotting oranges](/dsa/patterns/graph-traversals/problems/rotting-oranges)-style
+grid walks). Its problems: the visited matrix is pure overhead (the
+spiral structure *tells* you what is visited), and every step pays a
+bounds check plus a turn check, when the spiral is a perfectly regular
+object that can be walked by arithmetic.
+
+## Optimal: four boundaries closing inward
+
+The structure the turtle discovers dynamically: the unvisited region
+is always a **rectangle**, and one spiral ring is four walks along its
+edges. So maintain the rectangle explicitly: `top`, `bottom`, `left`,
+`right`, and emit a ring as: the top row left-to-right, the right
+column top-to-bottom, the bottom row right-to-left, the left column
+bottom-to-top. Then shrink the rectangle inward.
+
+```cpp
+std::vector<int> spiralOrder(
+        const std::vector<std::vector<int>>& matrix) {
+    std::vector<int> result;
+    int top = 0;
+    int bottom = static_cast<int>(matrix.size()) - 1;
+    int left = 0;
+    int right = static_cast<int>(matrix[0].size()) - 1;
+
+    while (top <= bottom && left <= right) {
+        for (int col = left; col <= right; ++col) {          // top edge
+            result.push_back(matrix[top][col]);
+        }
+        for (int row = top + 1; row <= bottom; ++row) {      // right edge
+            result.push_back(matrix[row][right]);
+        }
+        if (top < bottom && left < right) {                 // guard: not a line
+            for (int col = right - 1; col >= left + 1; --col) {   // bottom edge
+                result.push_back(matrix[bottom][col]);
+            }
+            for (int row = bottom; row >= top + 1; --row) {  // left edge
+                result.push_back(matrix[row][left]);
+            }
+        }
+        ++top;
+        --bottom;
+        ++left;
+        --right;                        // rectangle shrinks one ring
+    }
+    return result;
+}
+```
+
+The guard `top < bottom && left < right` before the last two edges is
+the entire bug surface of this problem: on the final ring, the region
+may be a single row or a single column, and walking "all four edges"
+would then emit that row or column **twice** (the top edge and the
+bottom edge are the same cells). The two-edge case (a degenerate ring:
+just the top row and right column) is the other classic half-bug,
+handled here by the `top + 1` / `right - 1` loop bounds. Every wrong
+answer on this problem is one of those two degeneracies, and tracing a
+3x3 (odd: center cell as a 1x1 final ring), a 3x4, and a 2x2 by hand is
+the standard preparation.
+
+This is the **layer-based traversal** from the
+[matrix pattern](/dsa/patterns/matrix-and-grid-algorithms) page: the
+spiral is not a walk with turning rules but a sequence of nested
+rectangles, and the four-pointer shrinking rectangle is the structure
+that makes it regular. The same four-boundary frame answers spiral
+matrix II (fill instead of read) and, with the edges reordered,
+counterclockwise and inward-first variants.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Turtle with visited matrix | O(mn) | O(mn) |
+| Four boundaries per ring | O(mn) | O(1) |
+
+Every cell is emitted exactly once in both versions; the boundary
+version drops the auxiliary memory and the per-step checks, and
+(n) is optimal because the output *is* the whole matrix. This is the
+canonical "traversal order as a discipline" problem: the naive answer
+works, and the four-pointer version is what it looks like when the
+structure is understood rather than discovered.

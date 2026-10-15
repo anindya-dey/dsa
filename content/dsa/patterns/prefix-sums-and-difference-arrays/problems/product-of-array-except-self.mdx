@@ -1,0 +1,123 @@
+---
+title: "Product of Array Except Self"
+difficulty: "Medium"
+variant: "Prefix Products"
+practiceLinks: []
+---
+
+## Problem
+
+Given an integer array `nums`, return an array `answer` where
+`answer[i]` is the product of all elements of `nums` except `nums[i]`.
+You must not use division, and the algorithm must run in O(n).
+
+**Constraints**
+
+- `2 <= n <= 10^5`
+- `-30 <= nums[i] <= 30`
+- The product of any prefix or suffix fits in a 32-bit integer.
+
+**Example**
+
+```text
+Input:  nums = [1, 2, 3, 4]
+Output: [24, 12, 8, 6]
+```
+
+## Brute force
+
+For each index, multiply every other element.
+
+```cpp
+std::vector<int> productExceptSelfBrute(
+        const std::vector<int>& nums) {
+    int n = static_cast<int>(nums.size());
+    std::vector<int> answer(n);
+    for (int i = 0; i < n; ++i) {
+        int product = 1;
+        for (int j = 0; j < n; ++j) {
+            if (j != i) {
+                product *= nums[j];     // recompute everything but i
+            }
+        }
+        answer[i] = product;
+    }
+    return answer;
+}
+```
+
+O(n²): 10^10 multiplications at the limit. The waste is the familiar
+[prefix-sum](/dsa/patterns/prefix-sums-and-difference-arrays) waste in
+disguise: each answer recomputes products that every other answer also
+computed (the product of "everything except i" is "the product before
+i" times "the product after i", and both halves are shared across
+answers).
+
+The *forbidden* shortcut, worth one sentence: compute the total
+product and divide by `nums[i]`, which is O(n) and trivial, and which
+the problem bans because **zeros break it** (a zero anywhere makes
+every division-by-zero or misattributes the answer), which is the
+problem's way of forcing the real technique.
+
+## Optimal: prefix products, twice, in place
+
+The reframe: `answer[i] = (product of everything left of i) * (product
+of everything right of i)`. Both halves are
+[prefix computations](/dsa/patterns/prefix-sums-and-difference-arrays)
+with multiplication as the aggregate, and the standard trick for
+"left times right without extra arrays" is two passes over the *same
+output array*.
+
+```cpp
+std::vector<int> productExceptSelf(const std::vector<int>& nums) {
+    int n = static_cast<int>(nums.size());
+    std::vector<int> answer(n, 1);
+
+    int runningLeft = 1;                // product of nums[0..i-1]
+    for (int i = 0; i < n; ++i) {
+        answer[i] = runningLeft;         // left factor lands in place
+        runningLeft *= nums[i];
+    }
+
+    int runningRight = 1;               // product of nums[i+1..n-1]
+    for (int i = n - 1; i >= 0; --i) {
+        answer[i] *= runningRight;      // multiply in the right factor
+        runningRight *= nums[i];
+    }
+    return answer;
+}
+```
+
+Walk `[1, 2, 3, 4]`: the first pass writes
+`[1, 1, 2, 6]` (the product of everything to the left), and the second
+pass multiplies the right factors in:
+`answer[3] *= 1`, `answer[2] *= 4`, `answer[1] *= 12`, `answer[0] *= 24`,
+giving `[24, 12, 8, 6]`. Each element is written once and multiplied
+once, no extra arrays, and no division: the two running products carry
+exactly the two factors each answer needs, and every intermediate
+product is shared across all the answers that need it, which is the
+prefix-computation idea verbatim (the [pivot
+index](/dsa/patterns/prefix-sums-and-difference-arrays/problems/find-pivot-index)
+problem's shape, with products and no center element).
+
+Zeros fall out for free, which is why this version is *robust* rather
+than merely allowed: one zero makes the running products zero for
+everything on the far side, and each answer correctly receives
+"product of the nonzero side" or zero, with no special case. That is
+the real content of the "no division" constraint: not a rule to obey
+but a hint that division is *fragile* (zeros) where the two-sided
+prefix is *structural*.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Multiply all others, per index | O(n²) | O(1) extra |
+| Two running products, in place | O(n) | O(1) extra (output excluded) |
+
+This is the canonical "prefix sums with a different operator" problem
+from [prefix sums](/dsa/patterns/prefix-sums-and-difference-arrays):
+the technique is not about adding, it is about *precomputing the
+fold of everything to one side*, and any associative operator with an
+identity (products, XOR, max) supports exactly the same two-pass
+machinery.

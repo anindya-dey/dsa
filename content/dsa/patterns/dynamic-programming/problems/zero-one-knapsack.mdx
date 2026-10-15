@@ -1,0 +1,121 @@
+---
+title: "0/1 Knapsack"
+difficulty: "Medium"
+variant: "Knapsack"
+practiceLinks: []
+---
+
+## Problem
+
+Given `n` items with weights `weights[i]` and values `values[i]`, and a
+knapsack of capacity `W`, choose items to maximize total value, where
+each item may be used **at most once** and the total weight cannot
+exceed `W`.
+
+**Constraints**
+
+- `1 <= n <= 100`
+- `1 <= W <= 10^5`
+- `1 <= weights[i], values[i] <= 100`
+
+**Example**
+
+```text
+Input:  values = [60, 100, 120], weights = [10, 20, 30], W = 50
+Output: 220
+```
+
+Take items 2 and 3: value 220, weight 50.
+
+## Brute force
+
+For each item, try both possibilities: take it or skip it.
+
+```cpp
+int knapsackBrute(const std::vector<int>& values,
+                  const std::vector<int>& weights,
+                  int i, int capacityLeft) {
+    if (i == static_cast<int>(values.size()) || capacityLeft == 0) {
+        return 0;                        // no items or no room
+    }
+    int skip = knapsackBrute(values, weights, i + 1, capacityLeft);
+    int take = 0;
+    if (weights[i] <= capacityLeft) {
+        take = values[i] + knapsackBrute(values, weights, i + 1,
+                                         capacityLeft - weights[i]);
+    }
+    return std::max(skip, take);
+}
+```
+
+Exponential (2^n branches): the same (item index, remaining capacity)
+state is re-derived along many paths, and there are only `n * W`
+distinct states.
+
+## Optimal: the DP, with the classic loop-order subtlety
+
+The state: `best[i][c]` = maximum value using the first i items with
+capacity c. The recurrence: for item i, either skip it (`best[i-1][c]`)
+or take it (`values[i] + best[i-1][c - weights[i]]`, only if it fits).
+The answer is `best[n][W]`.
+
+```cpp
+int knapsack(const std::vector<int>& values,
+             const std::vector<int>& weights, int W) {
+    int n = static_cast<int>(values.size());
+    std::vector<int> best(W + 1, 0);    // one row: item i's answers
+    for (int i = 0; i < n; ++i) {
+        for (int c = W; c >= weights[i]; --c) {   // DESCENDING capacity
+            best[c] = std::max(best[c],
+                              values[i] + best[c - weights[i]]);
+        }
+    }
+    return best[W];
+}
+```
+
+The row compression is standard DP space optimization, and the
+loop-order line is the load-bearing subtlety of the entire problem:
+**capacity must be iterated descending**.
+
+Why: the 0/1 rule says each item is used at most once. In row `i`, the
+value `best[c - weights[i]]` must be *the previous item's* answer, not
+the current item's. Iterating c descending writes `best[c]` *before*
+`best[c - weights[i]]` is read in this same item's pass, so the
+reference is safely stale (previous item). Iterating ascending would
+read the *just-written* current-item value, letting item i be used
+twice, which silently turns the algorithm into the unbounded
+([coin change](/dsa/patterns/dynamic-programming/problems/coin-change))
+variant where each item may be reused any number of times. One loop
+direction, two different problems: this is the single most-cited loop
+order in interview DP, and being able to *explain* it (rather than
+memorize "descending for 0/1") is what the question tests.
+
+The contrast, worth stating out loud: the unbounded knapsack (items
+reusable) *requires* ascending order, for exactly the mirror-image
+reason: it wants each item usable again, so reading the just-written
+value is the feature. Same skeleton, opposite order, opposite
+problem.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Recursive, no memo | O(2^n) | O(n) stack |
+| 2D table | O(n * W) | O(n * W) |
+| One row, descending | O(n * W) | O(W) |
+
+Note the complexity is *pseudo-polynomial*: O(n * W) is polynomial in
+the *value* W, not in the *bit-length* of W (which is what a
+complexity theorist measures), which is why W is capped at 10^5 in
+practice. With weights this large the table is the bottleneck, and
+that limit is exactly what separates the DP that works from the DP
+that does not.
+
+This is the pattern's flagship
+[knapsack](/dsa/patterns/dynamic-programming) problem, and the state
+design ("items considered + capacity") is the template for the whole
+family: subset sum (values all 1), partition equal subset sum (target
+W/2), the unbounded coin change
+([sibling](/dsa/patterns/dynamic-programming/problems/coin-change)),
+and every "pick items under a budget" problem that follows.

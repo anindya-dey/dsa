@@ -1,0 +1,128 @@
+---
+title: "Word Break"
+difficulty: "Medium"
+variant: "DP on Prefixes"
+practiceLinks: []
+---
+
+## Problem
+
+Given a string `s` and a dictionary of words `wordDict`, return whether
+`s` can be segmented into a space-separated sequence of one or more
+dictionary words (each word may be reused any number of times).
+
+**Constraints**
+
+- `1 <= s.length <= 300`
+- `1 <= wordDict.length <= 1000`
+- All strings are lowercase English letters.
+
+**Example**
+
+```text
+Input:  s = "applepenapple", wordDict = ["apple", "pen"]
+Output: true     // "apple" + "pen" + "apple"
+
+Input:  s = "catsandog", wordDict = ["cats", "dog", "sand", "and", "cat"]
+Output: false
+```
+
+## Brute force
+
+Try every possible first word; if it matches the start of `s`, recurse
+on the rest.
+
+```cpp
+bool wordBreakBrute(const std::string& s, int start,
+                    const std::vector<std::string>& wordDict) {
+    if (start == static_cast<int>(s.size())) {
+        return true;                    // consumed everything: a valid split
+    }
+    for (const std::string& word : wordDict) {
+        if (s.compare(start, word.size(), word) == 0) {
+            if (wordBreakBrute(s, start + static_cast<int>(word.size()),
+                              wordDict)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+```
+
+Exponential in the worst case (many matching prefixes, none
+completing), and the same subproblem ("can the suffix from start be
+split") is re-derived along many paths: at most `s.length` distinct
+questions, asked exponentially often. With "aab...aab" against
+`["a", "aa", "aaa"]`, the blowup is real, and the problem is the
+standard demonstration that a *string-over-substrings* enumeration is
+a DP in disguise.
+
+## Optimal: DP over prefixes, or the trie alternative
+
+The state: `reachable[i]` = true if the first i characters of `s` can
+be segmented. The recurrence: `reachable[i]` is true if there exists a
+`j < i` with `reachable[j]` true and `s[j..i)` a dictionary word.
+
+```cpp
+bool wordBreak(const std::string& s,
+               const std::vector<std::string>& wordDict) {
+    std::unordered_set<std::string> words(wordDict.begin(),
+                                          wordDict.end());
+    int n = static_cast<int>(s.size());
+    std::vector<char> reachable(n + 1, 0);
+    reachable[0] = 1;                    // empty prefix: trivially split
+
+    for (int i = 1; i <= n; ++i) {
+        for (int j = 0; j < i; ++j) {
+            if (reachable[j] &&
+                words.count(s.substr(j, i - j))) {
+                reachable[i] = 1;        // word s[j..i) completes the prefix
+                break;
+            }
+        }
+    }
+    return reachable[n];
+}
+```
+
+Read the table as a reachability claim: `reachable[i]` says the
+prefix of length i is reachable from position 0 by a sequence of
+dictionary-word steps, and the inner loop is "which previous
+reachability, plus one word, gets me here". That framing is why the
+problem is also a [BFS](/dsa/patterns/graph-traversals) over string
+positions (states are indices, edges are dictionary words), and the
+memoized-recursion, the BFS, and this prefix DP are three formulations
+of the same reachability.
+
+The trie alternative, worth naming because it changes the constants:
+put the dictionary in a [trie](/dsa/patterns/trie-prefix-tree) and, at
+each reachable position `j`, walk the trie along `s` instead of
+hashing every substring. Each position then costs O(length of the
+longest dictionary-word continuation) rather than O(i * average
+substring hash), which is a real win when the dictionary is large and
+prefixes share structure. The DP is unchanged: the trie only replaces
+the inner "is s[j..i) a word" test.
+
+The follow-up worth preparing ("Word Break II", which asks for *all*
+the splits): the DP decides reachability; the enumeration of paths
+through the reachability graph is then a
+[backtracking](/dsa/patterns/backtracking-and-pruning) pass that only
+extends along reachable positions (pruning with `reachable` is what
+keeps it from blowing up), which is the standard pairing of the two
+patterns.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Recursive, no memo | exponential worst case | O(n) stack |
+| Prefix DP + hash set | O(n² * L) (L: substring compare) | O(n + dictionary) |
+| Prefix DP + trie | O(n * L) walks | O(n + trie) |
+
+This problem earns its place as the standard
+"segmentation" [DP](/dsa/patterns/dynamic-programming): the state is a
+*prefix boundary* rather than a pair, the recurrence is "one word
+extends a smaller reachable prefix", and the same skeleton answers
+decode-ways, palindrome-partitioning (with an interval twist), and
+every "can this string be built from these pieces" question.

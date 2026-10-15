@@ -1,0 +1,143 @@
+---
+title: "Copy List with Random Pointer"
+difficulty: "Medium"
+variant: "Interleaving Trick"
+practiceLinks: []
+---
+
+## Problem
+
+A linked list has nodes with a `value`, a `next` pointer, and a
+`random` pointer that may point to any node in the list or be null.
+Return a **deep copy** of the list: new nodes, the same structure,
+`random` pointers pointing to the corresponding *new* nodes.
+
+**Constraints**
+
+- `0 <= n <= 1000`
+- `-10^4 <= Node.val <= 10^4`
+
+**Example**
+
+```text
+Input:  1 -> 2 -> 3, with 1.random -> 3, 2.random -> 1
+Output: a new list with identical structure, each random pointing
+        at the new copy of its target.
+```
+
+## Brute force
+
+The honest first answer: a hash map from old node to new node.
+
+```cpp
+Node* copyRandomListMap(Node* head) {
+    if (head == nullptr) {
+        return nullptr;
+    }
+    std::unordered_map<Node*, Node*> copies;
+
+    Node* current = head;
+    while (current != nullptr) {         // pass 1: create all the new nodes
+        copies[current] = new Node(current->val);
+        current = current->next;
+    }
+    current = head;
+    while (current != nullptr) {         // pass 2: wire the pointers
+        copies[current]->next =
+            current->next ? copies[current->next] : nullptr;
+        copies[current]->random =
+            current->random ? copies[current->random] : nullptr;
+        current = current->next;
+    }
+    return copies[head];
+}
+```
+
+Correct, O(n) time, O(n) extra memory, and a perfectly reasonable
+answer (it is the [clone graph](/dsa/patterns/graph-traversals/problems/clone-graph)
+solution: the map *is* the visited set). The problem exists because
+there is an O(1)-extra-memory version, and the trick behind it is the
+lesson.
+
+## Optimal: interleave the copies, then split
+
+The insight: the *hard* part is `random`, because a random pointer may
+point forward, to a node you have not created yet. The map answers
+"which new node corresponds to this old one". The trick replaces the
+map with **the list itself**: interleave each new node directly after
+its original, so `old->next` *is* the correspondence.
+
+```cpp
+Node* copyRandomList(Node* head) {
+    if (head == nullptr) {
+        return nullptr;
+    }
+
+    // Pass 1: interleave. old1 -> new1 -> old2 -> new2 -> ...
+    Node* current = head;
+    while (current != nullptr) {
+        Node* fresh = new Node(current->val);
+        fresh->next = current->next;
+        current->next = fresh;           // the copy sits right after its original
+        current = fresh->next;
+    }
+
+    // Pass 2: set the random pointers on the interleaved copies.
+    current = head;
+    while (current != nullptr) {
+        Node* fresh = current->next;
+        fresh->random = (current->random != nullptr)
+            ? current->random->next      // the copy of random sits after random
+            : nullptr;
+        current = fresh->next;
+    }
+
+    // Pass 3: split the interleaved list into old and new.
+    Node dummy(0);
+    Node* tail = &dummy;
+    current = head;
+    while (current != nullptr) {
+        tail->next = current->next;      // the new node
+        tail = tail->next;
+        current->next = current->next->next;   // restore the original list
+        current = current->next;
+    }
+    return dummy.next;
+}
+```
+
+Walk the three passes, because each exists for one reason:
+
+- **Interleave** creates the correspondence: after this pass,
+  `old_i -> next` is `new_i`, so "the new node corresponding to old
+  node X" is answered by *reading a pointer* instead of a hash map.
+- **Set random** is where the correspondence pays: `old->random` is
+  an old node, and *its* copy is `old->random->next` (one more hop),
+  which is the line that replaces the entire map lookup.
+- **Split** un-weaves the two lists, restoring the original (the
+  problem requires the input unmodified) and chaining the copies.
+
+The dummy head in the split pass is the same
+[weaving discipline](/dsa/patterns/linked-list-manipulation/problems/merge-two-sorted-lists)
+as always: an unattached starting point so no branch is needed for
+the first node. And the whole structure is the
+[pointer-labeling](/dsa/patterns/linked-list-manipulation) discipline
+at its most concentrated: at every moment of every pass, there is
+exactly one sentence true of the list ("the copy of X is X->next"),
+and all three passes exist to establish, exploit, and then erase that
+sentence.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Hash map old-to-new | O(n) | O(n) |
+| Interleave and split | O(n) | **O(1)** |
+
+Three passes instead of two, zero auxiliary memory. This is the
+canonical "use the structure as its own bookkeeping" problem, the
+sibling of [clone graph](/dsa/patterns/graph-traversals/problems/clone-graph)
+(where the cycle-free guarantee is absent and the map is genuinely
+necessary), and it is worth knowing which is which: the interleaving
+trick *requires* a linear structure with a next field to borrow, which
+is exactly what a general graph lacks.

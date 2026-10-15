@@ -1,0 +1,148 @@
+---
+title: "Reservoir Sampling"
+difficulty: "Medium"
+variant: "Streaming Random Sampling"
+practiceLinks: []
+---
+
+## Problem
+
+Given a data stream of unknown length (the elements arrive one at a
+time, and you cannot know the total count in advance), maintain a
+uniformly random sample of size `k`: at any moment, each of the
+elements seen so far must be equally likely to be in the sample, using
+O(k) memory.
+
+**Constraints**
+
+- `1 <= k <= stream length`
+- The stream length is not known in advance.
+- Only one pass over the stream is allowed.
+
+**Example**
+
+```text
+k = 2, stream = [a, b, c, d, e]
+After processing all 5: each pair among {a,b,c,d,e}'s 2-subsets
+appears with probability 1 / C(5,2) = 1/10.
+```
+
+## Brute force
+
+Store the entire stream (or store all element indices, or read it
+twice to count first): then sample k uniformly from the whole set.
+
+```cpp
+std::vector<int> sampleWholeStream(const std::vector<int>& stream,
+                                    int k) {
+    std::vector<int> indices(stream.size());
+    std::iota(indices.begin(), indices.end(), 0);
+    std::random_device device;
+    std::mt19937 rng(device());
+    std::shuffle(indices.begin(), indices.end(), rng);   // uniform order
+    indices.resize(k);
+    std::vector<int> sample(k);
+    for (int i = 0; i < k; ++i) {
+        sample[i] = stream[indices[i]];   // any k-subset, uniformly
+    }
+    return sample;
+}
+```
+
+Uniform and correct, and it violates the two constraints a stream
+imposes: O(n) memory (the whole stream, which may be far larger than
+the sample) and the "unknown length" premise (you cannot wait for the
+end, and a stream cannot be rewound). The problem is the classic
+**streaming** question, and the interesting part is that uniformity
+must be maintained *without knowing n*.
+
+## Optimal: reservoir sampling
+
+The algorithm: keep the first k elements as the initial reservoir,
+then for each subsequent element i (0-indexed, i >= k), include it
+with probability k/(i+1), and if included, **evict a uniformly random
+reservoir slot**.
+
+```cpp
+class ReservoirSampler {
+public:
+    explicit ReservoirSampler(int k) : k_(k) {}
+
+    void offer(int value) {
+        int i = static_cast<int>(seen_++);
+        if (static_cast<int>(reservoir_.size()) < k_) {
+            reservoir_.push_back(value);  // fill phase: everyone enters
+        } else {
+            std::uniform_int_distribution<int> pick(0, i);   // 0..i inclusive
+            int position = pick(rng_);
+            if (position < k_) {         // probability k / (i + 1)
+                reservoir_[position] = value;   // evict a random slot
+            }
+        }
+    }
+
+    const std::vector<int>& sample() const {
+        return reservoir_;
+    }
+
+private:
+    int k_;
+    long long seen_ = 0;
+    std::vector<int> reservoir_;
+    std::mt19937 rng_{std::random_device{}()};
+};
+```
+
+The proof that this is uniform is the whole content of the problem,
+and it is a genuinely satisfying induction (Algorithm R, in Knuth's
+naming):
+
+- **Base**: after the first k elements, each is in the reservoir with
+  probability k/k = 1, which is correct for n = k.
+- **Step**: suppose each of the first i elements is in the reservoir
+  with probability k/i. Element i+1 enters with probability k/(i+1),
+  which is exactly the uniform probability for n = i+1. For an old
+  element to *stay*, either the newcomer does not enter
+  (probability 1 - k/(i+1)), or it enters and evicts a different slot
+  (probability k/(i+1) * (k-1)/k), so staying has probability
+  `1 - k/(i+1) + k/(i+1) * (k-1)/k = i/(i+1)`, and each old element's
+  total probability is `k/i * i/(i+1) = k/(i+1)`: uniform at the new
+  count, completing the induction.
+
+The one-line intuition behind the algebra: **each element, at its
+arrival, competes for the reservoir against exactly the right number
+of rivals, and evictions are uniform so no old element is
+disadvantaged**. The newcomer's entry probability *is* the target
+uniform probability for the new count, and the eviction rule is what
+makes the old elements' survival rate match.
+
+The failure modes worth knowing (interviewers probe the
+implementation, not the proof): the `0..i` inclusive range (an
+exclusive bound makes the entry probability k/i instead of
+k/(i+1), silently non-uniform), the **fill phase** before the
+reservoir is full (the first k elements are *kept*, not sampled: they
+enter with probability 1, which the induction requires as its base),
+and the [reseeded](https://en.wikipedia.org/wiki/Pseudorandom_number_generator)
+RNG per call (a generator re-created inside `offer` destroys both
+performance and, with time-based seeds, uniformity).
+
+## Complexity
+
+| Approach | Memory | Time |
+| --- | --- | --- |
+| Store the stream | O(n) | O(n) or O(n log n) |
+| Reservoir sampling | **O(k)** | O(n) expected |
+
+O(k) memory regardless of stream length, one pass, uniform at every
+prefix. This is the canonical
+[streaming](/system-design/fundamentals/stream-vs-batch-processing)
+algorithm: it appears in
+[data pipelines](/system-design/fundamentals/olap-vs-oltp) (sampling
+production traffic for analysis),
+[observability](/system-design/fundamentals/observability) (sampling
+traces: keep a uniform sample of all requests, not just the last k),
+and ML data preparation (uniform training-set sampling from a corpus
+too large to store), and it is the natural "AI-era" problem in
+[design data structures](/dsa/patterns/design-data-structures): a
+maintain-under-stream constraint, a probabilistic guarantee, and an
+induction proof in place of a data structure.

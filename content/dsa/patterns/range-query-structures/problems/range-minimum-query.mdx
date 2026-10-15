@@ -1,0 +1,130 @@
+---
+title: "Range Minimum Query"
+difficulty: "Hard"
+variant: "Sparse Table"
+practiceLinks: []
+---
+
+## Problem
+
+Given an integer array, answer many queries of the form: what is the
+minimum element in the range `[l, r]`? The array is **static** (no
+updates), and queries are numerous.
+
+**Constraints**
+
+- `1 <= n <= 10^5`
+- Up to `10^5` queries.
+- The array does not change between queries.
+
+**Example**
+
+```text
+Input:  nums = [1, 3, 2, 5, 4]
+        query(1, 3) -> 2
+        query(0, 4) -> 1
+        query(2, 2) -> 2
+```
+
+## Brute force
+
+Each query scans its range.
+
+```cpp
+int rangeMinBrute(const std::vector<int>& nums, int l, int r) {
+    int best = nums[l];
+    for (int i = l + 1; i <= r; ++i) {
+        best = std::min(best, nums[i]);   // re-scan, every query
+    }
+    return best;
+}
+```
+
+O(n) per query, O(n * q) total: 10^10 operations at the limits. And
+the waste is structural in a new way: the array *never changes*, so
+the answer to every possible question is computable **once**, and
+re-deriving it per query is spending work that has already been paid
+for. The problem statement's "static" is the whole hint.
+
+## Optimal: the sparse table
+
+The [range-query pattern](/dsa/patterns/range-query-structures) logic:
+static data means precomputation is safe, and the question is what to
+precompute. The sparse table's answer: **the minimum of every range
+whose length is a power of two**.
+
+`best[k][i]` = the minimum of the 2^k elements starting at i, and the
+recurrence builds each level from the one below: a 2^(k+1)-range is two
+adjacent 2^k-ranges, and a min of mins is a min (this is the property
+that makes the whole structure work for min, max, gcd: **idempotent**
+aggregates, where combining overlapping data changes nothing).
+
+```cpp
+class SparseTable {
+public:
+    explicit SparseTable(const std::vector<int>& nums)
+        : n_(static_cast<int>(nums.size())) {
+        int levels = 1;
+        while ((1 << levels) <= n_) {
+            ++levels;                     // floor(log2(n)) + 1 levels
+        }
+        table_.assign(levels, std::vector<int>(n_));
+        table_[0] = nums;                 // level 0: ranges of length 1
+
+        for (int k = 1; k < levels; ++k) {
+            for (int i = 0; i + (1 << k) <= n_; ++i) {
+                table_[k][i] = std::min(table_[k - 1][i],
+                                        table_[k - 1][i + (1 << (k - 1))]);
+            }                              // two half-ranges tile the range
+        }
+    }
+
+    int rangeMin(int l, int r) const {    // inclusive [l, r]
+        int length = r - l + 1;
+        int k = 31 - __builtin_clz(length);   // floor(log2(length))
+        // Two (possibly overlapping) 2^k ranges tile [l, r]:
+        return std::min(table_[k][l],
+                        table_[k][r - (1 << k) + 1]);
+    }
+
+private:
+    int n_;
+    std::vector<std::vector<int>> table_;
+};
+```
+
+The query is the whole cleverness: take `k = floor(log2(length))`, the
+largest power of two that fits in the range, and cover `[l, r]` with
+**two** 2^k ranges: one starting at `l`, one ending at `r`. They may
+overlap (they usually do), and *overlap is harmless for min*: taking
+the minimum of a set twice is the same minimum. That is the idempotent
+property doing real work, and it is why the query is two table lookups
+and nothing else, with no stitching of multiple disjoint blocks.
+
+What idempotence *prevents*: sums, counts, and anything where
+overlapping would double-count. A range *sum* from a sparse table
+would need the two covering ranges to be disjoint (they cannot cover
+an arbitrary range with two powers of two disjointly), which is why
+sums use the [prefix](/dsa/patterns/prefix-sums-and-difference-arrays)
+or [Fenwick](/dsa/patterns/range-query-structures/problems/range-sum-query-mutable)
+family and min/max/gcd use this one. The table is O(n log n) memory
+and build, and each query is O(1) *guaranteed*, which is the
+structure's headline: no amortization, no log factor, two lookups.
+
+## Complexity
+
+| Approach | Per query | Build | Space |
+| --- | --- | --- | --- |
+| Scan the range | O(n) | O(1) | O(1) |
+| Sparse table | **O(1)** | O(n log n) | O(n log n) |
+
+10^5 queries at O(1) each against a one-time 10^5 * 17 build: the
+precomputation pays for itself a thousand times over. This is the
+canonical second structure of
+[range-query structures](/dsa/patterns/range-query-structures)
+(after the Fenwick
+[sum](/dsa/patterns/range-query-structures/problems/range-sum-query-mutable)
+and before the segment tree): static data, idempotent aggregate,
+O(1) queries, and the discipline of matching the structure to exactly
+the guarantees the problem offers (static: sparse table; updates:
+segment tree; sums only: Fenwick).

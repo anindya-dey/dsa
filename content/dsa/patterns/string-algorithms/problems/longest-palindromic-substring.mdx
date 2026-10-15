@@ -1,0 +1,134 @@
+---
+title: "Longest Palindromic Substring"
+difficulty: "Medium"
+variant: "Expand Around Center"
+practiceLinks: []
+---
+
+## Problem
+
+Given a string `s`, return the longest palindromic **substring**
+(contiguous) of `s`.
+
+**Constraints**
+
+- `1 <= s.length <= 1000`
+- `s` consists of lowercase English letters.
+
+**Example**
+
+```text
+Input:  s = "babad"
+Output: "bab"    // "aba" is equally valid
+
+Input:  s = "cbbd"
+Output: "bb"
+```
+
+## Brute force
+
+Check every substring for palindromicity.
+
+```cpp
+std::string longestPalindromeBrute(const std::string& s) {
+    int n = static_cast<int>(s.size());
+    auto isPalindrome = [&](int l, int r) {
+        while (l < r) {
+            if (s[l++] != s[r--]) {
+                return false;
+            }
+        }
+        return true;
+    };
+    for (int length = n; length >= 1; --length) {     // longest first
+        for (int start = 0; start + length <= n; ++start) {
+            if (isPalindrome(start, start + length - 1)) {
+                return s.substr(start, length);
+            }
+        }
+    }
+    return "";
+}
+```
+
+O(n³): n² substrings, each checked in O(n). At n = 1000 that is 10^9
+character comparisons, and the waste is structural: every palindrome
+check re-derives *from scratch* information its neighboring checks
+already established (a string is a palindrome exactly when its ends
+match and the inside is a palindrome, so overlapping checks share
+almost everything).
+
+## Optimal: expand around center
+
+The observation that removes a factor of n: **every palindrome has a
+center**, and there are only 2n - 1 of them (n character centers for
+odd lengths, n - 1 gap centers for even lengths). For each center,
+expand outward while the ends match, and the longest expansion over
+all centers is the answer.
+
+```cpp
+std::string longestPalindrome(const std::string& s) {
+    int n = static_cast<int>(s.size());
+    if (n < 2) {
+        return s;
+    }
+    int bestStart = 0;
+    int bestLength = 1;
+
+    auto expand = [&](int left, int right) {
+        while (left >= 0 && right < n && s[left] == s[right]) {
+            --left;                       // expand outward while symmetric
+            ++right;
+        }
+        // The loop overshoots by one: the last valid palindrome is
+        // (left + 1 .. right - 1), length (right - 1) - (left + 1) + 1.
+        int length = right - left - 1;
+        if (length > bestLength) {
+            bestStart = left + 1;
+            bestLength = length;
+        }
+    };
+
+    for (int center = 0; center < n; ++center) {
+        expand(center, center);          // odd length: single-char center
+        expand(center, center + 1);      // even length: gap center
+    }
+    return s.substr(bestStart, bestLength);
+}
+```
+
+The **off-by-one in the expansion** is where this problem's bugs
+live: the `while` loop exits *after* the mismatch or boundary, so the
+last *valid* palindrome is one step inside the final positions, which
+is why the length is `right - left - 1` and the start is `left + 1`.
+Tracing `expand(1, 1)` on `"abbac"` by hand (a: matches itself, then
+`b` vs `b`, then `a` vs `a`, then out of bounds) is the standard
+self-check, and the even-center call (`expand(center, center+1)`) is
+the half people forget: skipping it silently breaks `"cbbd"`-style
+answers, returning `"b"` instead of `"bb"`.
+
+The complexity: 2n - 1 centers, each expansion up to O(n), so O(n²)
+time with O(1) space, and *no re-derivation*: each expansion performs
+only the comparisons that could not be known before (everything inside
+the expansion was validated by that same expansion's earlier steps).
+The [Manacher](/dsa/patterns/string-algorithms) algorithm's linear
+version reuses expansions *across* centers (a palindrome near a known
+one starts already-validated), which is the next step up and the one
+this problem's constraints (n at most 1000) deliberately do not require.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Check every substring | O(n³) | O(1) |
+| Expand around 2n-1 centers | O(n²) | O(1) |
+| Manacher's algorithm | O(n) | O(n) |
+
+This is the palindrome entry in
+[string algorithms](/dsa/patterns/string-algorithms) and the bridge
+problem to [DP](/dsa/patterns/dynamic-programming): the same problem
+solved as a table (`pal[i][j] = pal[i+1][j-1] && s[i]==s[j]`) is a
+standard 2D DP exercise, and being able to present both (the center
+version is simpler and faster in practice; the DP version generalizes
+to "count palindromic substrings" and "minimum cuts") is the mark of
+knowing the problem rather than the solution.

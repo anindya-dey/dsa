@@ -1,0 +1,124 @@
+---
+title: "Search a 2D Matrix II"
+difficulty: "Medium"
+variant: "Staircase Walk"
+practiceLinks: []
+---
+
+## Problem
+
+Given an `m x n` matrix where each row is sorted left to right and each
+column is sorted top to bottom, and a target, return whether the target
+exists in the matrix.
+
+**Constraints**
+
+- `0 <= m, n <= 1000`
+- `-10^9 <= matrix[i][j], target <= 10^9`
+- Each row is sorted; each column is sorted.
+
+**Example**
+
+```text
+Input:  matrix = [[ 1,  4,  7, 11],
+                  [ 2,  5,  8, 12],
+                  [ 3,  6,  9, 16],
+                  [10, 13, 14, 17]], target = 5
+Output: true
+```
+
+## Brute force
+
+Scan every cell (or binary search each row).
+
+```cpp
+bool searchMatrixBrute(const std::vector<std::vector<int>>& matrix,
+                        int target) {
+    for (const auto& row : matrix) {
+        if (std::binary_search(row.begin(), row.end(), target)) {
+            return true;
+        }
+    }
+    return false;
+}
+```
+
+O(m log n): correct, uses the row-sortedness, and ignores the
+column-sortedness entirely. The structure is doubly sorted, and only
+half of the promise is being cashed.
+
+## The pattern: the staircase walk
+
+The insight that unlocks the sorted-both-ways grid: **pick a corner
+where the two available moves disagree**. At the top-right corner,
+moving *left* decreases the value and moving *down* increases it, so
+*every comparison is decisive*: too big means the whole column below is
+too big (go left), too small means the whole row leftward is too small
+(go down).
+
+```cpp
+bool searchMatrix(const std::vector<std::vector<int>>& matrix,
+                   int target) {
+    if (matrix.empty() || matrix[0].empty()) {
+        return false;
+    }
+    int row = 0;
+    int col = static_cast<int>(matrix[0].size()) - 1;   // top-right corner
+
+    while (row < static_cast<int>(matrix.size()) && col >= 0) {
+        int value = matrix[row][col];
+        if (value == target) {
+            return true;
+        }
+        if (value > target) {
+            --col;                       // this column is all bigger: exclude it
+        } else {
+            ++row;                       // this row is all smaller: exclude it
+        }
+    }
+    return false;
+}
+```
+
+Walk it on the example, hunting 5: start at 11 (top-right): 11 > 5, go
+left to 7, then 4: 4 < 5, go down to 5: found. Each step eliminates an
+entire row or an entire column from the candidate rectangle, so after
+at most m + n steps the rectangle is empty, and every comparison moved
+the boundary inward in a way that *could not discard the target*.
+
+Why the corner matters, and why the wrong corners fail: at the
+top-*left* corner, both moves (right and down) *increase* the value, so
+a "too small" answer tells you nothing (either move might fix it): no
+decision, no staircase. The walk needs a corner where one move
+increases and the other decreases: the top-right or bottom-left, the
+"disagreement" corners from the
+[matrix pattern](/dsa/patterns/matrix-and-grid-algorithms) page. This
+is the same decisive-comparison property that makes
+[binary search](/dsa/patterns/binary-search-variants) work (each
+comparison eliminates half the space), applied in two dimensions: each
+step eliminates a row *or* a column, so the walk is the 2-D
+generalization of halving.
+
+The contrast with the *other* classic (the matrix where each row's
+first element exceeds the previous row's last, i.e. one sorted list
+wrapped): that version supports a true single binary search over
+m * n flattened indices, because the sort is *total*. This version's
+sort is *partial* (rows overlap), no single order exists, and the
+staircase is what the partial order still buys: the difference between
+the two problems is the difference between a total and a partial
+order, which is worth saying out loud.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Scan every cell | O(m * n) | O(1) |
+| Binary search each row | O(m log n) | O(1) |
+| Staircase walk | O(m + n) | O(1) |
+
+At most m + n steps, each O(1), no extra memory: the optimal
+comparison-based answer for this matrix organization. This is the
+canonical matrix problem for the
+[two pointers](/dsa/patterns/two-pointers) family: a converging walk
+where the "pointers" are a row index and a column index, and it is the
+standard bridge between the 1-D pointer patterns and 2-D structure.
