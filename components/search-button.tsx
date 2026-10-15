@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { SearchIcon } from "@/components/icons";
 import { SearchDialog } from "@/components/search-dialog";
 
 export function SearchButton() {
@@ -23,18 +24,16 @@ export function SearchButton() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label="Search (Cmd+K)"
-        className="inline-flex items-center gap-2 rounded-full border border-line px-3 py-1.5 font-mono text-xs text-ink-faint transition-colors hover:border-accent hover:text-accent-deep"
+        aria-label="Search (Command+K)"
+        className="group inline-flex items-center gap-2 rounded-full border border-line bg-paper/60 py-1.5 pr-1.5 pl-3 text-ink-faint transition-colors hover:border-accent/40 hover:text-ink-soft"
       >
-        Search
-        <kbd className="rounded border border-line px-1 py-px text-[10px]">
+        <SearchIcon className="size-4" />
+        <span className="hidden font-mono text-xs sm:inline">Search</span>
+        <kbd className="hidden rounded-full border border-line bg-accent-wash/50 px-2 py-0.5 font-mono text-[10px] text-ink-faint sm:inline">
           ⌘K
         </kbd>
       </button>
-      <SearchDialog
-        open={open}
-        onClose={() => setOpen(false)}
-      />
+      <SearchDialog open={open} onClose={() => setOpen(false)} />
     </>
   );
 }

@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { SearchIcon } from "@/components/icons";
 
 interface SearchEntry {
   url: string;
@@ -76,8 +79,10 @@ export function SearchDialog({
 }) {
   const [query, setQuery] = useState("");
   const [index, setIndex] = useState<SearchEntry[] | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const dialogRef = useRef<HTMLDivElement>(null);
+  const activeItemRef = useRef<HTMLAnchorElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     let cancelled = false;
@@ -97,6 +102,7 @@ export function SearchDialog({
     }
     const frame = requestAnimationFrame(() => {
       setQuery("");
+      setActiveIndex(0);
       inputRef.current?.focus();
     });
     return () => cancelAnimationFrame(frame);
@@ -116,30 +122,15 @@ export function SearchDialog({
   }, [open, onClose]);
 
   useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if ((event.key === "k" || event.key === "K") &&
-          (event.metaKey || event.ctrlKey)) {
-        event.preventDefault();
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
-  useEffect(() => {
     if (!open) {
       return;
     }
-    const onClick = (event: MouseEvent) => {
-      if (dialogRef.current &&
-          !dialogRef.current.contains(event.target as Node)) {
-        onClose();
-      }
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
     };
-    window.addEventListener("mousedown", onClick);
-    return () => window.removeEventListener("mousedown", onClick);
-  }, [open, onClose]);
+  }, [open]);
 
   const tokens = useMemo(
     () => tokenize(query).filter((token) => token.length > 1),
@@ -161,80 +152,171 @@ export function SearchDialog({
       }));
   }, [index, tokens]);
 
+  const active =
+    results.length > 0
+      ? Math.min(activeIndex, results.length - 1)
+      : -1;
+
+  useEffect(() => {
+    activeItemRef.current?.scrollIntoView({ block: "nearest" });
+  }, [active]);
+
+  if (!open) {
+    return null;
+  }
+
   const showEmpty = index !== null && query.length > 1 && results.length === 0;
 
-  return (
+  const move = (delta: number) => {
+    setActiveIndex((current) => {
+      if (results.length === 0) {
+        return 0;
+      }
+      const next = current + delta;
+      if (next < 0) {
+        return results.length - 1;
+      }
+      if (next >= results.length) {
+        return 0;
+      }
+      return next;
+    });
+  };
+
+  const openActive = () => {
+    if (active >= 0) {
+      const target = results[active].entry.url;
+      onClose();
+      router.push(target);
+    }
+  };
+
+  const onInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      move(1);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      move(-1);
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      openActive();
+    }
+  };
+
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-label="Search the site"
-      className={`fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm ${
-        open ? "" : "pointer-events-none opacity-0"
-      }`}
+      className="fixed inset-0 z-[100] flex items-start justify-center bg-ink/50 px-4 pt-[12vh] backdrop-blur-sm"
     >
-      <div
-        ref={dialogRef}
-        className="mx-auto mt-[10vh] w-[92%] max-w-xl overflow-hidden rounded-2xl border border-line bg-paper shadow-xl"
-      >
-        <div className="flex items-center gap-2 border-b border-line px-4">
-          <span className="font-mono text-xs uppercase tracking-widest text-ink-faint">
-            Search
-          </span>
+      <button
+        type="button"
+        aria-label="Close search"
+        onClick={onClose}
+        className="absolute inset-0 h-full w-full cursor-default"
+      />
+      <div className="animate-rise relative w-full max-w-xl overflow-hidden rounded-2xl border border-line bg-paper shadow-2xl">
+        <div className="flex items-center gap-3 border-b border-line px-4">
+          <SearchIcon className="size-4 shrink-0 text-ink-faint" />
           <input
             ref={inputRef}
             type="text"
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search patterns, problems, topics…"
-            className="h-12 flex-1 bg-transparent text-ink outline-none placeholder:text-ink-faint/70"
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setActiveIndex(0);
+            }}
+            onKeyDown={onInputKeyDown}
+            placeholder="Search patterns, problems, and topics…"
+            autoComplete="off"
+            spellCheck={false}
+            role="combobox"
+            aria-expanded={results.length > 0}
+            aria-controls="search-results"
+            aria-activedescendant={
+              active >= 0 ? `search-option-${active}` : undefined
+            }
+            className="h-14 flex-1 bg-transparent text-base text-ink outline-none focus-visible:outline-none placeholder:text-ink-faint/70"
           />
-          <kbd className="rounded border border-line px-1.5 py-0.5 font-mono text-[10px] text-ink-faint">
+          <kbd className="hidden shrink-0 rounded-md border border-line px-1.5 py-0.5 font-mono text-[10px] text-ink-faint sm:block">
             esc
           </kbd>
         </div>
 
-        <div className="max-h-[60vh] overflow-y-auto p-2">
+        <div className="max-h-[55vh] overflow-y-auto p-2">
           {index === null && (
-            <p className="px-3 py-6 text-sm text-ink-faint">Loading index…</p>
+            <p className="px-3 py-8 text-center text-sm text-ink-faint">
+              Loading index…
+            </p>
           )}
 
           {index !== null && tokens.length === 0 && (
-            <p className="px-3 py-6 text-sm text-ink-faint">
-              {index.length} published articles. Type to search.
+            <p className="px-3 py-8 text-center text-sm text-ink-faint">
+              {index.length} published articles. Start typing to search.
             </p>
           )}
 
           {showEmpty && (
-            <p className="px-3 py-6 text-sm text-ink-faint">
+            <p className="px-3 py-8 text-center text-sm text-ink-faint">
               No results for &ldquo;{query}&rdquo;.
             </p>
           )}
 
           {results.length > 0 && (
-            <ul className="space-y-1">
-              {results.map(({ entry, snippet }) => (
-                <li key={entry.url}>
-                  <Link
-                    href={entry.url}
-                    onClick={onClose}
-                    className="block rounded-xl px-3 py-2.5 transition-colors hover:bg-accent-wash"
+            <ul id="search-results" role="listbox" className="space-y-0.5">
+              {results.map(({ entry, snippet }, position) => {
+                const isActive = position === active;
+                return (
+                  <li
+                    key={entry.url}
+                    id={`search-option-${position}`}
+                    role="option"
+                    aria-selected={isActive}
                   >
-                    <p className="font-mono text-[10px] uppercase tracking-widest text-accent-deep">
-                      {entry.section}
-                    </p>
-                    <p className="mt-0.5 font-display text-[0.95rem] font-semibold text-ink">
-                      {entry.title}
-                    </p>
-                    <p className="mt-1 text-sm leading-snug text-ink-soft">
-                      {snippet}
-                    </p>
-                  </Link>
-                </li>
-              ))}
+                    <Link
+                      ref={isActive ? activeItemRef : undefined}
+                      href={entry.url}
+                      onClick={onClose}
+                      onMouseEnter={() => setActiveIndex(position)}
+                      className={`block rounded-xl px-3 py-2.5 outline-none transition-colors ${
+                        isActive ? "bg-accent-wash" : ""
+                      }`}
+                    >
+                      <span className="font-mono text-[10px] uppercase tracking-widest text-accent-deep">
+                        {entry.section}
+                      </span>
+                      <span className="mt-0.5 block font-display text-[0.95rem] font-semibold text-ink">
+                        {entry.title}
+                      </span>
+                      <span className="mt-1 block text-sm leading-snug text-ink-soft">
+                        {snippet}
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
+
+        <div className="flex items-center gap-4 border-t border-line px-4 py-2 text-[11px] text-ink-faint">
+          <span className="flex items-center gap-1.5">
+            <kbd className="rounded border border-line px-1 py-px font-mono text-[10px]">
+              ↑↓
+            </kbd>
+            navigate
+          </span>
+          <span className="flex items-center gap-1.5">
+            <kbd className="rounded border border-line px-1 py-px font-mono text-[10px]">
+              ↵
+            </kbd>
+            open
+          </span>
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
