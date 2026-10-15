@@ -1,0 +1,139 @@
+---
+title: "Advanced Graphs"
+summary: "Minimum spanning trees, strongly connected components, and the shortest-path variants beyond Dijkstra: three tools for graphs that plain BFS, DFS, and Dijkstra cannot handle."
+---
+
+The [graph specializations](/dsa/patterns/graph-specializations) cover the
+three everyday families. This page covers the tools that sit just past
+them, and the best way to keep them straight is by the *question* each one
+answers, because they are frequently confused with each other.
+
+- **Minimum spanning tree**: connect every node with the cheapest possible
+  set of edges, with no cycles. This is *not* a shortest-path problem.
+- **Strongly connected components**: which groups of nodes can all reach
+  each other, following edge directions. This is the directed version of
+  "connected components".
+- **Shortest paths with negative edges or hop limits**: when Dijkstra's
+  non-negative assumption fails, or the path length is constrained.
+
+## Minimum spanning tree: connecting everything cheaply
+
+Given a connected, weighted, undirected graph, a **minimum spanning tree
+(MST)** is a subset of edges that connects all nodes at minimum total
+weight, with no cycles (a tree on V nodes has exactly V - 1 edges). The
+canonical example is wiring a network with the least cable, or connecting
+cities with the least road.
+
+The critical distinction, and the most common confusion: **an MST is not a
+shortest-path tree.** The MST minimizes the *total* edge weight; shortest
+paths minimize the *distance from a source to each node*. These are
+different objectives, and the same graph produces different edge sets for
+each. A node's path in the MST can be far longer than its shortest path,
+because the MST was optimizing the sum, not that node.
+
+Two algorithms, both greedy, both correct:
+
+**Kruskal's algorithm** sorts all edges by weight and adds each one that
+does not create a cycle, using [union-find](/dsa/patterns/graph-specializations)
+to test connectivity. It is O(E log E), dominated by the sort, and it is
+the one to reach for on sparse graphs.
+
+```cpp
+// Kruskal's MST using the DisjointSet from the graph-specializations page.
+int minimumSpanningTree(int n, std::vector<std::array<int, 3>>& edges) {
+    // edges are {weight, u, v}
+    std::sort(edges.begin(), edges.end());   // ascending by weight
+
+    DisjointSet ds(n);
+    int total = 0;
+    int used = 0;
+    for (const auto& [w, u, v] : edges) {
+        if (ds.unite(u, v)) {                // adding it does not form a cycle
+            total += w;
+            if (++used == n - 1) {
+                break;                       // a spanning tree is complete
+            }
+        }
+    }
+    return total;
+}
+```
+
+**Prim's algorithm** grows one tree from a start node, always adding the
+cheapest edge that connects a new node to the tree, using a
+[priority queue](/dsa/patterns/heaps-and-priority-queues) of frontier
+edges. It is O(E log V) and is the one to reach for on dense graphs. Both
+are greedy and both are provably optimal, by the cut property: the cheapest
+edge crossing any cut must be in some MST.
+
+## Strongly connected components
+
+In a **directed** graph, a strongly connected component (SCC) is a maximal
+set of nodes where every node can reach every other. Condensing each SCC to
+a single node yields a DAG, which is the standard first step for
+scheduling, dependency analysis, and "which parts of this system are
+mutually reachable" questions. Two algorithms find all SCCs in linear time:
+**Tarjan's** (a single DFS with a stack and low-link values) and
+**Kosaraju's** (two DFS passes, the second on the reversed graph). Tarjan's
+is the more common interview answer, but Kosaraju's is easier to reason
+about: order nodes by DFS finish time, then DFS the reversed graph in that
+order; each tree is one SCC.
+
+The related but distinct question is **bridges and articulation points**:
+edges (bridges) or nodes (articulation points) whose removal disconnects
+the graph. These also use the DFS low-link idea, and they are the "find the
+single point of failure" tool for undirected graphs. A bridge is the
+network edge you cannot afford to lose.
+
+## Shortest paths beyond Dijkstra
+
+Two refinements of the shortest-path family matter past the basics:
+
+**Bellman-Ford** relaxes all edges V - 1 times and handles negative weights
+(it also detects negative cycles). Its `k`-hop-limited form relaxes V - 1
+times but stops after `k` rounds, which is exactly how you solve "shortest
+path with at most k stops": the number of relaxations is the hop budget.
+This is why Bellman-Ford, not Dijkstra, is the tool when the path length is
+constrained: Dijkstra finalizes nodes and cannot respect a hop limit.
+
+**Floyd-Warshall** computes all-pairs shortest paths in O(V³) with a
+three-line dynamic program. It is the right tool when you need every pair's
+distance and V is small (a few hundred).
+
+## Choosing the tool
+
+- Cheapest way to connect everything (no source): **MST** (Kruskal or
+  Prim).
+- Groups that are mutually reachable, or a DAG after condensing: **SCC**
+  (Tarjan or Kosaraju).
+- Single points of failure in an undirected network: **bridges /
+  articulation points**.
+- Shortest path with negative weights, or a hop/stop limit:
+  **Bellman-Ford**.
+- All-pairs shortest paths with small V: **Floyd-Warshall**.
+
+## When these don't fit
+
+MST requires an undirected graph; on a directed graph "spanning tree" is a
+different (arborescence) problem. SCC requires direction; on an undirected
+graph, connectivity is just union-find. And every one of these is heavier
+than the everyday tools, so reach for them only when the question genuinely
+demands the extra structure; a plain BFS or Dijkstra is wrong far less
+often than it is over-avoided.
+
+## The takeaway
+
+The advanced graph tools exist for questions the everyday three cannot
+answer, and each is named by its question: connect everything (MST), find
+mutual reachability (SCC), find single points of failure (bridges), or
+handle negative weights and hop limits (Bellman-Ford). The MST-vs-shortest-
+path confusion is the one to banish first, because it is the most common.
+
+## Related patterns
+
+- [Graph Specializations](/dsa/patterns/graph-specializations) covers the
+  everyday graph algorithms (topological sort, union-find, Dijkstra).
+- [Graph Traversals](/dsa/patterns/graph-traversals) is the BFS/DFS
+  foundation every graph algorithm builds on.
+- [Heaps / Priority Queues](/dsa/patterns/heaps-and-priority-queues) powers
+  Dijkstra and Prim.

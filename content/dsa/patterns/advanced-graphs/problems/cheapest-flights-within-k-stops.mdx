@@ -1,0 +1,118 @@
+---
+title: "Cheapest Flights Within K Stops"
+difficulty: "Medium"
+variant: "Bellman-Ford with Hop Limit"
+practiceLinks: []
+---
+
+## Problem
+
+Given `n` cities, a list of directed flights `(from, to, price)`, a source
+`src`, a destination `dst`, and an integer `k`, return the cheapest price
+from `src` to `dst` using at most `k` stops (a path with `k` stops has
+`k + 1` flights), or -1 if no such path exists.
+
+**Constraints**
+
+- `1 <= n <= 100`.
+- `0 <= flights.length <= 6000`.
+- `0 <= k < n`.
+- `1 <= price <= 10^4`.
+
+**Example**
+
+```text
+Input:  n = 3, flights = [[0,1,100],[1,2,100],[0,2,500]], src = 0, dst = 2, k = 1
+Output: 200
+```
+
+With one stop allowed, `0 -> 1 -> 2` (200) beats the direct `0 -> 2` (500)
+and is within the stop limit.
+
+## Brute force
+
+Explore all paths from `src` to `dst` with at most `k` stops, tracking the
+minimum cost, via DFS.
+
+```cpp
+void dfs(int node, int stopsLeft, int cost,
+         const std::vector<std::vector<std::pair<int, int>>>& adj,
+         int dst, int& best) {
+    if (stopsLeft < 0 || cost >= best) {
+        return;
+    }
+    if (node == dst) {
+        best = cost;
+        return;
+    }
+    for (auto [next, price] : adj[node]) {
+        dfs(next, stopsLeft - 1, cost + price, adj, dst, best);
+    }
+}
+```
+
+Exponential in the worst case (many paths, and cycles among cities), even
+with the `cost >= best` prune. It works only for tiny inputs.
+
+## Optimal: Bellman-Ford bounded to k + 1 rounds
+
+The reason Dijkstra is the wrong tool here is the stop limit: Dijkstra
+finalizes a node at its cheapest distance, but a *cheaper overall* path to
+`dst` might use more stops than allowed, and a valid path might be more
+expensive per-hop. Dijkstra has no way to respect a hop budget. Bellman-Ford
+does, naturally: each round of edge relaxation extends paths by exactly one
+edge, so running `k + 1` rounds computes the cheapest path using at most
+`k + 1` edges.
+
+```cpp
+int findCheapestPrice(int n, const std::vector<std::vector<int>>& flights,
+                      int src, int dst, int k) {
+    const int INF = std::numeric_limits<int>::max();
+    std::vector<int> dist(n, INF);
+    dist[src] = 0;
+
+    for (int round = 0; round <= k; ++round) {
+        std::vector<int> next = dist;      // snapshot: one edge per round
+        for (const auto& f : flights) {
+            int u = f[0];
+            int v = f[1];
+            int price = f[2];
+            if (dist[u] != INF && dist[u] + price < next[v]) {
+                next[v] = dist[u] + price;
+            }
+        }
+        dist = std::move(next);
+    }
+    return dist[dst] == INF ? -1 : dist[dst];
+}
+```
+
+The one line that makes this correct is `std::vector<int> next = dist;`
+before the edge loop. Relaxations must read the distances from the
+*previous* round, not the current one, or a single round could chain
+multiple edges together and exceed the hop budget. This snapshot is the
+entire difference between "at most `k + 1` edges" and "unlimited edges",
+and it is the detail interviewers watch for, because the naive
+Bellman-Ford (updating `dist` in place) silently gives the wrong answer
+when a hop limit is involved.
+
+The interpretation of a round is worth stating precisely: after `r` rounds,
+`dist[v]` is the cheapest cost from `src` to `v` using at most `r` edges.
+Running `k + 1` rounds therefore answers "at most `k + 1` flights", which is
+"at most `k` stops".
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| DFS over all paths | exponential | O(V) |
+| Bounded Bellman-Ford | O(k · E) | O(V) |
+
+Each of the `k + 1` rounds scans every edge once, so the cost is
+`O(k · E)`, which is well within limits for `k < n <= 100`. This is the
+canonical demonstration of *why Bellman-Ford exists alongside Dijkstra*
+(see [Graph Specializations](/dsa/patterns/graph-specializations)): the hop
+limit is a constraint Dijkstra's greedy finalization cannot express, and the
+round-by-round structure of Bellman-Ford encodes it directly. It is also the
+reason [Advanced Graphs](/dsa/patterns/advanced-graphs) treats the
+shortest-path variants as their own family.

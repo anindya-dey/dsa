@@ -1,0 +1,154 @@
+---
+title: "Pacific Atlantic Water Flow"
+difficulty: "Medium"
+variant: "Reverse Multi-Source DFS"
+practiceLinks: []
+---
+
+## Problem
+
+Given an `m x n` grid of heights, water can flow from a cell to an adjacent
+cell (4-directionally) if the neighbor's height is less than or equal to the
+current cell's. The Pacific Ocean touches the top and left edges; the
+Atlantic touches the bottom and right edges. Return all cells from which
+water can reach **both** oceans.
+
+**Constraints**
+
+- `1 <= m, n <= 200`.
+- `0 <= heights[i][j] <= 10^5`.
+
+**Example**
+
+```text
+Input:  heights = [[1,2,2,3,5],
+                   [3,2,3,4,4],
+                   [2,4,5,3,1],
+                   [6,7,1,4,5],
+                   [5,1,1,2,4]]
+Output: cells that reach both oceans
+```
+
+## Brute force
+
+From every cell, DFS downhill in all directions and check whether any path
+reaches the Pacific and any reaches the Atlantic.
+
+```cpp
+bool canReach(const std::vector<std::vector<int>>& h, int i, int j,
+              bool pacific, std::vector<std::vector<bool>>& seen) {
+    int m = h.size();
+    int n = h[0].size();
+    if (i < 0 || i >= m || j < 0 || j >= n || seen[i][j]) {
+        return false;
+    }
+    if (pacific && (i == 0 || j == 0)) {
+        return true;
+    }
+    if (!pacific && (i == m - 1 || j == n - 1)) {
+        return true;
+    }
+    seen[i][j] = true;
+    const int di[] = {1, -1, 0, 0};
+    const int dj[] = {0, 0, 1, -1};
+    for (int d = 0; d < 4; ++d) {
+        int ni = i + di[d];
+        int nj = j + dj[d];
+        if (ni >= 0 && ni < m && nj >= 0 && nj < n &&
+            h[ni][nj] <= h[i][j] &&
+            canReach(h, ni, nj, pacific, seen)) {
+            return true;
+        }
+    }
+    return false;
+}
+```
+
+This runs a full search from every cell, for each ocean: O((m·n)²) or worse,
+and it re-explores the same downhill paths over and over.
+
+## Optimal: search backwards from the oceans
+
+Reverse the direction of the question. Instead of asking "can this cell
+reach the ocean", ask "which cells can the ocean reach", where water flows
+*upward* (to a neighbor that is greater than or equal to the current). Run
+one DFS from each ocean's border cells, marking every cell reachable
+uphill. A cell is in the answer if both searches reached it.
+
+```cpp
+class Solution {
+public:
+    std::vector<std::vector<int>> pacificAtlantic(
+            std::vector<std::vector<int>>& heights) {
+        if (heights.empty()) {
+            return {};
+        }
+        int m = heights.size();
+        int n = heights[0].size();
+        std::vector<std::vector<bool>> pacific(m, std::vector<bool>(n, false));
+        std::vector<std::vector<bool>> atlantic(m, std::vector<bool>(n, false));
+
+        for (int j = 0; j < n; ++j) {
+            dfs(heights, 0, j, pacific);       // top edge -> Pacific
+            dfs(heights, m - 1, j, atlantic);  // bottom edge -> Atlantic
+        }
+        for (int i = 0; i < m; ++i) {
+            dfs(heights, i, 0, pacific);       // left edge -> Pacific
+            dfs(heights, i, n - 1, atlantic);  // right edge -> Atlantic
+        }
+
+        std::vector<std::vector<int>> result;
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (pacific[i][j] && atlantic[i][j]) {
+                    result.push_back({i, j});
+                }
+            }
+        }
+        return result;
+    }
+
+private:
+    void dfs(std::vector<std::vector<int>>& h, int i, int j,
+             std::vector<std::vector<bool>>& reachable) {
+        if (i < 0 || i >= static_cast<int>(h.size()) ||
+            j < 0 || j >= static_cast<int>(h[0].size()) ||
+            reachable[i][j]) {
+            return;
+        }
+        reachable[i][j] = true;
+        const int di[] = {1, -1, 0, 0};
+        const int dj[] = {0, 0, 1, -1};
+        for (int d = 0; d < 4; ++d) {
+            int ni = i + di[d];
+            int nj = j + dj[d];
+            if (ni >= 0 && ni < static_cast<int>(h.size()) &&
+                nj >= 0 && nj < static_cast<int>(h[0].size()) &&
+                h[ni][nj] >= h[i][j]) {    // uphill: the reverse flow direction
+                dfs(h, ni, nj, reachable);
+            }
+        }
+    }
+};
+```
+
+The reversal is the entire insight. The forward question ("from this cell,
+can water reach the ocean?") is many-to-many and forces a search per cell.
+The backward question ("from the ocean, which cells drain here?") is
+one-to-many, and two searches cover every cell. The `>=` comparison is the
+reverse of the original `<=` rule: water flowed downhill, so searching
+backward from the ocean climbs uphill. Both searches together are linear,
+and the answer is the intersection of the two reachable sets.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Search from every cell | O((m·n)²) | O(m·n) |
+| Reverse search from borders | O(m·n) | O(m·n) |
+
+The general lesson, applicable far beyond this problem: when a
+reachability question is asked *for every start*, ask whether reversing
+the edges lets a single search from the targets answer all of them at
+once. It is a direct application of
+[Graph Traversals](/dsa/patterns/graph-traversals).

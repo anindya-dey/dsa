@@ -1,0 +1,135 @@
+---
+title: "Implement Trie (Prefix Tree)"
+difficulty: "Medium"
+variant: "Trie"
+practiceLinks: []
+---
+
+## Problem
+
+Implement a trie with three operations: `insert(word)`, `search(word)`
+(returns true only if the exact word was inserted), and
+`startsWith(prefix)` (returns true if any inserted word begins with the
+prefix).
+
+**Constraints**
+
+- `1 <= word.length, prefix.length <= 2000`.
+- Words and prefixes consist of lowercase English letters.
+- At most 3 * 10^4 calls in total.
+
+**Example**
+
+```text
+insert("apple")
+search("apple")    -> true
+search("app")      -> false    // "app" is a prefix, not an inserted word
+startsWith("app")  -> true
+insert("app")
+search("app")      -> true
+```
+
+## Brute force
+
+Store every inserted word in a vector. `insert` appends; `search` scans for
+an exact match; `startsWith` scans for any word with the prefix.
+
+```cpp
+class TrieBrute {
+public:
+    void insert(const std::string& word) { words_.push_back(word); }
+
+    bool search(const std::string& word) const {
+        return std::find(words_.begin(), words_.end(), word) != words_.end();
+    }
+
+    bool startsWith(const std::string& prefix) const {
+        for (const std::string& word : words_) {
+            if (word.compare(0, prefix.size(), prefix) == 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+private:
+    std::vector<std::string> words_;
+};
+```
+
+Both queries are O(total input size) in the worst case, because each scans
+every stored word. With 3 * 10^4 calls against a growing dictionary, that
+is quadratic in aggregate, and it re-compares the same prefixes against
+every word on every call.
+
+## Optimal: the trie
+
+Store the words by their characters, so a query walks one node per
+character and never touches a word it does not share a prefix with. The
+`isEnd` flag on each node is what separates `search` from `startsWith`.
+
+```cpp
+struct TrieNode {
+    std::array<TrieNode*, 26> children{};
+    bool isEnd = false;
+};
+
+class Trie {
+public:
+    void insert(const std::string& word) {
+        TrieNode* node = &root_;
+        for (char c : word) {
+            int i = c - 'a';
+            if (node->children[i] == nullptr) {
+                node->children[i] = new TrieNode();
+            }
+            node = node->children[i];
+        }
+        node->isEnd = true;
+    }
+
+    bool search(const std::string& word) const {
+        const TrieNode* node = walk(word);
+        return node != nullptr && node->isEnd;
+    }
+
+    bool startsWith(const std::string& prefix) const {
+        return walk(prefix) != nullptr;
+    }
+
+private:
+    const TrieNode* walk(const std::string& s) const {
+        const TrieNode* node = &root_;
+        for (char c : s) {
+            node = node->children[c - 'a'];
+            if (node == nullptr) {
+                return nullptr;
+            }
+        }
+        return node;
+    }
+
+    TrieNode root_;
+};
+```
+
+Both queries share `walk`, and the only difference between them is the
+`isEnd` check. That is the entire teaching point of this problem: the
+prefix structure is identical for "is a word" and "is a prefix"; the
+boolean at the terminal node is what tells them apart, and getting it
+wrong is the most common mistake. Insert, search, and startsWith are all
+O(L) in the length of the input string, regardless of how many words are
+stored.
+
+## Complexity
+
+| Operation | Brute force | Trie |
+| --- | --- | --- |
+| insert | O(1) | O(L) |
+| search | O(N) | O(L) |
+| startsWith | O(N) | O(L) |
+
+Where L is the query length and N the number of stored words. The trie's
+advantage is that query cost depends only on the query, not on the size of
+the dictionary, which is what makes it the basis for
+[autocomplete and prefix search](/dsa/patterns/trie-prefix-tree) at scale.

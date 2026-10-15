@@ -1,0 +1,150 @@
+---
+title: "Design Add and Search Words Data Structure"
+difficulty: "Medium"
+variant: "Trie with Wildcards"
+practiceLinks: []
+---
+
+## Problem
+
+Design a structure that supports `addWord(word)` and `search(word)`, where
+the search word may contain the wildcard character `.` matching any single
+letter.
+
+**Constraints**
+
+- `1 <= word.length <= 25`.
+- Words consist of lowercase letters; search words may also contain `.`.
+- At most 10^4 calls.
+
+**Example**
+
+```text
+addWord("bad"), addWord("dad"), addWord("mad")
+search("pad") -> false
+search("bad") -> true
+search(".ad") -> true    // '.' matches b, d, or m
+search("b..") -> true
+```
+
+## Brute force
+
+Keep all words in a list. For `search`, try to match each stored word
+character by character, treating `.` as a match-anything.
+
+```cpp
+class WordDictionaryBrute {
+public:
+    void addWord(const std::string& word) { words_.push_back(word); }
+
+    bool search(const std::string& pattern) const {
+        for (const std::string& word : words_) {
+            if (matches(word, pattern)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+private:
+    static bool matches(const std::string& word, const std::string& pattern) {
+        if (word.size() != pattern.size()) {
+            return false;
+        }
+        for (size_t i = 0; i < word.size(); ++i) {
+            if (pattern[i] != '.' && pattern[i] != word[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    std::vector<std::string> words_;
+};
+```
+
+O(N · L) per search, scanning every stored word even when the first
+character already rules it out. A trie makes that early rejection free.
+
+## Optimal: trie with recursive wildcard branching
+
+Store the words in a [trie](/dsa/patterns/trie-prefix-tree). For a normal
+character, descend the single matching child. For a `.`, try *every* child
+and succeed if any branch matches the rest of the pattern. The trie's
+shared prefixes mean a branch that fails early is abandoned without ever
+touching the words that share its dead prefix.
+
+```cpp
+struct TrieNode {
+    std::array<TrieNode*, 26> children{};
+    bool isEnd = false;
+};
+
+class WordDictionary {
+public:
+    void addWord(const std::string& word) {
+        TrieNode* node = &root_;
+        for (char c : word) {
+            int i = c - 'a';
+            if (node->children[i] == nullptr) {
+                node->children[i] = new TrieNode();
+            }
+            node = node->children[i];
+        }
+        node->isEnd = true;
+    }
+
+    bool search(const std::string& pattern) const {
+        return searchFrom(&root_, pattern, 0);
+    }
+
+private:
+    bool searchFrom(const TrieNode* node, const std::string& pattern,
+                    size_t index) const {
+        if (node == nullptr) {
+            return false;
+        }
+        if (index == pattern.size()) {
+            return node->isEnd;               // pattern consumed: is it a word?
+        }
+
+        char c = pattern[index];
+        if (c == '.') {
+            for (const TrieNode* child : node->children) {
+                if (searchFrom(child, pattern, index + 1)) {
+                    return true;              // any matching branch suffices
+                }
+            }
+            return false;
+        }
+        return searchFrom(node->children[c - 'a'], pattern, index + 1);
+    }
+
+    TrieNode root_;
+};
+```
+
+The recursion mirrors the pattern: a literal character is a forced single
+step, and a `.` is a branching point over all children. The cost is
+proportional to the number of trie nodes the pattern could match, not to
+the number of stored words, which is the whole advantage. The one thing to
+watch is the end-of-pattern check: reaching the end of the pattern is only
+a match if the node is marked `isEnd`, or `search("ba")` would wrongly
+match after `addWord("bad")`.
+
+For an adversarial input (a pattern of all dots), this explores the whole
+trie, so the worst case is the total trie size. That is inherent: a
+match-anything pattern genuinely has to consider everything, and the trie
+still avoids re-walking each word's shared prefix from the root.
+
+## Complexity
+
+| Operation | Brute force | Trie |
+| --- | --- | --- |
+| addWord | O(L) | O(L) |
+| search (no `.`) | O(N · L) | O(L) |
+| search (with `.`) | O(N · L) | O(nodes visited) |
+
+The value of the trie here is concentrated in the literal-prefix portion
+of the query: those characters prune the search to one path, which is
+what makes the wildcard branching tractable instead of exhaustive.

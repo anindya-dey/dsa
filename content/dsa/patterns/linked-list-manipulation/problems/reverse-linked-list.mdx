@@ -91,4 +91,5 @@ head->next = nullptr;`) is elegant and worth knowing, but it consumes O(n)
 call stack and overflows on long lists. The iterative flip is the
 production answer, and it's the foundation for the harder compositions:
 reversing a sublist (`reverseBetween`), reversing in k-groups, and
-palindrome-checking a list by reversing its back half.
+palindrome-checking a list by reversing its back half. It is the core move of
+[Linked List Manipulation](/dsa/patterns/linked-list-manipulation).

@@ -1,0 +1,135 @@
+---
+title: "Min Cost to Connect All Points"
+difficulty: "Medium"
+variant: "Minimum Spanning Tree"
+practiceLinks: []
+---
+
+## Problem
+
+Given an array of points on a plane, where the cost of connecting two
+points is their Manhattan distance `|x1 - x2| + |y1 - y2|`, return the
+minimum total cost to connect all points so that there is exactly one path
+between any two points.
+
+**Constraints**
+
+- `1 <= points.length <= 1000`.
+- `-10^6 <= xi, yi <= 10^6`.
+
+**Example**
+
+```text
+Input:  points = [[0,0],[2,2],[3,10],[5,2],[7,0]]
+Output: 20
+```
+
+## Brute force
+
+Try every possible set of edges and check whether the chosen edges form a
+connected, acyclic graph, keeping the cheapest. This is exponential and
+only stated to make the point: the naive framing ("which edges to pick") is
+intractable, and the structure of the problem has to be exploited.
+
+A more sensible-but-still-slow approach enumerates all O(n²) pairwise
+edges, then repeatedly adds the cheapest edge that does not create a cycle,
+re-scanning the edge list every time. That is Kruskal's algorithm without
+sorting, which is O(n³) with the repeated scans.
+
+## Optimal: build the complete graph, then find its MST
+
+The problem *is* a minimum spanning tree, which is exactly the "connect
+every node with the cheapest set of edges, no cycles" question. Two facts
+make it concrete: the graph is **complete** (every pair of points can be
+connected, so there are O(n²) edges), and the weight of an edge is the
+Manhattan distance. Build the edges and run Kruskal's.
+
+```cpp
+class DisjointSet {
+public:
+    explicit DisjointSet(int n) : parent_(n), rank_(n, 0) {
+        std::iota(parent_.begin(), parent_.end(), 0);
+    }
+    int find(int x) {
+        return parent_[x] == x ? x : parent_[x] = find(parent_[x]);
+    }
+    bool unite(int a, int b) {
+        int ra = find(a);
+        int rb = find(b);
+        if (ra == rb) {
+            return false;
+        }
+        if (rank_[ra] < rank_[rb]) {
+            std::swap(ra, rb);
+        }
+        parent_[rb] = ra;
+        if (rank_[ra] == rank_[rb]) {
+            ++rank_[ra];
+        }
+        return true;
+    }
+private:
+    std::vector<int> parent_;
+    std::vector<int> rank_;
+};
+
+int minCostConnectPoints(const std::vector<std::vector<int>>& points) {
+    int n = points.size();
+    std::vector<std::array<int, 3>> edges;   // {weight, u, v}
+
+    for (int i = 0; i < n; ++i) {
+        for (int j = i + 1; j < n; ++j) {
+            int w = std::abs(points[i][0] - points[j][0]) +
+                    std::abs(points[i][1] - points[j][1]);
+            edges.push_back({w, i, j});
+        }
+    }
+
+    std::sort(edges.begin(), edges.end());
+
+    DisjointSet ds(n);
+    int total = 0;
+    int used = 0;
+    for (const auto& [w, u, v] : edges) {
+        if (ds.unite(u, v)) {
+            total += w;
+            if (++used == n - 1) {
+                break;
+            }
+        }
+    }
+    return total;
+}
+```
+
+Walk the logic: generate all pairwise edges with their Manhattan weights,
+sort them cheapest-first, and greedily add each edge whose endpoints are
+not yet connected (union-find says so in near-constant time). Stop once
+`n - 1` edges have been added, since that is a spanning tree. The greedy
+choice is safe by the **cut property**: the cheapest edge crossing any
+partition of the nodes must belong to some minimum spanning tree, so
+greedily taking the globally cheapest non-cycling edge never forecloses the
+optimum.
+
+Prim's algorithm is the natural alternative here, and on a dense graph of
+O(n²) edges it is often faster in practice, because it never materializes
+the full edge list: it grows a tree from one point, always adding the
+cheapest edge to a new point using a priority queue of O(n) frontier
+distances. Both produce the same total; Kruskal's is easier to write
+correctly, Prim's uses less memory here.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Kruskal (build edges + sort) | O(n² log n) | O(n²) |
+| Prim (dense, array scan) | O(n²) | O(n) |
+
+The O(n²) edge set dominates Kruskal's memory and its sort. When n is large
+enough that O(n²) memory hurts, Prim's frontier-only version (which keeps
+just the current best distance to the tree for each point) is the answer,
+at O(n²) time but only O(n) space. Both rely on the tools from
+[Graph Specializations](/dsa/patterns/graph-specializations) (union-find)
+and [Heaps / Priority Queues](/dsa/patterns/heaps-and-priority-queues)
+(Prim's frontier), and the MST-vs-shortest-path distinction is covered in
+[Advanced Graphs](/dsa/patterns/advanced-graphs).

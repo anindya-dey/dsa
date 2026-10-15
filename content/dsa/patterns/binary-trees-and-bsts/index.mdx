@@ -1,0 +1,123 @@
+---
+title: "Binary Trees & BSTs"
+summary: "A tree is a recursive structure, so almost every tree problem has a one-line recursive answer once you decide what each node should return."
+---
+
+A binary tree is defined recursively: a node with a value, a left subtree,
+and a right subtree, where each subtree is itself a binary tree (possibly
+empty). That definition is not just a convenience; it is the algorithm.
+Almost every tree problem is solved by asking one question at each node:
+*what do I need from my children, and what do I return to my parent?* Once
+you can answer that, the code is three lines: handle the base case, recurse
+left, recurse right, combine.
+
+The reason this matters is that the naive alternative, iterating over a
+tree, has no natural shape. Arrays have indices; trees have only
+relationships (parent, child, sibling). Recursion is the only iteration
+that matches the structure, which is why tree problems reward thinking in
+"what does a node return" rather than "how do I loop".
+
+## How to spot it
+
+- The input is a `TreeNode` (or a general tree/forest), and the question is
+  about paths, depths, ancestors, or structure.
+- "Lowest common ancestor", "maximum depth", "is it balanced", "validate
+  this tree", "path sum", "diameter".
+- The answer for a node can be expressed in terms of the answers for its
+  children. This is the real test: if the answer to "the whole tree"
+  depends on "the left subtree" and "the right subtree", recursion is the
+  tool.
+
+## The recursion template
+
+Every tree problem starts by defining the **contract of a single call**:
+what does `solve(node)` return or do? Get that sentence right, and the
+rest is mechanical.
+
+```cpp
+// Returns the maximum depth of the subtree rooted at node.
+int maxDepth(TreeNode* node) {
+    if (node == nullptr) {
+        return 0;                       // base case: empty tree has depth 0
+    }
+    int left = maxDepth(node->left);    // recurse: trust the contract
+    int right = maxDepth(node->right);
+    return 1 + std::max(left, right);   // combine: node adds one level
+}
+```
+
+The power of the contract is that you assume the recursive calls are
+correct (they solve smaller versions of the same problem) and only write
+the combine step. The skill is choosing a contract that makes the combine
+step simple. For "maximum depth", returning depth works. For problems
+where the answer can pass *through* a node (like the diameter), you
+often need the function to return one thing (the height) while updating a
+separate global answer (the best path seen). That split, "return a value
+for the parent, track a different value for the global answer", is the
+single most useful trick in tree problems.
+
+## Traversals: three orders, three uses
+
+The three depth-first orders differ only in *when* you process the node
+relative to its children:
+
+- **Preorder** (node, left, right): process top-down. Used for copying a
+  tree, serializing it, or anything where the parent's decision must
+  precede the children's.
+- **Inorder** (left, node, right): for a **BST**, this visits values in
+  sorted order, which is why "validate a BST" and "k-th smallest" reduce
+  to an inorder walk.
+- **Postorder** (left, right, node): process bottom-up. Used when a node's
+  answer depends on its children's answers, which is most "compute a
+  property of the tree" problems.
+
+**Level-order** (breadth-first, by depth) is the fourth, and it is
+[graph BFS](/dsa/patterns/graph-traversals) applied to a tree: a queue of
+nodes, processing one level at a time. It is the traversal for anything
+phrased per-level: "connect nodes at the same level", "right side view",
+"minimum depth".
+
+## The BST property and what it buys
+
+A **binary search tree** adds one invariant: for every node, everything in
+the left subtree is smaller, and everything in the right subtree is
+larger. That single rule buys O(log n) search, insert, and delete *if the
+tree stays balanced*, because each comparison discards one whole subtree,
+exactly like [binary search](/dsa/patterns/binary-search-variants).
+
+Two consequences that trip people up. First, the invariant is about
+*subtrees*, not just immediate children: it is not enough for a node's left
+child to be smaller; every node in the left subtree must be smaller. That
+is why validating a BST needs a valid *range* passed down, not a
+parent-child comparison. Second, the O(log n) promise holds only when the
+tree is balanced. Insert sorted data into a naive BST and you get a linked
+list with extra pointers, O(n) per operation. Balanced variants (AVL,
+red-black) exist precisely to prevent that, which is why real ordered maps
+in standard libraries are balanced trees, not naive BSTs.
+
+## When it doesn't fit
+
+If the tree is a plain binary tree with no ordering (not a BST), you cannot
+binary-search it, and "find a value" is O(n) by traversal. If the data is
+mostly static and queried by range, a sorted array plus
+[prefix sums](/dsa/patterns/prefix-sums-and-difference-arrays) is simpler
+than a tree. And if the "tree" is really a graph with cycles or shared
+children, the recursion needs visited-tracking, which means you want
+[graph traversal](/dsa/patterns/graph-traversals), not tree recursion.
+
+## The takeaway
+
+Trees are recursive, so solve them recursively: define what a node
+returns, trust the recursive calls, and write only the combine step. The
+BST adds an ordering invariant that turns traversals into sorted scans and
+search into binary search, at the cost of needing balance to keep the
+promise.
+
+## Related patterns
+
+- [Graph Traversals](/dsa/patterns/graph-traversals) is what tree recursion
+  becomes once the structure has cycles or shared children.
+- [Heaps / Priority Queues](/dsa/patterns/heaps-and-priority-queues) are a
+  tree shape with a different, weaker invariant.
+- [Recursion & Math](/dsa/patterns/recursion-and-math) is the recurrence
+  reasoning behind a tree recursion's cost.

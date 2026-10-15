@@ -1,0 +1,123 @@
+---
+title: "Lowest Common Ancestor of a Binary Tree"
+difficulty: "Medium"
+variant: "Recursive Contract"
+practiceLinks: []
+---
+
+## Problem
+
+Given the root of a binary tree and two nodes `p` and `q`, return their
+lowest common ancestor: the deepest node that has both `p` and `q` in its
+subtree (a node may be a descendant of itself).
+
+**Constraints**
+
+- The tree has between 2 and 10^5 nodes.
+- All node values are unique.
+- `p` and `q` both exist in the tree and are different nodes.
+
+**Example**
+
+```text
+Input:     3
+          / \
+         5   1
+        / \ / \
+       6  2 0  8
+         / \
+        7   4
+        p = 5, q = 4
+Output: 5
+```
+
+`5` is an ancestor of itself and of `4`, so it is the lowest node covering
+both.
+
+## Brute force
+
+For each node, determine whether it has both `p` and `q` in its subtree by
+a separate search; the deepest node that does is the answer.
+
+```cpp
+bool contains(TreeNode* root, TreeNode* target) {
+    if (root == nullptr) {
+        return false;
+    }
+    return root == target || contains(root->left, target) ||
+           contains(root->right, target);
+}
+
+TreeNode* lcaBrute(TreeNode* root, TreeNode* p, TreeNode* q) {
+    if (root == nullptr) {
+        return nullptr;
+    }
+    if (contains(root, p) && contains(root, q)) {
+        TreeNode* left = lcaBrute(root->left, p, q);
+        if (left != nullptr) {
+            return left;
+        }
+        TreeNode* right = lcaBrute(root->right, p, q);
+        if (right != nullptr) {
+            return right;
+        }
+        return root;                       // both here, neither child: LCA
+    }
+    return nullptr;
+}
+```
+
+Each node performs two full subtree searches, so this is O(n²) on a
+skewed tree. The redundancy is stark: the `contains` calls re-traverse
+subtrees that other calls already traversed.
+
+## Optimal: one traversal, three-way return
+
+Recursion makes the answer fall out. Define the contract of `lca(node)`:
+it returns the LCA if both targets are in `node`'s subtree, or `p`/`q` if
+only one is found, or `nullptr` if neither is found. Then the combine step
+is a case analysis on the two child results.
+
+```cpp
+TreeNode* lowestCommonAncestor(TreeNode* root, TreeNode* p, TreeNode* q) {
+    if (root == nullptr || root == p || root == q) {
+        return root;                       // found one (or the empty subtree)
+    }
+    TreeNode* left = lowestCommonAncestor(root->left, p, q);
+    TreeNode* right = lowestCommonAncestor(root->right, p, q);
+
+    if (left != nullptr && right != nullptr) {
+        return root;                       // targets split: this is the LCA
+    }
+    return left != nullptr ? left : right; // one side found something
+}
+```
+
+Read the three cases. If both recursive calls return non-null, `p` was
+found on one side and `q` on the other, so the current node is the first
+place they meet: the LCA. If only one side is non-null, both targets (or
+the one target found) are in that side, so pass that result upward
+unchanged. If `root` itself is `p` or `q`, return it immediately: a node
+can be its own ancestor, and the other target, if present, is below it.
+
+The elegance is that "have I found p, have I found q, where do they
+meet" collapses into a single three-state return, so the tree is visited
+exactly once. This is the cleanest illustration of the tree recursion
+contract in the whole pattern: the return value means "the best answer
+found in this subtree", and the combine step encodes the meeting rule.
+
+For a **BST**, there is an even simpler O(log n) version: walk from the
+root, and go left if both targets are smaller, right if both are larger,
+and stop the moment they would diverge. That works only because the
+[BST ordering](/dsa/patterns/binary-trees-and-bsts) tells you which
+subtree holds which target, information a plain binary tree lacks.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Repeated subtree search | O(n²) | O(n) recursion |
+| Single recursive pass | O(n) | O(n) recursion |
+
+Every node is visited once, and the recursion depth is the tree height,
+which is O(n) in the worst (skewed) case and O(log n) when balanced.

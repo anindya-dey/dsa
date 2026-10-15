@@ -1,0 +1,171 @@
+---
+title: "Graph Specializations"
+summary: "Three families of graph question — ordering, connectivity, and shortest paths — each with its own named algorithm."
+---
+
+Plain [BFS and DFS](/dsa/patterns/graph-traversals) answer "what can I
+reach from here". A large family of harder questions needs a specific
+algorithm on top, and the way to keep them straight is to sort them into
+three families, each asking a different kind of question and each with a
+characteristic tool. Recognizing which family a problem belongs to is most
+of the work; the algorithm then follows.
+
+- **Ordering**: in what order can I do these things, respecting
+  dependencies? Tool: topological sort.
+- **Connectivity**: which things are in the same group, and are there
+  cycles? Tool: union-find (disjoint set union).
+- **Shortest paths**: what is the cheapest way from A to B when edges have
+  weights? Tools: Dijkstra and Bellman-Ford.
+
+## Ordering: topological sort
+
+A **directed acyclic graph (DAG)** where edges mean "must come before"
+admits a linear order of the nodes that respects every edge. Course
+prerequisites, build dependencies, task scheduling, and spreadsheet
+recalculation are all this shape. Two standard algorithms produce the
+order:
+
+**Kahn's algorithm** (BFS-based) repeatedly removes nodes with no
+remaining incoming edges. It also detects cycles for free: if some nodes
+never reach in-degree zero, they are in a cycle, so no valid order exists.
+
+```cpp
+// Kahn's topological sort. Returns an empty vector if there is a cycle.
+std::vector<int> topoSort(int n, const std::vector<std::vector<int>>& adj) {
+    std::vector<int> inDegree(n, 0);
+    for (int u = 0; u < n; ++u) {
+        for (int v : adj[u]) {
+            ++inDegree[v];
+        }
+    }
+
+    std::queue<int> ready;
+    for (int u = 0; u < n; ++u) {
+        if (inDegree[u] == 0) {
+            ready.push(u);
+        }
+    }
+
+    std::vector<int> order;
+    while (!ready.empty()) {
+        int u = ready.front();
+        ready.pop();
+        order.push_back(u);
+        for (int v : adj[u]) {
+            if (--inDegree[v] == 0) {
+                ready.push(v);
+            }
+        }
+    }
+    return static_cast<int>(order.size()) == n ? order : std::vector<int>{};
+}
+```
+
+**DFS-based** topological sort does a postorder traversal and reverses the
+result: a node finishes only after all its descendants, so the reverse of
+finish order is a valid topological order.
+
+## Connectivity: union-find (disjoint set union)
+
+**Union-find** tracks a partition of elements into groups under two
+operations: `find(x)` returns the group's representative, and `union(x, y)`
+merges two groups. It answers "are x and y connected?" in near-constant
+time, and it is the right tool for dynamic connectivity (edges added over
+time), cycle detection in undirected graphs, and grouping problems like
+"accounts that share an email" or Kruskal's minimum spanning tree.
+
+The classic optimizations, both needed for near-O(1) amortized operations,
+are **path compression** (point every node on a `find` path directly at the
+root) and **union by rank** (attach the smaller tree under the larger).
+
+```cpp
+class DisjointSet {
+public:
+    explicit DisjointSet(int n) : parent_(n), rank_(n, 0) {
+        std::iota(parent_.begin(), parent_.end(), 0);
+    }
+
+    int find(int x) {
+        if (parent_[x] != x) {
+            parent_[x] = find(parent_[x]);     // path compression
+        }
+        return parent_[x];
+    }
+
+    bool unite(int a, int b) {
+        int ra = find(a);
+        int rb = find(b);
+        if (ra == rb) {
+            return false;                      // already connected
+        }
+        if (rank_[ra] < rank_[rb]) {
+            std::swap(ra, rb);                 // attach smaller under larger
+        }
+        parent_[rb] = ra;
+        if (rank_[ra] == rank_[rb]) {
+            ++rank_[ra];
+        }
+        return true;
+    }
+
+private:
+    std::vector<int> parent_;
+    std::vector<int> rank_;
+};
+```
+
+## Shortest paths: Dijkstra and Bellman-Ford
+
+When edges have **weights**, "fewest edges" (BFS) is no longer "cheapest",
+and the shortest path needs a weighted algorithm.
+
+**Dijkstra's algorithm** works when all edge weights are non-negative. It
+grows a set of finalized nodes, always finalizing the unfinalized node with
+the smallest known distance, using a
+[priority queue](/dsa/patterns/heaps-and-priority-queues) to pick it. It
+runs in O((V + E) log V) with a binary heap. The requirement of
+non-negative weights is what makes it correct: finalizing the closest
+unsettled node is safe only if no path through a farther node could be
+cheaper, which a negative edge would break.
+
+**Bellman-Ford** handles negative weights by relaxing every edge V - 1
+times, in O(V · E). It is slower, but it detects **negative cycles** (a
+cycle that lowers cost indefinitely), which Dijkstra cannot, and it works
+on distributed or streaming settings where Dijkstra's global priority
+queue is impractical.
+
+## Choosing the tool
+
+- Dependencies, ordering, "is this schedule possible": **topological
+  sort** (and its cycle check).
+- Grouping, undirected cycles, incremental connectivity, Kruskal's MST:
+  **union-find**.
+- Weighted shortest path, non-negative weights: **Dijkstra**.
+- Weighted shortest path with negative weights or negative-cycle
+  detection: **Bellman-Ford**.
+- All-pairs shortest paths: **Floyd-Warshall**, O(V³).
+
+## When these don't fit
+
+Topological sort needs a DAG; a cyclic dependency graph has no valid order,
+which is itself the answer ("impossible"). Union-find handles undirected
+connectivity; for directed reachability you need traversal or SCC
+([advanced graphs](/dsa/patterns/advanced-graphs)). Dijkstra is wrong with
+negative weights; Bellman-Ford is correct but slow. And none of these
+solve the *all-pairs* or the *minimum spanning tree* problem directly,
+which is why those have their own entries.
+
+## The takeaway
+
+Most "hard graph" problems reduce to naming the family: ordering,
+connectivity, or shortest path. Once named, the algorithm is standard.
+The recognition step, not the implementation, is the skill.
+
+## Related patterns
+
+- [Graph Traversals](/dsa/patterns/graph-traversals) is the BFS/DFS
+  foundation these algorithms extend.
+- [Advanced Graphs](/dsa/patterns/advanced-graphs) covers MST, strongly
+  connected components, and bridges beyond these three families.
+- [Heaps / Priority Queues](/dsa/patterns/heaps-and-priority-queues) is the
+  structure behind Dijkstra's frontier.

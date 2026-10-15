@@ -1,0 +1,117 @@
+---
+title: "Heaps / Priority Queues"
+summary: "A heap keeps one element — the extreme one — instantly available, and keeps it there for a fraction of the cost of a full sort."
+---
+
+A heap is a structure built around a single promise: **the smallest (or
+largest) element is always at the top, and you can add or remove elements
+without paying to keep everything else sorted.** That promise is worth
+being precise about, because it is the source of both the heap's power and
+its limits. A sorted array also keeps the minimum at the front, but it
+pays O(n) to insert into the middle. A heap gives up total order and
+keeps only the one relationship it needs (each parent is no larger than
+its children, in a min-heap), and that partial order is enough to make
+"give me the minimum" O(1) and "add" and "remove the minimum" O(log n).
+
+That trade, **partial order for speed**, is the whole idea. You rarely
+need everything sorted; you usually need the next-most-important item,
+again and again, while new items keep arriving. That is a priority queue,
+and the heap is its standard implementation.
+
+## How to spot it
+
+- **"Top K"** anything: k largest, k most frequent, k closest.
+- **"Merge k sorted ..."**: lists, streams, files.
+- **"The next ..."** where items arrive over time and you repeatedly need
+  the current extreme: scheduling by deadline, the running median.
+- **"K-th smallest/largest"** where k is small or the data is streamed.
+- A greedy algorithm that repeatedly needs "the cheapest/best next
+  choice" among a growing set.
+
+The signal to notice is *repeated access to an extreme under updates*. If
+you only need the extreme once, a scan or a sort is simpler. If the data
+never changes, a sorted array or a
+[balanced tree](/dsa/patterns/binary-trees-and-bsts) may fit better. The
+heap earns its place when the set is *dynamic* and you keep asking for the
+front.
+
+## The mechanics you actually need
+
+A binary heap is a complete binary tree stored in a flat array: node `i`
+has children `2i+1` and `2i+2`, and a parent at `(i-1)/2`. There are no
+pointers, which is why heaps are cache-friendly and cheap. Two operations
+maintain the invariant:
+
+- **Sift up** on insert: place the new element at the end, then swap it
+  upward while it violates the parent-child order. O(log n).
+- **Sift down** on removal of the root: move the last element to the root,
+  then swap it downward while it violates the order. O(log n).
+
+```cpp
+// Min-heap of ints: the C++ standard library calls it a max-heap by default,
+// so a min-heap uses greater<int> as the comparator.
+std::priority_queue<int, std::vector<int>, std::greater<int>> minHeap;
+minHeap.push(5);
+minHeap.push(1);
+minHeap.push(3);
+int smallest = minHeap.top();     // 1, in O(1)
+minHeap.pop();                    // remove it, O(log n)
+```
+
+In interviews you almost never implement the sift logic; you use the
+library. What you *must* get right is the comparator direction (C++'s
+`priority_queue` is a max-heap by default, which is the single most common
+heap bug) and the fact that a heap cannot look at anything except its top.
+
+## The patterns that recur
+
+**Top K with a bounded heap.** To find the k largest elements of a stream,
+keep a **min-heap of size k**. Push each element; if the heap exceeds k,
+pop the smallest. What remains are the k largest, and the top is the k-th
+largest. The insight is that you keep the *opposite* extreme as the
+boundary: a min-heap of size k uses its smallest element as the eviction
+gate. This is O(n log k), better than sorting (O(n log n)) when k is
+small, and it works on a stream where sorting is impossible.
+
+**Two heaps for a running median.** Split the data into a max-heap of the
+lower half and a min-heap of the upper half, kept within one element of
+equal size. The median is at the top of one of them. Each insert rebalances
+the two, which is O(log n) per element instead of re-sorting.
+
+**K-way merge.** To merge k sorted lists, keep a min-heap of the current
+head of each list. Pop the smallest, append it, and push that list's next
+element. This is the heap version of the two-list
+[merge](/dsa/patterns/linked-list-manipulation/problems/merge-two-sorted-lists),
+generalized to k inputs in O(n log k).
+
+## When a heap is the wrong tool
+
+- **You need the median or an arbitrary element, not the extreme.** A heap
+  only guarantees its top; everything else is in no particular order. (The
+  two-heap trick is the exception that proves it: you build the median
+  from the two extremes.)
+- **You need to change the priority of an element already inside.** A plain
+  heap has no "decrease-key"; you either push a duplicate and skip stale
+  entries on pop (the common lazy approach) or maintain an index map (an
+  indexed heap), which is more machinery than most problems warrant.
+- **You need a sorted result.** A heap gives you the elements in order only
+  if you repeatedly pop, which is heapsort, O(n log n), no better than
+  sorting and with worse constants for a static array.
+- **k is about n.** If you want the top half, the bounded-heap trick is no
+  better than sorting; use `nth_element` or a sort.
+
+## The takeaway
+
+Reach for a heap when the set changes and you keep needing its extreme.
+The recurring shapes are a bounded heap for Top K, two heaps for a running
+median, and a heap of fronts for k-way merge. Everything else is the sift
+logic the library already wrote for you.
+
+## Related patterns
+
+- [Sorting & Selection](/dsa/patterns/sorting-and-selection) is the
+  alternative when you need full order, not just the extreme.
+- [Graph Specializations](/dsa/patterns/graph-specializations) uses heaps
+  in Dijkstra's frontier and in Prim's MST.
+- [Design Data Structures](/dsa/patterns/design-data-structures) extends
+  the two-heap idea to streaming medians and beyond.

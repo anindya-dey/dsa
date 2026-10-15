@@ -1,0 +1,130 @@
+---
+title: "Find Median from Data Stream"
+difficulty: "Hard"
+variant: "Two Heaps"
+practiceLinks: []
+---
+
+## Problem
+
+Design a data structure that supports adding a number and querying the
+median of all numbers added so far. `addNum(x)` inserts a value;
+`findMedian()` returns the median (the middle value for an odd count, or
+the average of the two middle values for an even count).
+
+**Constraints**
+
+- Between 1 and 5 * 10^4 calls.
+- `-10^5 <= x <= 10^5`.
+
+**Example**
+
+```text
+addNum(1), addNum(2), findMedian() -> 1.5
+addNum(3), findMedian() -> 2.0
+```
+
+## Brute force
+
+Store every number in a dynamic array, and on each query sort a copy and
+pick the middle.
+
+```cpp
+class MedianFinderBrute {
+public:
+    void addNum(int num) { nums_.push_back(num); }
+
+    double findMedian() {
+        std::sort(nums_.begin(), nums_.end());     // sorts the whole array
+        int n = static_cast<int>(nums_.size());
+        if (n % 2 == 1) {
+            return nums_[n / 2];
+        }
+        return (nums_[n / 2 - 1] + nums_[n / 2]) / 2.0;
+    }
+
+private:
+    std::vector<int> nums_;
+};
+```
+
+Correct, but each query is O(n log n), so n interleaved add/query pairs
+cost O(n² log n). And it re-sorts from scratch even when only one number
+was added since the last query, which is where all the waste is.
+
+## Optimal: two heaps, split at the median
+
+The median is the boundary between the lower half and the upper half of
+the data. If you maintain those two halves as two heaps, the median is
+readable from their tops:
+
+- a **max-heap** holding the smaller half, so its top is the largest of
+  the lower half;
+- a **min-heap** holding the larger half, so its top is the smallest of
+  the upper half.
+
+Keep the two heaps within one element of each other in size. Then the
+median is the top of the larger heap (odd count) or the average of the two
+tops (even count).
+
+```cpp
+class MedianFinder {
+public:
+    void addNum(int num) {
+        if (lower_.empty() || num <= lower_.top()) {
+            lower_.push(num);                  // belongs to the lower half
+        } else {
+            upper_.push(num);
+        }
+        rebalance();
+    }
+
+    double findMedian() const {
+        if (lower_.size() > upper_.size()) {
+            return lower_.top();
+        }
+        if (upper_.size() > lower_.size()) {
+            return upper_.top();
+        }
+        return (lower_.top() + upper_.top()) / 2.0;
+    }
+
+private:
+    void rebalance() {
+        if (lower_.size() > upper_.size() + 1) {
+            upper_.push(lower_.top());         // move largest of lower up
+            lower_.pop();
+        } else if (upper_.size() > lower_.size() + 1) {
+            lower_.push(upper_.top());         // move smallest of upper down
+            upper_.pop();
+        }
+    }
+
+    std::priority_queue<int> lower_;           // max-heap: smaller half
+    std::priority_queue<int, std::vector<int>, std::greater<int>> upper_;
+};
+```
+
+Two details make this correct. First, the size invariant (the heaps differ
+by at most one) is what guarantees the median is at one of the two tops,
+and `rebalance` restores it after every insert. Second, the insertion
+routing uses `num <= lower_.top()` to decide the half; the comparison
+direction matters, and it pairs with the `rebalance` moves so that an
+element can be pushed into one heap and immediately transferred to the
+other, which is the standard way to keep both the order and the size
+correct at once.
+
+The payoff: each insert is O(log n) (a push plus at most one move and two
+pops), and each query is O(1). No re-sorting ever.
+
+## Complexity
+
+| Approach | addNum | findMedian | Space |
+| --- | --- | --- | --- |
+| Sort on query | O(1) | O(n log n) | O(n) |
+| Two heaps | O(log n) | O(1) | O(n) |
+
+The lesson is the general one from
+[heaps](/dsa/patterns/heaps-and-priority-queues): when a problem needs an
+order statistic that is *not* the extreme, ask whether two heaps facing
+each other can manufacture it from the two extremes they each expose.

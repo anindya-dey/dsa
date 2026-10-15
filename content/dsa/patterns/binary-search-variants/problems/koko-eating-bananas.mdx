@@ -98,7 +98,8 @@ Everything between is the search space, and each check costs O(n).
 | Try every speed | O(max(piles) · n) | O(1) |
 | Binary search on the speed | O(n · log(max(piles))) | O(1) |
 
-This is the canonical "binary search on the answer" problem: no sorted array
-anywhere in sight, just a monotonic check. When you see "minimum x such
-that...", ask whether you can verify a guess cheaply, and if so, search the
-guesses instead of the data.
+This is the canonical "binary search on the answer" problem (the third
+variant in [Binary Search Variants](/dsa/patterns/binary-search-variants)):
+no sorted array anywhere in sight, just a monotonic check. When you see
+"minimum x such that...", ask whether you can verify a guess cheaply, and if
+so, search the guesses instead of the data.

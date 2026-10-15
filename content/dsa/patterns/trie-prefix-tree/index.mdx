@@ -1,0 +1,145 @@
+---
+title: "Trie (Prefix Tree)"
+summary: "A tree that stores strings by their characters, so every word sharing a prefix shares the nodes that spell it."
+---
+
+A trie is a tree where the path from the root spells a string, one
+character per edge. Insert `cat`, `car`, and `card`, and the root has a
+single `c` edge; that node has an `a` edge; that node has a `t` edge
+(marking the end of `cat`) and an `r` edge (marking `car`), and the `r`
+node has a `d` edge (marking `card`). The three words share the nodes for
+`c` and `ca`, because they share those prefixes. That sharing is the whole
+point: the structure is organized by *prefix*, which is exactly how human
+lookups by prefix work, and exactly what a
+[hash map](/dsa/patterns/hash-based-structures) throws away.
+
+The reason to reach for a trie over a hash set is a specific kind of
+question: **"what starts with ...?"** A hash gives you exact-match lookup
+in O(1) and knows nothing about prefixes; it scatters strings so that
+`car` and `card` are unrelated. A trie groups them by construction, so
+prefix queries become walks rather than scans.
+
+## How to spot it
+
+- **Prefix search / autocomplete**: "find all words starting with `ca`".
+- **Word games on a board**: Word Search II, Boggle, crossword filling,
+  where you extend a partial word one letter at a time and need to know
+  quickly whether any word continues that way.
+- **Spell-check and dictionaries**: is `recieve` a word, and is
+  `receiv` a prefix of any word.
+- **Maximum XOR** of two numbers: a trie over *bits* instead of
+  characters, built by the same rule.
+- Any time you would otherwise keep re-comparing a growing prefix against
+  every candidate string.
+
+## The structure
+
+Each node holds a map (or fixed array) from character to child, plus a
+flag saying whether a word *ends* here. That end flag is essential and
+easy to forget: `car` and `card` share every node up to `r`, and the only
+thing distinguishing "is `car` a word" from "is `car` merely a prefix of
+`card`" is a boolean at the `r` node.
+
+```cpp
+struct TrieNode {
+    std::array<TrieNode*, 26> children{};   // lowercase a-z; nullptr = absent
+    bool isEnd = false;
+};
+
+class Trie {
+public:
+    void insert(const std::string& word) {
+        TrieNode* node = &root_;
+        for (char c : word) {
+            int index = c - 'a';
+            if (node->children[index] == nullptr) {
+                node->children[index] = new TrieNode();
+            }
+            node = node->children[index];
+        }
+        node->isEnd = true;                  // mark the word's end
+    }
+
+    bool startsWith(const std::string& prefix) const {
+        return find(prefix) != nullptr;      // any node reached = prefix exists
+    }
+
+    bool search(const std::string& word) const {
+        const TrieNode* node = find(word);
+        return node != nullptr && node->isEnd;
+    }
+
+private:
+    const TrieNode* find(const std::string& s) const {
+        const TrieNode* node = &root_;
+        for (char c : s) {
+            int index = c - 'a';
+            if (node->children[index] == nullptr) {
+                return nullptr;
+            }
+            node = node->children[index];
+        }
+        return node;
+    }
+
+    TrieNode root_;
+};
+```
+
+Read the difference between `search` and `startsWith`: both walk the same
+path, but `search` also checks `isEnd`. That single boolean is the whole
+distinction between "is a word" and "is a prefix", and it is the source of
+most trie bugs. Note also the storage choice: a fixed 26-slot array trades
+memory (each node holds 26 pointers even if most are null) for O(1)
+indexing. For sparse alphabets or memory-constrained settings, a hash map
+of children is the alternative, trading lookup speed for space.
+
+## Why it beats the alternatives
+
+- **Versus a hash set**: a hash gives O(1) exact lookup but O(n) prefix
+  search (scan every word). A trie gives prefix search proportional to the
+  prefix length, and it shares structure so it can answer "how many words
+  start with this" or "what's the most common prefix" that a hash cannot
+  answer at all without a scan.
+- **Versus sorting the words**: sorted strings let you binary-search a
+  prefix range, which is a fine alternative when the dictionary is static
+  and you only need membership. A trie wins when the dictionary changes
+  and you need the *descendants* of a prefix (autocomplete suggestions),
+  or when you're extending a partial word one character at a time and
+  need incremental pruning (Word Search II).
+
+The complexity story: inserting or looking up a string of length L is
+O(L), independent of how many strings are stored. That is the trie's
+headline, and it is why prefix operations scale.
+
+## When it doesn't fit
+
+- **Exact-match only.** If you never ask about prefixes, a hash set is
+  simpler and faster.
+- **Huge alphabets with sparse data.** 26 slots per node is fine for
+  lowercase English; Unicode or byte strings waste enormous memory with
+  fixed arrays, and the structure gets fiddly.
+- **Memory-bound settings.** A trie stores characters as separate nodes,
+  so it can use far more memory than the strings themselves. Compressed
+  tries (radix trees, Patricia tries) collapse single-child chains to fix
+  this, at the cost of more intricate code.
+- **Fuzzy or ranked search.** A trie matches exact prefixes; ranked,
+  typo-tolerant search is a different structure (an inverted index), which
+  is why real search engines are not tries.
+
+## The takeaway
+
+A trie trades memory for prefix structure. Reach for it when the questions
+are about prefixes, incremental extension, or shared beginnings, and reach
+for a hash when the questions are about exact membership. The end-of-word
+flag and the array-vs-map child storage are the two decisions every trie
+implementation turns on.
+
+## Related patterns
+
+- [Hash-Based Structures](/dsa/patterns/hash-based-structures) is the
+  exact-match alternative to a trie's prefix matching.
+- [String Algorithms](/dsa/patterns/string-algorithms) is the other family
+  of string-matching tools.
+- [Graph Traversals](/dsa/patterns/graph-traversals) is what a trie walk
+  becomes once you branch over several children.

@@ -95,7 +95,9 @@ With it, the whole array from the start counts correctly.
 | Brute force | O(n²) | O(1) |
 | Prefix sum + hash map | O(n) | O(n) |
 
-This is two patterns stacked: the prefix sum turns a range question into a
-question about two points, and the hash map answers "how many earlier points
-had this value" in O(1). When a problem involves both ranges and counting,
-look for exactly this combination.
+This is two patterns stacked: the
+[prefix sum](/dsa/patterns/prefix-sums-and-difference-arrays) turns a range
+question into a question about two points, and the
+[hash map](/dsa/patterns/hash-based-structures) answers "how many earlier
+points had this value" in O(1). When a problem involves both ranges and
+counting, look for exactly this combination.

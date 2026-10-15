@@ -1,0 +1,142 @@
+---
+title: "Network Delay Time"
+difficulty: "Medium"
+variant: "Dijkstra"
+practiceLinks: []
+---
+
+## Problem
+
+A network has `n` nodes labeled `1` to `n`, and a list of directed edges
+`(u, v, w)` meaning a signal takes `w` time to travel from `u` to `v`.
+Starting from node `k`, return the time for all nodes to receive the
+signal, or -1 if some node is unreachable.
+
+**Constraints**
+
+- `1 <= k <= n <= 100`.
+- `1 <= times.length <= 6000`.
+- `1 <= w <= 100`.
+
+**Example**
+
+```text
+Input:  times = [[2,1,1],[2,3,1],[3,4,1]], n = 4, k = 2
+Output: 2
+```
+
+The signal reaches 1 and 3 at time 1, then 4 at time 2. All nodes received
+it by time 2.
+
+## Brute force
+
+Relax edges repeatedly: keep a distance array, and sweep every edge,
+updating any distance that can be shortened, until no distance changes.
+
+```cpp
+int networkDelayTimeBrute(const std::vector<std::vector<int>>& times, int n, int k) {
+    const int INF = std::numeric_limits<int>::max();
+    std::vector<int> dist(n + 1, INF);
+    dist[k] = 0;
+
+    bool changed = true;
+    while (changed) {
+        changed = false;
+        for (const auto& edge : times) {
+            int u = edge[0];
+            int v = edge[1];
+            int w = edge[2];
+            if (dist[u] != INF && dist[u] + w < dist[v]) {
+                dist[v] = dist[u] + w;
+                changed = true;
+            }
+        }
+    }
+
+    int answer = 0;
+    for (int node = 1; node <= n; ++node) {
+        if (dist[node] == INF) {
+            return -1;
+        }
+        answer = std::max(answer, dist[node]);
+    }
+    return answer;
+}
+```
+
+This is essentially Bellman-Ford without a bound on the number of rounds:
+O(V · E) at best, more if the sweep keeps finding improvements. It works
+but ignores the structure the non-negative weights provide.
+
+## Optimal: Dijkstra's algorithm
+
+All weights are positive, so Dijkstra applies. Grow the set of finalized
+nodes outward from the source: always finalize the unfinalized node with
+the smallest tentative distance (a
+[priority queue](/dsa/patterns/heaps-and-priority-queues) picks it), then
+relax its outgoing edges. Because weights are non-negative, a node's
+distance can never improve after it is finalized.
+
+```cpp
+int networkDelayTime(const std::vector<std::vector<int>>& times, int n, int k) {
+    std::vector<std::vector<std::pair<int, int>>> adj(n + 1);
+    for (const auto& edge : times) {
+        adj[edge[0]].push_back({edge[1], edge[2]});   // (neighbor, weight)
+    }
+
+    const int INF = std::numeric_limits<int>::max();
+    std::vector<int> dist(n + 1, INF);
+    dist[k] = 0;
+
+    using Item = std::pair<int, int>;      // (distance, node)
+    std::priority_queue<Item, std::vector<Item>, std::greater<Item>> pq;
+    pq.push({0, k});
+
+    while (!pq.empty()) {
+        auto [d, u] = pq.top();
+        pq.pop();
+        if (d > dist[u]) {
+            continue;                      // stale entry: skip
+        }
+        for (auto [v, w] : adj[u]) {
+            if (dist[u] + w < dist[v]) {
+                dist[v] = dist[u] + w;
+                pq.push({dist[v], v});
+            }
+        }
+    }
+
+    int answer = 0;
+    for (int node = 1; node <= n; ++node) {
+        if (dist[node] == INF) {
+            return -1;
+        }
+        answer = std::max(answer, dist[node]);
+    }
+    return answer;
+}
+```
+
+The `if (d > dist[u]) continue;` line is the standard way to handle a
+priority queue that does not support decrease-key: instead of updating an
+entry in place, we push a new (smaller) one and skip stale pops later. That
+"lazy deletion" keeps the code simple at the cost of a few redundant heap
+entries, and it is the version you should be able to write from memory.
+
+The answer to the original question is the **maximum** finalized distance:
+the signal reaches everyone once the slowest node is reached, so the time
+for full coverage is the largest shortest-path distance. If any node is
+still unreachable, return -1.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Repeated edge relaxation | O(V · E) | O(V + E) |
+| Dijkstra with a binary heap | O((V + E) log V) | O(V + E) |
+
+Dijkstra's correctness rests entirely on non-negative weights; the moment
+a negative edge appears, "finalize the closest node" can be wrong, and you
+must fall back to Bellman-Ford. That trade-off is the reason
+[the two algorithms coexist](/dsa/patterns/graph-specializations) rather
+than one replacing the other.

@@ -98,4 +98,5 @@ one comparison per index.
 Notice this uses no prefix *array* at all. The values needed at each step
 depend only on the previous step, so a single running total replaces the
 whole table. When a precomputed table would only ever be read at the index
-you're already standing on, keep a scalar instead.
+you're already standing on, keep a scalar instead. It is the streaming form
+of [Prefix Sums & Difference Arrays](/dsa/patterns/prefix-sums-and-difference-arrays).

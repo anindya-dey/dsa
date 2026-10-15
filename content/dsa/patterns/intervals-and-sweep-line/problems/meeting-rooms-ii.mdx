@@ -89,11 +89,12 @@ interview's semantics were "buffer needed between meetings", you'd flip
 the tie and answer one room higher.
 
 A second, equally valid framing worth knowing: sort meetings by start, and
-hold a **min-heap of end times** (the earliest-finishing occupied room).
-For each meeting, if the heap's earliest end is at or before this start,
-reuse that room (pop it); otherwise you need a new one. The heap's maximum
-size ever is the answer. Same complexity, more machinery, but generalizes
-nicely when rooms have identities.
+hold a **min-heap of end times** (the earliest-finishing occupied room). For
+each meeting, if the heap's earliest end is at or before this start, reuse
+that room (pop it); otherwise you need a new one. The heap's maximum size
+ever is the answer. Same complexity, more machinery, but generalizes nicely
+when rooms have identities, and it uses the
+[priority queue](/dsa/patterns/heaps-and-priority-queues) tool directly.
 
 ## Complexity
 

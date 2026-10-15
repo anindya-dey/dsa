@@ -1,0 +1,185 @@
+---
+title: "Word Search II"
+difficulty: "Hard"
+variant: "Trie + Backtracking"
+practiceLinks: []
+---
+
+## Problem
+
+Given an `m x n` board of characters and a list of words, return all the
+words that can be formed by walking adjacent cells (horizontally or
+vertically), using each cell at most once per word.
+
+**Constraints**
+
+- `1 <= m, n <= 12`.
+- `1 <= words.length <= 3 * 10^4`.
+- `1 <= words[i].length <= 10`.
+- All words are lowercase English letters.
+
+**Example**
+
+```text
+Input:  board = [["o","a","a","n"],
+                 ["e","t","a","e"],
+                 ["i","h","k","r"],
+                 ["i","f","l","v"]]
+        words = ["oath","pea","eat","rain"]
+Output: ["eat","oath"]
+```
+
+## Brute force
+
+For each word, run a full
+[flood-fill search](/dsa/patterns/matrix-and-grid-algorithms/problems/number-of-islands)
+over the board trying to trace it, starting from every cell.
+
+```cpp
+bool dfs(const std::vector<std::vector<char>>& board,
+         const std::string& word, int i, int j, int k,
+         std::vector<std::vector<bool>>& used) {
+    if (k == static_cast<int>(word.size())) {
+        return true;
+    }
+    if (i < 0 || i >= static_cast<int>(board.size()) ||
+        j < 0 || j >= static_cast<int>(board[0].size()) ||
+        used[i][j] || board[i][j] != word[k]) {
+        return false;
+    }
+    used[i][j] = true;
+    bool found = dfs(board, word, i + 1, j, k + 1, used) ||
+                 dfs(board, word, i - 1, j, k + 1, used) ||
+                 dfs(board, word, i, j + 1, k + 1, used) ||
+                 dfs(board, word, i, j - 1, k + 1, used);
+    used[i][j] = false;
+    return found;
+}
+
+std::vector<std::string> findWordsBrute(
+        const std::vector<std::vector<char>>& board,
+        const std::vector<std::string>& words) {
+    std::vector<std::string> result;
+    for (const std::string& word : words) {
+        std::vector<std::vector<bool>> used(
+            board.size(), std::vector<bool>(board[0].size(), false));
+        bool found = false;
+        for (int i = 0; i < static_cast<int>(board.size()) && !found; ++i) {
+            for (int j = 0; j < static_cast<int>(board[0].size()) && !found; ++j) {
+                if (dfs(board, word, i, j, 0, used)) {
+                    found = true;
+                }
+            }
+        }
+        if (found) {
+            result.push_back(word);
+        }
+    }
+    return result;
+}
+```
+
+Each word triggers a full board search from every cell: catastrophic when
+there are 3 * 10^4 words, and it re-walks shared prefixes ("eat" and
+"eats" re-trace "eat") separately every time.
+
+## Optimal: one traversal over a trie of all words
+
+The fix is to invert the search. Instead of walking the board once per
+word, put all the words into a [trie](/dsa/patterns/trie-prefix-tree) and
+walk the *board once*, carrying a trie node as the current prefix. At each
+cell, the trie tells you immediately whether any word continues with this
+letter; if not, the whole branch dies, pruning every word that shares the
+dead prefix at once.
+
+```cpp
+struct TrieNode {
+    std::array<TrieNode*, 26> children{};
+    std::string word;                      // non-empty if a word ends here
+};
+
+class Solution {
+public:
+    std::vector<std::string> findWords(
+            std::vector<std::vector<char>>& board,
+            const std::vector<std::string>& words) {
+        root_ = new TrieNode();
+        for (const std::string& word : words) {
+            insert(word);
+        }
+
+        int m = board.size();
+        int n = board[0].size();
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                dfs(board, i, j, root_);
+            }
+        }
+        return result_;
+    }
+
+private:
+    void insert(const std::string& word) {
+        TrieNode* node = root_;
+        for (char c : word) {
+            int idx = c - 'a';
+            if (node->children[idx] == nullptr) {
+                node->children[idx] = new TrieNode();
+            }
+            node = node->children[idx];
+        }
+        node->word = word;                 // store the word at its terminal node
+    }
+
+    void dfs(std::vector<std::vector<char>>& board, int i, int j,
+             TrieNode* node) {
+        if (i < 0 || i >= static_cast<int>(board.size()) ||
+            j < 0 || j >= static_cast<int>(board[0].size())) {
+            return;
+        }
+        char c = board[i][j];
+        if (c == '#' || node->children[c - 'a'] == nullptr) {
+            return;                        // visited, or no word continues here
+        }
+        node = node->children[c - 'a'];
+        if (!node->word.empty()) {
+            result_.push_back(node->word);
+            node->word.clear();            // dedupe: collect each word once
+        }
+
+        board[i][j] = '#';                 // mark visited in place
+        dfs(board, i + 1, j, node);
+        dfs(board, i - 1, j, node);
+        dfs(board, i, j + 1, node);
+        dfs(board, i, j - 1, node);
+        board[i][j] = c;                   // unmark on the way back
+    }
+
+    TrieNode* root_ = nullptr;
+    std::vector<std::string> result_;
+};
+```
+
+Three things carry the solution. The trie **prunes at every step**: a cell
+whose letter has no outgoing trie edge ends the branch immediately, which
+is what kills the "one full search per word" cost. The word is **stored at
+its terminal node**, so recognizing a found word is a null-check rather
+than re-walking. And `node->word.clear()` after collecting prevents the
+same word from being reported from multiple starting cells. The in-place
+`'#'` marking is the flood-fill discipline from
+[Number of Islands](/dsa/patterns/matrix-and-grid-algorithms/problems/number-of-islands),
+marking before recursing so a path never reuses a cell.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Search per word | O(W · m · n · 4^L) | O(m · n) |
+| Trie + single traversal | O(m · n · 4^L) | O(total word length) |
+
+Where W is the number of words and L the maximum word length. The trie
+removes the per-word factor entirely and shares the prefix work across
+words, which is the difference between passing and timing out at the
+constraint limits. This problem is the canonical meeting of two patterns:
+the trie supplies prefix pruning, and backtracking supplies the board
+search.

@@ -1,0 +1,157 @@
+---
+title: "Rotting Oranges"
+difficulty: "Medium"
+variant: "Multi-Source BFS"
+practiceLinks: []
+---
+
+## Problem
+
+Given a grid where `0` is empty, `1` is a fresh orange, and `2` is a rotten
+orange, every minute a fresh orange adjacent (4-directionally) to a rotten
+one becomes rotten. Return the number of minutes until no fresh orange
+remains, or -1 if some orange can never rot.
+
+**Constraints**
+
+- `1 <= m, n <= 10`.
+- `grid[i][j]` is 0, 1, or 2.
+
+**Example**
+
+```text
+Input:  grid = [[2,1,1],
+                [1,1,0],
+                [0,1,1]]
+Output: 4
+```
+
+## Brute force
+
+Simulate minute by minute: scan the whole grid, find every fresh orange
+adjacent to a rotten one, rot them all, repeat until nothing changes.
+
+```cpp
+int orangesRottingBrute(std::vector<std::vector<int>> grid) {
+    int m = grid.size();
+    int n = grid[0].size();
+    int minutes = 0;
+
+    while (true) {
+        std::vector<std::pair<int, int>> toRot;
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (grid[i][j] != 1) {
+                    continue;
+                }
+                const int di[] = {1, -1, 0, 0};
+                const int dj[] = {0, 0, 1, -1};
+                for (int d = 0; d < 4; ++d) {
+                    int ni = i + di[d];
+                    int nj = j + dj[d];
+                    if (ni >= 0 && ni < m && nj >= 0 && nj < n &&
+                        grid[ni][nj] == 2) {
+                        toRot.push_back({i, j});
+                        break;
+                    }
+                }
+            }
+        }
+        if (toRot.empty()) {
+            break;
+        }
+        for (auto [i, j] : toRot) {
+            grid[i][j] = 2;
+        }
+        ++minutes;
+    }
+
+    for (int i = 0; i < m; ++i) {
+        for (int j = 0; j < n; ++j) {
+            if (grid[i][j] == 1) {
+                return -1;
+            }
+        }
+    }
+    return minutes;
+}
+```
+
+Correct but O((m·n)²) in the worst case: each minute rescans the entire grid
+to find newly rotten oranges, and the same cells are re-examined every
+round. The waste is that "which oranges rot this minute" is recomputed
+from scratch, when the answer is exactly the previous frontier's neighbors.
+
+## Optimal: multi-source BFS
+
+The key observation is that all rotten oranges rot simultaneously, which is
+exactly what **breadth-first search** models: the frontier at BFS level `d`
+is precisely the set of oranges that rot after `d` minutes. The twist is
+that there are *many* sources (every initial rotten orange), so seed the
+queue with all of them at once and run a single BFS. The number of levels
+is the answer.
+
+```cpp
+int orangesRotting(std::vector<std::vector<int>>& grid) {
+    int m = grid.size();
+    int n = grid[0].size();
+    std::queue<std::pair<int, int>> frontier;
+    int fresh = 0;
+
+    for (int i = 0; i < m; ++i) {
+        for (int j = 0; j < n; ++j) {
+            if (grid[i][j] == 2) {
+                frontier.push({i, j});     // seed every source at time 0
+            } else if (grid[i][j] == 1) {
+                ++fresh;
+            }
+        }
+    }
+
+    int minutes = 0;
+    const int di[] = {1, -1, 0, 0};
+    const int dj[] = {0, 0, 1, -1};
+
+    while (!frontier.empty() && fresh > 0) {
+        int levelSize = static_cast<int>(frontier.size());  // one minute
+        for (int i = 0; i < levelSize; ++i) {
+            auto [r, c] = frontier.front();
+            frontier.pop();
+            for (int d = 0; d < 4; ++d) {
+                int nr = r + di[d];
+                int nc = c + dj[d];
+                if (nr >= 0 && nr < m && nc >= 0 && nc < n &&
+                    grid[nr][nc] == 1) {
+                    grid[nr][nc] = 2;      // mark on enqueue: rots once
+                    --fresh;
+                    frontier.push({nr, nc});
+                }
+            }
+        }
+        ++minutes;
+    }
+
+    return fresh == 0 ? minutes : -1;
+}
+```
+
+Two details make it correct. Seeding the queue with **all** rotten oranges
+before the loop is what makes the sources simultaneous; a BFS from one
+source would model a sequential spread. And marking each orange rotten when
+it *enters* the queue (not when it leaves) prevents it from being enqueued
+twice by two neighbors in the same minute. The `levelSize` snapshot counts
+each BFS level as one minute, and the `fresh` counter answers the "can some
+orange never rot" question at the end without a second grid scan.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Rescan per minute | O((m·n)²) | O(m·n) |
+| Multi-source BFS | O(m·n) | O(m·n) |
+
+Every cell enters the queue at most once, so the traversal is linear. This
+is the standard template for any "spread from many points at once" problem:
+seed all sources, BFS by levels, and let the level count be the time. It is
+[Graph Traversals](/dsa/patterns/graph-traversals) with several starting
+points.

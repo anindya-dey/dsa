@@ -1,0 +1,148 @@
+---
+title: "Number of Connected Components in an Undirected Graph"
+difficulty: "Medium"
+variant: "Union-Find"
+practiceLinks: []
+---
+
+## Problem
+
+Given `n` nodes labeled `0` to `n - 1` and a list of undirected edges,
+return the number of connected components.
+
+**Constraints**
+
+- `1 <= n <= 2000`.
+- `0 <= edges.length <= 5000`.
+- Edges contain no self-loops and no duplicates.
+
+**Example**
+
+```text
+Input:  n = 5, edges = [[0,1],[1,2],[3,4]]
+Output: 2
+```
+
+`{0,1,2}` is one component and `{3,4}` is another.
+
+## Brute force
+
+Run a full [DFS/BFS](/dsa/patterns/graph-traversals) from each unvisited
+node, counting how many times a new search starts.
+
+```cpp
+int countComponentsTraversal(int n, const std::vector<std::vector<int>>& edges) {
+    std::vector<std::vector<int>> adj(n);
+    for (const auto& e : edges) {
+        adj[e[0]].push_back(e[1]);
+        adj[e[1]].push_back(e[0]);
+    }
+
+    std::vector<bool> visited(n, false);
+    int components = 0;
+    for (int start = 0; start < n; ++start) {
+        if (visited[start]) {
+            continue;
+        }
+        ++components;                      // a new component begins here
+        std::stack<int> frontier;
+        frontier.push(start);
+        visited[start] = true;
+        while (!frontier.empty()) {
+            int node = frontier.top();
+            frontier.pop();
+            for (int next : adj[node]) {
+                if (!visited[next]) {
+                    visited[next] = true;
+                    frontier.push(next);
+                }
+            }
+        }
+    }
+    return components;
+}
+```
+
+This is O(V + E) and perfectly good for a *static* graph. The reason to
+know union-find is the *dynamic* version: when edges are added over time
+and you must answer "how many components now" after each addition, the
+traversal approach re-runs from scratch every time, while union-find
+updates incrementally.
+
+## Optimal: union-find
+
+Start with `n` components, each node alone. Each edge that connects two
+*previously separate* components merges them, decrementing the count. If
+the edge's endpoints are already in the same component, it changes nothing.
+
+```cpp
+class DisjointSet {
+public:
+    explicit DisjointSet(int n) : parent_(n), rank_(n, 0) {
+        std::iota(parent_.begin(), parent_.end(), 0);
+    }
+
+    int find(int x) {
+        if (parent_[x] != x) {
+            parent_[x] = find(parent_[x]);   // path compression
+        }
+        return parent_[x];
+    }
+
+    bool unite(int a, int b) {
+        int ra = find(a);
+        int rb = find(b);
+        if (ra == rb) {
+            return false;                    // already connected
+        }
+        if (rank_[ra] < rank_[rb]) {
+            std::swap(ra, rb);               // union by rank
+        }
+        parent_[rb] = ra;
+        if (rank_[ra] == rank_[rb]) {
+            ++rank_[ra];
+        }
+        return true;
+    }
+
+private:
+    std::vector<int> parent_;
+    std::vector<int> rank_;
+};
+
+int countComponents(int n, const std::vector<std::vector<int>>& edges) {
+    DisjointSet ds(n);
+    int components = n;                      // every node starts alone
+    for (const auto& e : edges) {
+        if (ds.unite(e[0], e[1])) {
+            --components;                    // a merge reduces the count
+        }
+    }
+    return components;
+}
+```
+
+The whole algorithm is three lines of counting around the union-find. The
+count starts at `n` (every node its own component) and drops by one each
+time a `unite` actually merges two distinct sets. An edge whose endpoints
+are already connected returns `false` and leaves the count alone, which is
+exactly how a cycle is detected in an undirected graph.
+
+The two optimizations matter for the complexity. **Path compression**
+flattens the tree on every `find`, so subsequent finds are near-constant.
+**Union by rank** keeps trees shallow in the first place. Together they give
+an amortized near-O(1) per operation (the precise bound is the inverse
+Ackermann function, which is below 5 for any realistic input).
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Traversal per component | O(V + E) | O(V + E) |
+| Union-find | O(E · α(V)) ≈ O(E) | O(V) |
+
+For a static graph the two are comparable, and traversal is simpler to
+write. Union-find's advantage is that it is *incremental*: adding an edge
+is one `unite` call, so it handles streaming connectivity, Kruskal's
+minimum spanning tree, and "accounts merged by shared emails" without
+rebuilding anything.

@@ -1,0 +1,129 @@
+---
+title: "Graph Traversals"
+summary: "BFS and DFS are the same idea in two orders: explore every reachable node, differing only in whether you go wide first or deep first."
+---
+
+A graph is a set of nodes and a set of edges between them, and almost every
+graph algorithm is built on one primitive: **starting from a node, visit
+every node reachable from it.** Breadth-first search and depth-first
+search are the two ways to do that, and they differ in a single decision:
+when you have several unexplored neighbors, do you go to the oldest one
+(BFS, using a queue) or the newest one (DFS, using a stack, or recursion)?
+Everything else follows from that choice.
+
+The reason this is a pattern and not just two algorithms is that the
+*choice* determines what you can compute. BFS visits nodes in order of
+distance from the start, so it finds shortest paths in unweighted graphs
+and does anything phrased "by level". DFS exhausts one branch before
+backtracking, so it is the tool for connectivity, cycle detection,
+topological structure, and anything phrased "fully explore this region
+before moving on". Pick the traversal that matches the question's shape.
+
+## How to spot it
+
+- The problem is stated as a graph, a grid, or a network of
+  relationships (friends, dependencies, routes, states).
+- "Shortest path" in an **unweighted** graph, "minimum number of steps",
+  "fewest moves": BFS.
+- "Connected components", "can I reach X from Y", "detect a cycle",
+  "flood fill", "is this bipartite": DFS (or BFS; both work).
+- State-space search: puzzles, word ladders, "minimum transformations",
+  where nodes are states and edges are moves.
+
+## The two traversals
+
+Both need a **visited** set, and the single most common graph bug is
+marking a node visited when you *dequeue* it (BFS) rather than when you
+*enqueue* it, which lets duplicates flood the queue. Mark on discovery.
+
+```cpp
+// BFS: shortest number of edges from src to every reachable node.
+std::vector<int> bfs(const std::vector<std::vector<int>>& adj, int src) {
+    std::vector<int> dist(adj.size(), -1);
+    std::queue<int> q;
+    dist[src] = 0;
+    q.push(src);
+    while (!q.empty()) {
+        int node = q.front();
+        q.pop();
+        for (int next : adj[node]) {
+            if (dist[next] == -1) {        // undiscovered: mark on enqueue
+                dist[next] = dist[node] + 1;
+                q.push(next);
+            }
+        }
+    }
+    return dist;
+}
+
+// DFS: visit every node reachable from src.
+void dfs(const std::vector<std::vector<int>>& adj, int node,
+         std::vector<bool>& visited) {
+    visited[node] = true;
+    for (int next : adj[node]) {
+        if (!visited[next]) {
+            dfs(adj, next, visited);
+        }
+    }
+}
+```
+
+The BFS queue guarantees non-decreasing distance, which is *why* it finds
+shortest paths: the first time you reach a node, you reached it by the
+fewest edges, because everything closer was processed first. The DFS
+recursion (or an explicit stack) exhausts a branch before returning, which
+is what makes it suited to "finish exploring this before anything else"
+questions.
+
+## Choosing between them
+
+Use BFS when the *distance* or *level* matters, or when the answer is
+shallow (BFS finds near answers fast, since it explores in rings outward).
+Use DFS when you need to explore a whole region, when you need the
+recursive structure (topological order, cycle detection via colors), or
+when memory matters (DFS recursion depth is the longest path; BFS memory
+is the frontier width, which can be huge for a wide graph).
+
+They are interchangeable for connectivity and component-counting; pick the
+one that reads more naturally. They are *not* interchangeable for shortest
+paths (BFS only, in unweighted graphs) or for "explore the entire region
+before returning" (DFS's shape).
+
+## Grids are graphs
+
+A grid of cells is a graph where each cell is a node and adjacent cells
+share an edge, which is why flood fill (islands, blobs, regions) is just
+DFS or BFS on an implicit graph. The
+[matrix and grid pattern](/dsa/patterns/matrix-and-grid-algorithms) is
+this traversal with the adjacency computed from coordinates instead of
+stored in a list. Marking visited by writing into the grid (or a separate
+visited array) and marking *before* recursing are the grid-specific
+details, and they are where most flood-fill bugs live.
+
+## When it doesn't fit
+
+Plain BFS and DFS assume **unweighted** edges (or edges of equal cost). The
+moment edges have different weights, shortest path needs
+[Dijkstra or Bellman-Ford](/dsa/patterns/graph-specializations), because
+"fewest edges" is no longer "cheapest". And if the graph is a DAG and the
+question is about ordering, you want
+[topological sort](/dsa/patterns/graph-specializations), which is DFS
+returning in reverse finish order. The traversals are the foundation;
+the specializations are what you build on top.
+
+## The takeaway
+
+Graph traversal is one primitive in two orders. BFS goes wide and gives
+you distances and levels; DFS goes deep and gives you regions and
+recursive structure. Choose by the shape of the question, mark visited on
+discovery, and remember that grids are graphs wearing a coordinate system.
+
+## Related patterns
+
+- [Graph Specializations](/dsa/patterns/graph-specializations) covers what
+  you build on top of traversal: ordering, connectivity, and shortest
+  paths.
+- [Matrix & Grid Algorithms](/dsa/patterns/matrix-and-grid-algorithms) is
+  traversal on an implicit graph defined by coordinates.
+- [Binary Trees & BSTs](/dsa/patterns/binary-trees-and-bsts) is traversal
+  where the graph happens to be a tree.

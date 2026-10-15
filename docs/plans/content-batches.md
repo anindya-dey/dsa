@@ -53,8 +53,8 @@ requirements and templates) and `2026-10-14-roadmap-review-decisions.md`
 | --- | --- | --- | --- | --- |
 | 1 | Array/string core, fundamentals core, template validation | Sliding Window, Binary Search Variants, Hash-Based Structures, Prefix Sums & Difference Arrays (10 problems) | Fundamentals: Scalability, Load Balancing, Database Fundamentals, CAP Theorem, Consistent Hashing, Message Queues & Pub/Sub. LLD: Parking Lot. HLD: URL Shortener. | **done** |
 | 2 | Finish Phase 2, finish the fundamentals core | Monotonic Structures, Intervals & Sweep Line, Matrix & Grid Algorithms, Stacks & Queues, Linked List Manipulation (14 problems) | Fundamentals: CDN, Rate Limiting, API Design, Observability, Distributed Transactions, Idempotency & Exactly-Once. LLD: LRU/LFU Cache, Rate Limiter. HLD: Distributed Rate Limiter, Chat Application. | **done** |
-| 3 | Trees, heaps, graphs; HLD infrastructure depth | Phase 3: Binary Trees & BSTs, Heaps / Priority Queues, Trie, Graph Traversals, Graph Specializations, Advanced Graphs | HLD: News Feed, Notification System, Search Autocomplete, Distributed Cache, Key-Value Store. LLD: Elevator System, Vending Machine, Chess Game. | **next** |
-| 4 | Dynamic programming; the big product case studies | Phase 4: Dynamic Programming, Backtracking & Pruning, Greedy Algorithms, String Algorithms, Range-Query Structures, Number Theory & Combinatorics, Design Data Structures | HLD: Payment System, Ride-Sharing App, Video Streaming Service, Distributed Job Scheduler, E-commerce / Flash Sale. LLD: Movie Ticket Booking, Task Scheduler, Bank / Ledger. | not started |
+| 3 | Trees, heaps, graphs; HLD infrastructure depth | Phase 3: Binary Trees & BSTs, Heaps / Priority Queues, Trie, Graph Traversals, Graph Specializations, Advanced Graphs (18 problems) | HLD: News Feed, Notification System, Search Autocomplete, Distributed Cache, Key-Value Store. LLD: Elevator System, Vending Machine, Chess Game. | **done** |
+| 4 | Dynamic programming; the big product case studies | Phase 4: Dynamic Programming, Backtracking & Pruning, Greedy Algorithms, String Algorithms, Range-Query Structures, Number Theory & Combinatorics, Design Data Structures | HLD: Payment System, Ride-Sharing App, Video Streaming Service, Distributed Job Scheduler, E-commerce / Flash Sale. LLD: Movie Ticket Booking, Task Scheduler, Bank / Ledger. | **next** |
 | 5 | Long tail; principal-level breadth | Remaining Phase 1/2/4: Linear Structures, Recursion & Math, Sorting & Selection, Bit Manipulation, Divide & Conquer, Intervals remainder | Remaining HLD infrastructure and case studies. Principal-level Fundamentals: Multi-Region & Active-Active, Consensus & Leader Election, Clock Synchronization, Reliability Engineering, Concurrency & Parallelism, Event Sourcing & CQRS, Backpressure, Stream vs Batch, and the rest. Remaining LLD. | not started |
 
 ## Sequencing rules
@@ -69,6 +69,28 @@ requirements and templates) and `2026-10-14-roadmap-review-decisions.md`
   clue links to real content.
 - Before closing any batch: `pnpm check:content`, `pnpm lint`,
   `pnpm typecheck`, and `pnpm build` must all pass.
+
+## Batch 3 completion notes (2026-10-14)
+
+Batch 3 is written and shipped.
+
+- DSA: all of Phase 3 is live (Binary Trees & BSTs, Heaps / Priority
+  Queues, Trie, Graph Traversals, Graph Specializations, Advanced Graphs)
+  with 18 new problem pages. Phase 1 is untouched, Phase 2 has only
+  Divide & Conquer left (Batch 5).
+- System Design: HLD grew by 5 (News Feed, Notification System, Search
+  Autocomplete, Distributed Cache, Key-Value Store) and LLD by 3 (Elevator
+  System, Vending Machine, Chess Game). Fundamentals unchanged at 13.
+- Full-corpus review pass: every DSA pattern overview gained a "Related
+  patterns" end section (the System Design articles already had "Related
+  concepts"), and inline links were added to problem pages that referenced
+  a sibling pattern, satisfying the rule that dependencies appear both
+  inline and at the end. Lengths were audited: concept articles sit in the
+  450-1050 word band, problem pages in 190-500.
+- No System Design sub-articles were added: each concept in this batch
+  holds as a single article, and the LLD/HLD track split already serves the
+  "concrete instance" need (e.g. Consistent Hashing vs. Distributed Cache
+  vs. Key-Value Store).
 
 ## Batch 2 completion notes (2026-10-14)
 

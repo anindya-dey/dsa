@@ -1,0 +1,91 @@
+---
+title: "Kth Largest Element in an Array"
+difficulty: "Medium"
+variant: "Bounded Heap"
+practiceLinks: []
+---
+
+## Problem
+
+Given an integer array `nums` and an integer `k`, return the k-th largest
+element. Note that this is the k-th largest in sorted order, not the k-th
+distinct value.
+
+**Constraints**
+
+- `1 <= k <= n <= 10^5`
+- `-10^4 <= nums[i] <= 10^4`
+
+**Example**
+
+```text
+Input:  nums = [3,2,1,5,6,4], k = 2
+Output: 5
+```
+
+Sorted descending, the array is `[6,5,4,3,2,1]`, so the second largest is 5.
+
+## Brute force
+
+Sort the array and index into it.
+
+```cpp
+int findKthLargestBrute(std::vector<int> nums, int k) {
+    std::sort(nums.begin(), nums.end(), std::greater<int>());
+    return nums[k - 1];
+}
+```
+
+O(n log n), correct, and completely reasonable for a one-off. The waste is
+that it sorts *everything* to answer a question about *one* element. If
+you only ever need the k-th largest, sorting the n - k elements you'll
+never look at is pure overhead.
+
+## Optimal: a min-heap of size k
+
+Keep a min-heap holding at most k elements. For each number, push it; if
+the heap now has more than k, pop the smallest. At the end, the heap holds
+exactly the k largest elements, and its top (the smallest of them) is the
+k-th largest.
+
+```cpp
+int findKthLargest(const std::vector<int>& nums, int k) {
+    std::priority_queue<int, std::vector<int>, std::greater<int>> minHeap;
+    for (int value : nums) {
+        minHeap.push(value);
+        if (static_cast<int>(minHeap.size()) > k) {
+            minHeap.pop();                 // evict the smallest seen so far
+        }
+    }
+    return minHeap.top();                  // smallest of the k largest
+}
+```
+
+The counterintuitive part is using a **min**-heap to find the **k-th
+largest**. It makes sense once you see the heap's role: it is a sieve that
+keeps the k largest values seen so far, and the smallest value in that
+sieve is exactly the threshold a new value must beat to enter. Using a
+max-heap of size k would evict the largest values, which is the opposite
+of what you want.
+
+The complexity is O(n log k): each of the n elements costs a push and at
+most a pop, each O(log k). When k is small relative to n, this beats
+sorting. It also works on a stream, where sorting is impossible.
+
+A second optimal approach worth naming is **quickselect**, which uses the
+[partition step of quicksort](/dsa/patterns/divide-and-conquer) to place
+the k-th element in expected O(n) time without a heap. It is faster on
+average but has an O(n²) worst case (or O(n) guaranteed with the
+median-of-medians pivot, at a high constant cost).
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Sort | O(n log n) | O(n) |
+| Bounded min-heap | O(n log k) | O(k) |
+| Quickselect | O(n) expected, O(n²) worst | O(1) |
+
+The choice is situational: sorting when k is close to n or the array is
+small, the bounded heap when k is small or the input streams, quickselect
+when average-case speed on a mutable array is what matters.

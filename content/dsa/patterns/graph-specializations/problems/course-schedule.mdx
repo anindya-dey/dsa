@@ -1,0 +1,137 @@
+---
+title: "Course Schedule"
+difficulty: "Medium"
+variant: "Topological Sort"
+practiceLinks: []
+---
+
+## Problem
+
+There are `numCourses` courses labeled `0` to `numCourses - 1`, and a list
+of prerequisite pairs `[a, b]` meaning you must take `b` before `a`.
+Determine whether it is possible to finish all courses.
+
+**Constraints**
+
+- `1 <= numCourses <= 2000`.
+- `0 <= prerequisites.length <= 5000`.
+- All prerequisite pairs are distinct.
+
+**Example**
+
+```text
+Input:  numCourses = 2, prerequisites = [[1,0]]
+Output: true     // take 0, then 1
+
+Input:  numCourses = 2, prerequisites = [[1,0],[0,1]]
+Output: false    // 0 needs 1 and 1 needs 0: a cycle
+```
+
+## Brute force
+
+Repeatedly find a course with no remaining prerequisites, "take" it, remove
+it, and repeat. If no such course exists but courses remain, there is a
+cycle.
+
+```cpp
+bool canFinishBrute(int numCourses,
+                    std::vector<std::vector<int>> prerequisites) {
+    std::vector<bool> taken(numCourses, false);
+    int takenCount = 0;
+
+    while (takenCount < numCourses) {
+        bool progressed = false;
+        for (int c = 0; c < numCourses; ++c) {
+            if (taken[c]) {
+                continue;
+            }
+            bool ready = true;
+            for (const auto& [a, b] : prerequisites) {
+                if (a == c && !taken[b]) {
+                    ready = false;
+                    break;
+                }
+            }
+            if (ready) {
+                taken[c] = true;
+                ++takenCount;
+                progressed = true;
+                break;                     // restart the scan
+            }
+        }
+        if (!progressed) {
+            return false;                  // stuck: a cycle remains
+        }
+    }
+    return true;
+}
+```
+
+Each round rescans every course and every prerequisite: O(V² + V·E), and it
+recomputes readiness from scratch instead of updating it incrementally.
+
+## Optimal: Kahn's topological sort
+
+Build a graph where an edge `b -> a` means "b unlocks a". Track each
+course's in-degree (how many prerequisites remain). Courses with in-degree
+zero are ready; taking one decrements its neighbors' in-degrees, possibly
+making them ready. If every course eventually becomes ready, the schedule
+exists; if the process stalls with courses remaining, they form a cycle.
+
+```cpp
+bool canFinish(int numCourses, const std::vector<std::vector<int>>& prerequisites) {
+    std::vector<std::vector<int>> adj(numCourses);
+    std::vector<int> inDegree(numCourses, 0);
+
+    for (const auto& [a, b] : prerequisites) {
+        adj[b].push_back(a);               // b unlocks a
+        ++inDegree[a];
+    }
+
+    std::queue<int> ready;
+    for (int c = 0; c < numCourses; ++c) {
+        if (inDegree[c] == 0) {
+            ready.push(c);
+        }
+    }
+
+    int completed = 0;
+    while (!ready.empty()) {
+        int course = ready.front();
+        ready.pop();
+        ++completed;
+        for (int next : adj[course]) {
+            if (--inDegree[next] == 0) {
+                ready.push(next);          // all prerequisites cleared
+            }
+        }
+    }
+    return completed == numCourses;
+}
+```
+
+The `completed == numCourses` check is the cycle detector, and it is worth
+understanding why. If a cycle exists, every course in it permanently has at
+least one outstanding prerequisite (each is waiting on another in the
+cycle), so none of them ever reaches in-degree zero, so the count falls
+short. No separate cycle-detection pass is needed: the topological sort's
+own termination *is* the check.
+
+A DFS-based alternative colors nodes white (unvisited), gray (on the
+current path), and black (finished); finding a gray node again means a
+back edge, hence a cycle. Both are O(V + E); Kahn's is usually the one
+people reach for because the cycle check is built into its structure.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Repeated readiness scan | O(V² + V·E) | O(V + E) |
+| Kahn's topological sort | O(V + E) | O(V + E) |
+
+Every node and edge is processed once. This is the canonical entry to the
+ordering family of
+[graph specializations](/dsa/patterns/graph-specializations), and the same
+Kahn's skeleton answers "find a valid course order" (return the order) and
+"minimum semesters" (count BFS levels, since courses without dependencies
+can be taken in parallel).

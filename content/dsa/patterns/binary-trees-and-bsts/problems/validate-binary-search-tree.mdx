@@ -1,0 +1,105 @@
+---
+title: "Validate Binary Search Tree"
+difficulty: "Medium"
+variant: "BST Property"
+practiceLinks: []
+---
+
+## Problem
+
+Given the root of a binary tree, determine whether it is a valid binary
+search tree. A valid BST has, for every node, all values in its left
+subtree strictly smaller and all values in its right subtree strictly
+larger.
+
+**Constraints**
+
+- The tree has between 1 and 10^4 nodes.
+- `-2^31 <= Node.val <= 2^31 - 1`.
+
+**Example**
+
+```text
+Input:    5
+         / \
+        1   4
+           / \
+          3   6
+Output: false
+```
+
+The node `3` sits in the right subtree of `5` but is smaller than `5`, so
+the tree is not a valid BST even though `3 < 4` locally.
+
+## Brute force
+
+For every node, walk its entire left subtree to confirm everything is
+smaller, and its entire right subtree to confirm everything is larger.
+
+```cpp
+bool isValidBSTBrute(TreeNode* root) {
+    if (root == nullptr) {
+        return true;
+    }
+    if (!allLess(root->left, root->val)) {
+        return false;
+    }
+    if (!allGreater(root->right, root->val)) {
+        return false;
+    }
+    return isValidBSTBrute(root->left) && isValidBSTBrute(root->right);
+}
+```
+
+Each node triggers a full scan of its subtrees, so the same nodes are
+re-examined at every ancestor: O(n²). The waste is that "everything in this
+subtree is within this range" is recomputed from scratch for every node,
+when it can be *narrowed* as you descend.
+
+## Optimal: pass down the allowed range
+
+The correct invariant is about ranges, not parent-child comparisons. The
+root may be anything. Its left child must be in `(-inf, root->val)`; its
+right child in `(root->val, +inf)`. Each level tightens the range for its
+children. A node is valid exactly when it lies inside the range its
+ancestors have allowed.
+
+```cpp
+bool isValidBST(TreeNode* root) {
+    return validate(root, nullptr, nullptr);   // null bound = unbounded
+}
+
+bool validate(TreeNode* node, TreeNode* low, TreeNode* high) {
+    if (node == nullptr) {
+        return true;
+    }
+    if ((low != nullptr && node->val <= low->val) ||
+        (high != nullptr && node->val >= high->val)) {
+        return false;
+    }
+    return validate(node->left, low, node) &&      // left: upper bound = node
+           validate(node->right, node, high);      // right: lower bound = node
+}
+```
+
+Why ranges and not local comparisons: the failure case in the example
+proves it. Node `3` is a perfectly valid *right child* of `4`, but `4`'s
+whole subtree must be greater than `5`, and `3` is not. Only a bound
+inherited from the root catches that. The two nullable bounds carry the
+range; passing `nullptr` for "no bound" avoids needing sentinel infinities.
+
+An equivalent solution collects the values via an
+[inorder traversal](/dsa/patterns/binary-trees-and-bsts) (which should be
+strictly increasing) and checks the sequence, which is arguably clearer
+but uses O(n) memory and does not short-circuit as early.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Re-scan subtrees per node | O(n²) | O(n) recursion |
+| Range bounds, single pass | O(n) | O(n) recursion |
+
+The lesson generalizes beyond BSTs: a property that must hold "for the
+whole subtree" is carried *downward* as a constraint, not re-checked
+upward at every ancestor.

@@ -1,0 +1,122 @@
+---
+title: "Binary Tree Level Order Traversal"
+difficulty: "Medium"
+variant: "BFS by Level"
+practiceLinks: []
+---
+
+## Problem
+
+Given the root of a binary tree, return its values level by level, from
+top to bottom, with each level as its own list.
+
+**Constraints**
+
+- The tree has between 0 and 2000 nodes.
+- `-1000 <= Node.val <= 1000`.
+
+**Example**
+
+```text
+Input:     3
+          / \
+         9  20
+           /  \
+          15   7
+Output: [[3], [9, 20], [15, 7]]
+```
+
+## Brute force
+
+Recurse with a depth parameter, appending each value to the list for its
+depth, growing the list-of-lists as deeper levels appear.
+
+```cpp
+std::vector<std::vector<int>> levelOrderRecursive(TreeNode* root) {
+    std::vector<std::vector<int>> result;
+    helper(root, 0, result);
+    return result;
+}
+
+void helper(TreeNode* node, int depth,
+            std::vector<std::vector<int>>& result) {
+    if (node == nullptr) {
+        return;
+    }
+    if (depth == static_cast<int>(result.size())) {
+        result.push_back({});              // first time we reach this level
+    }
+    result[depth].push_back(node->val);
+    helper(node->left, depth + 1, result);
+    helper(node->right, depth + 1, result);
+}
+```
+
+This is actually O(n) and perfectly acceptable: a preorder walk with the
+depth tracked gives levels for free. The reason to know it is that it is
+not obviously "level order" at a glance, and it depends on a subtle
+invariant (a node at depth `d` is always processed after some node at
+depth `d-1`, so the level list already exists). It is the recursive
+disguise of the same traversal.
+
+## Optimal: BFS with a queue, one level per outer loop
+
+The direct interpretation: process nodes in the order they appear by
+depth, which is exactly breadth-first search. A queue holds the frontier,
+and the outer loop runs once per level.
+
+```cpp
+std::vector<std::vector<int>> levelOrder(TreeNode* root) {
+    std::vector<std::vector<int>> result;
+    if (root == nullptr) {
+        return result;
+    }
+
+    std::queue<TreeNode*> frontier;
+    frontier.push(root);
+
+    while (!frontier.empty()) {
+        int levelSize = static_cast<int>(frontier.size());  // freeze this level
+        std::vector<int> level;
+
+        for (int i = 0; i < levelSize; ++i) {   // exactly the current level
+            TreeNode* node = frontier.front();
+            frontier.pop();
+            level.push_back(node->val);
+            if (node->left != nullptr) {
+                frontier.push(node->left);
+            }
+            if (node->right != nullptr) {
+                frontier.push(node->right);
+            }
+        }
+        result.push_back(std::move(level));
+    }
+    return result;
+}
+```
+
+The one line that makes this work is `levelSize = frontier.size()` before
+the inner loop. It freezes the boundary between the current level and the
+next: the inner loop processes exactly the nodes that were already in the
+queue, while the children it enqueues belong to the next iteration. Drop
+that snapshot and process the whole queue at once, and levels blur
+together. Every "level", "layer", or "per-depth" tree question uses this
+same boundary trick.
+
+This is the tree instance of
+[breadth-first search](/dsa/patterns/graph-traversals): the queue
+guarantees nodes are dequeued in non-decreasing depth, and the level
+snapshot turns that ordering into grouped output.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Depth-tracked recursion | O(n) | O(n) |
+| Queue BFS | O(n) | O(w) widest level |
+
+Both are linear. The queue version's space is the width of the widest
+level (the frontier), which is smaller than n for balanced trees and
+larger only for a single enormous level. It also generalizes directly to
+graphs, where the recursive version does not.

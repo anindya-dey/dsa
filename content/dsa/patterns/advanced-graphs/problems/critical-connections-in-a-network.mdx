@@ -1,0 +1,159 @@
+---
+title: "Critical Connections in a Network"
+difficulty: "Hard"
+variant: "Bridges (Tarjan)"
+practiceLinks: []
+---
+
+## Problem
+
+A network of `n` servers is connected by undirected edges. A connection is
+**critical** (a bridge) if removing it disconnects the network. Return all
+critical connections.
+
+**Constraints**
+
+- `2 <= n <= 10^5`.
+- `n - 1 <= connections.length <= 10^5`.
+- Connections are unique and contain no self-loops.
+
+**Example**
+
+```text
+Input:  n = 4, connections = [[0,1],[1,2],[2,0],[1,3]]
+Output: [[1,3]]
+```
+
+Removing `[1,3]` isolates server 3. Removing any of the triangle's edges
+leaves the rest connected.
+
+## Brute force
+
+For each edge, remove it, run a connectivity check (DFS/BFS) from any node,
+and see whether all nodes are still reachable. The connectivity check is the
+basic [graph traversal](/dsa/patterns/graph-traversals).
+
+```cpp
+bool connectedWithout(int n, const std::vector<std::vector<int>>& adj,
+                      int skipU, int skipV) {
+    std::vector<bool> visited(n, false);
+    std::stack<int> stack;
+    stack.push(0);
+    visited[0] = true;
+    int count = 1;
+    while (!stack.empty()) {
+        int u = stack.top();
+        stack.pop();
+        for (int v : adj[u]) {
+            if ((u == skipU && v == skipV) || (u == skipV && v == skipU)) {
+                continue;
+            }
+            if (!visited[v]) {
+                visited[v] = true;
+                ++count;
+                stack.push(v);
+            }
+        }
+    }
+    return count == n;
+}
+```
+
+One connectivity check per edge, each O(V + E): O(E · (V + E)) overall,
+which is O(n²) on a sparse graph and far too slow at 10^5 edges. It also
+re-derives, for every edge, information a single traversal could compute
+once.
+
+## Optimal: one DFS tracking low-link values
+
+The insight is that a single DFS can identify every bridge by comparing,
+for each node, the earliest node reachable from its subtree *without*
+crossing back over the edge to its parent. That earliest reachable depth is
+the node's **low-link** value. An edge `(u, v)` where `v` is a child of `u`
+is a bridge exactly when `v`'s subtree cannot reach any node discovered
+before `u`, i.e. `low[v] > disc[u]`.
+
+```cpp
+class Solution {
+public:
+    std::vector<std::vector<int>> criticalConnections(
+            int n, const std::vector<std::vector<int>>& connections) {
+        std::vector<std::vector<int>> adj(n);
+        for (const auto& c : connections) {
+            adj[c[0]].push_back(c[1]);
+            adj[c[1]].push_back(c[0]);
+        }
+
+        discovery_.assign(n, -1);
+        low_.assign(n, 0);
+        timer_ = 0;
+        bridges_.clear();
+
+        for (int node = 0; node < n; ++node) {
+            if (discovery_[node] == -1) {
+                dfs(adj, node, -1);          // handle a possibly disconnected graph
+            }
+        }
+        return bridges_;
+    }
+
+private:
+    void dfs(const std::vector<std::vector<int>>& adj, int node, int parent) {
+        discovery_[node] = low_[node] = timer_++;
+
+        for (int next : adj[node]) {
+            if (next == parent) {
+                continue;                    // do not immediately go back
+            }
+            if (discovery_[next] == -1) {
+                dfs(adj, next, node);
+                low_[node] = std::min(low_[node], low_[next]);
+                if (low_[next] > discovery_[node]) {
+                    bridges_.push_back({node, next});   // next cannot escape upward
+                }
+            } else {
+                low_[node] = std::min(low_[node], discovery_[next]);  // back edge
+            }
+        }
+    }
+
+    std::vector<int> discovery_;
+    std::vector<int> low_;
+    int timer_ = 0;
+    std::vector<std::vector<int>> bridges_;
+};
+```
+
+Read the two arrays. `discovery[node]` is *when* this node was first
+visited (a DFS timestamp). `low[node]` is the earliest discovery time
+reachable from `node`'s subtree, considering both tree edges (downward)
+and back edges (upward to an ancestor). For a child `next`, if
+`low[next] > discovery[node]`, then nothing in `next`'s subtree can reach
+`node` or anything older, so the only connection from that subtree to the
+rest is the edge `(node, next)`: removing it disconnects the subtree,
+making it a bridge.
+
+The `next == parent` skip is the subtle part. It prevents the DFS from
+treating the edge back to the parent as a back edge, which would wrongly
+lower the low-link value. But note it skips only the *specific* parent edge
+once, not the parent node entirely: a second edge to the parent (a parallel
+edge) would be a genuine back edge and should count, which is why the check
+is on the edge (via `next == parent`) rather than a "don't revisit parent"
+flag. For graphs without parallel edges, the distinction is invisible; it
+matters the moment multi-edges exist.
+
+The whole traversal is one DFS, so it is linear.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Remove-and-check per edge | O(E · (V + E)) | O(V + E) |
+| Tarjan low-link DFS | O(V + E) | O(V + E) |
+
+This is the standard bridge-finding algorithm, and it is the same low-link
+machinery that powers strongly connected components (in the directed case)
+and articulation-point finding (the node version: a node is critical when
+two of its children's subtrees cannot reach above it). Learning the
+low-link idea once covers the whole family of "what is the single point of
+failure" problems.
