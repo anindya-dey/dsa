@@ -1,0 +1,81 @@
+---
+title: "std::unordered_map / std::unordered_set"
+summary: "Hash containers: O(1) average, iteration-order gotchas, and the load factor dial."
+---
+
+The unordered containers are the
+[hash table](/dsa/patterns/hash-based-structures) as a library type:
+**O(1) average** lookup, insert, and erase, keyed by a hash of the
+key, with the honest asterisks (worst case O(n) under collisions,
+iteration order unspecified, pointers invalidated by rehash) that
+the [design-a-hashmap entry's](/dsa/patterns/design-data-structures/problems/design-hashmap)
+own implementation made visible.
+
+## The API surface
+
+```cpp
+std::unordered_map<std::string, int> counts;
+counts["a"] = 1;                       // INSERTS if missing (default-init!)
+counts.at("b");                        // throws if missing
+counts.find("c");                      // returns end() if missing: the LOOKUP form
+if (m.find(k) != m.end()) { ... }      // THE existence check
+m.count(k);                            // 0 or 1 (2 for multimap)
+m.insert({k, v}); m.insert_or_assign(k, v);
+m.emplace(k, v);                       // construct in place
+m.erase(k);
+m.reserve(n);                          // pre-size buckets: the performance knob
+m.load_factor(); m.max_load_factor(f); // the tuning dial
+for (auto& [key, value] : m) { ... }   // structured bindings (any order)
+```
+
+The single most-used line is the
+[find-end existence check](https://en.cppreference.com/w/cpp/container/unordered_map/find),
+and the single most-caught trap is `operator[]`'s
+**insert-if-missing**: `if (m["x"] == 5)` *creates* `x` with a
+default value (0), silently mutating the map during a "read". Use
+`find` for reading, `[]` for "get-or-create".
+
+## The complexity, honestly
+
+- **Average O(1)** per operation, the
+  [separate-chaining / open-addressing](/dsa/patterns/hash-based-structures)
+  machinery underneath.
+- **Worst case O(n)**: all keys colliding into one bucket
+  (adversarial or pathological keys), which is the standing
+  asterisk, and the reason
+  [std::map](/cpp/map) (the tree) exists for the
+  guaranteed-latency cases.
+- **Iteration: O(n) over the buckets** (empty buckets included),
+  in an **unspecified order** that can *change after a rehash*: the
+  trap that bites anyone who snapshots iteration order, or expects
+  "insertion order" (that is
+  [`std::unordered_map`'s cousins in other
+  languages](https://en.wikipedia.org/wiki/Hash_table#History);
+  C++ standard has no insertion-ordered hash map).
+
+## The invalidation rules, the load factor, and the custom key
+
+**Rehashing invalidates iterators** (the buckets moved) but *not*
+references/pointers to elements (the nodes/chaining stay: elements
+don't move in memory, only the bucket index changes). `erase`
+invalidates only what it erases (plus, formally, iterators to the
+erased element — save-the-iterator-then-erase returns the next
+iterator:
+`it = m.erase(it)` [the idiom](/cpp/invalidation)).
+
+**The load factor dial**: `max_load_factor` (default 1.0: size
+reaches buckets) triggers the rehash (bucket count ~ doubles).
+`reserve(n)` pre-buckets for n elements, the same
+[pre-size-the-vector](/cpp/vector) discipline, and it is the
+performance knob when the final size is known ("build a map of a
+million entries": reserve it).
+
+**Custom keys**: a `std::hash<Key>` specialization (or a
+`Hash` template argument) plus `operator==`, and the pair must
+agree (equal keys *must* hash equal: the invariant whose violation
+produces "the element is not found but count says it exists" —
+the classic custom-key bug). For pairs and tuples, a
+[combine-hash](https://en.cppreference.com/w/cpp/utility/hash)
+(`h1 ^ (h2 << 1)`-style, or `boost::hash_combine`), the same
+[fingerprint](/dsa/patterns/hash-based-structures/problems/group-anagrams)
+idea the algorithms use.

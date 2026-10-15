@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { siteUrl } from "@/lib/site";
 import { dsaPatterns } from "@/lib/catalog/dsa";
 import { systemDesignTopics } from "@/lib/catalog/system-design";
+import { cppEntries } from "@/lib/catalog/cpp";
 import {
   listProblemsForPattern,
   patternHasContent,
@@ -21,6 +22,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/dsa",
     "/dsa/cheat-sheet",
     "/system-design",
+    "/cpp",
   ].map((route) => ({ url: `${siteUrl}${route}` }));
 
   const patternRoutes: SitemapEntry[] = dsaPatterns
@@ -44,10 +46,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: topicMtime(topic.track, topic.slug),
     }));
 
+  const cppRoutes: SitemapEntry[] = cppEntries.map((entry) => ({
+    url: `${siteUrl}/cpp/${entry.slug}`,
+  }));
+
   return [
     ...staticRoutes,
     ...patternRoutes,
     ...problemRoutes,
     ...topicRoutes,
+    ...cppRoutes,
   ];
 }

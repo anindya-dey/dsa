@@ -1,0 +1,87 @@
+---
+title: "Numeric Utilities"
+summary: "accumulate, iota, gcd, minmax, numeric_limits: the small utilities every solution leans on."
+---
+
+The small numeric utilities from `<numeric>`, `<algorithm>`, and
+`<limits>` — none deep enough for their own entry, all of them
+short enough that writing them by hand is a recurring waste:
+
+## The family
+
+```cpp
+// <numeric>
+std::accumulate(v.begin(), v.end(), 0);              // sum (the init type WIDENS: see below)
+std::accumulate(v.begin(), v.end(), 1, std::multiplies<>{});  // product: the FOLD, generalized
+std::iota(v.begin(), v.end(), 0);                     // 0, 1, 2, 3, ... : the "fill with indices"
+std::gcd(a, b); std::lcm(a, b);                       // C++17, <numeric>
+std::midpoint(a, b);                                  // overflow-safe (a+b)/2: the binary-search middle!
+
+// <algorithm>
+std::min(a, b); std::max(a, b);
+std::minmax(a, b);                                    // pair, ONE evaluation each
+std::min_element(v.begin(), v.end());               // ITERATOR (dereference!)
+std::max_element(v.begin(), v.end());
+std::clamp(x, lo, hi);                                // C++17: the bounded value
+std::abs(x);                                          // <cstdlib> for ints, <cmath> for floats
+std::swap(a, b);                                      // the whole-site staple
+
+// <limits>
+std::numeric_limits<int>::max();                     // the "infinity" constant
+std::numeric_limits<int>::lowest();                  // the honest MINIMUM (most negative)
+std::numeric_limits<int>::infinity();                // floats only
+std::numeric_limits<long long>::max();              // the overflow-safe sum type
+```
+
+## The idioms this site uses constantly
+
+**`iota` + sort = rank mapping** ("sort indices by value": the
+[permutation](/dsa/patterns/sorting-and-selection) idiom):
+
+```cpp
+std::vector<int> idx(n);
+std::iota(idx.begin(), idx.end(), 0);
+std::sort(idx.begin(), idx.end(), [&](int a, int b) { return v[a] < v[b]; });
+// idx[0] is the index of v's smallest element
+```
+
+**`accumulate` with the right init type** — the silent-narrowing
+trap: `accumulate(v, 0)` with `int` v and `int` 0 **returns int**
+(overflowing on a sum of ints that exceeds int), while
+`accumulate(v, 0LL)` returns `long long`: the init argument is the
+*accumulator's type*, and passing `0LL` is the
+whole-site convention ([every prefix-sum entry](/dsa/patterns/prefix-sums-and-difference-arrays)).
+
+**`numeric_limits` as the "infinity" idiom**: Dijkstra's distance
+initialization (`std::vector<int> dist(n,
+std::numeric_limits<int>::max())`) — with the [relaxation check](/dsa/patterns/graph-specializations/problems/network-delay-time)
+that treats max as unvisited (`dist[u] != INF` guards), the
+convention that every graph solution on this site follows.
+
+**`minmax_element` and the pair idiom**: one pass for both min and
+max (two passes of `min_element` + `max_element` is the waste),
+returning the `[min_it, max_it]` pair — the
+[per-tenant](/system-design/fundamentals/multi-tenancy-and-data-residency)
+"one pass, two answers" discipline at type scale.
+
+## The traps
+
+- **`min`/`max` with mixed types** (`std::min(int, unsigned)`) is
+  a compile error (template deduction), and the cast is the fix —
+  the reason `std::min<size_t>(a, b)` appears in careful code.
+- **`minmax` evaluates each argument once**: safe with
+  side-effecting arguments (unlike the old
+  [pre-C++11 macros](https://en.cppreference.com/w/cpp/algorithm/min)
+  that every style guide remembers).
+- **`abs` of the most-negative int** is
+  [undefined behavior](/dsa/patterns/recursion-and-math) (the
+  magnitude does not fit: the INT_MIN trap that the
+  [pow entry](/dsa/patterns/number-theory-and-combinatorics/problems/pow-x-n)
+  covers in its negative-exponent handling).
+- **`midpoint` for the middle** (not `(a + b) / 2`): the
+  overflow-safe form for binary-search middles — `(a+b)` can
+  overflow when both are large, `midpoint` cannot, and it is the
+  C++20 answer to the [classic binary-search
+  bug](https://lemire.me/blog/2022/05/10/binary-search-overflow/)
+  that the [pattern entry](/dsa/patterns/binary-search-variants)
+  sidesteps with `lo + (hi - lo) / 2`.

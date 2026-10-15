@@ -1,0 +1,76 @@
+---
+title: "std::string"
+summary: "Construction, comparison, substr, and the operations that copy."
+---
+
+`std::string` is a `vector<char>` with attitude: contiguous, growable,
+and O(1) length (it stores its size, unlike C strings). Almost
+everything from [the vector entry](/cpp/vector) transfers — the
+growth, the
+[invalidation rules](/cpp/invalidation), the amortized argument —
+with a string-specific layer on top: small-string optimization
+(SSO), and a copy-semantics trap that C++ interviewers love.
+
+## Small-string optimization
+
+Short strings (~15-22 chars, library-dependent) are stored **inside
+the string object itself** (no heap allocation): construction is a
+stack write, copying is memcpy, and the whole short-string path is
+dramatically faster than the long-string one. The consequence that
+matters for reasoning: `sizeof(std::string)` is fixed (~24-32
+bytes) regardless of content length, and *moving* a short string
+gains nothing over copying it (there is no heap buffer to steal).
+Moving a long string is the usual O(1) pointer theft.
+
+## The API surface, with the costs
+
+```cpp
+std::string s = "hello";
+s.size(); s.length();               // O(1), same thing
+s.empty();
+s[i]; s.at(i);                      // indexing: same rules as vector
+s.substr(1, 3);                     // "ell": COPIES (allocates)
+s.find("ll");                       // npos if not found
+s.compare(t);                       // lexicographic, < 0 / 0 / > 0
+s + t; s += t;                      // concatenation: += cheaper (no new object)
+s.insert(i, t); s.erase(i, len);    // O(n): the shift, like vector
+s.c_str();                          // NUL-terminated view: valid until modification
+s.replace(pos, len, t);             // the multi-arg version, O(n)
+```
+
+The operators read the way you want:
+`s == t` (size-then-memcmp), `s < t` (lexicographic:
+[schoolbook order](https://en.cppreference.com/w/cpp/string/basic_string/operator_cmp)).
+That comparison *is* the [sorted-container](/cpp/map) ordering and
+the reason string keys in `std::map` behave like a dictionary.
+
+## The copy traps
+
+- **`substr` copies**: `auto part = s.substr(0, 100)` from a 10 MB
+  string copies 100 bytes (fine), but a loop of substr-then-concat
+  builds a string character-group-by-character-group at O(n²)-ish
+  cost. `s.substr(start)` to the end, or iterator ranges, for the
+  cheap paths; `+=` for building.
+- **Pass by value for "read" is a copy**: a function taking
+  `std::string s` copies at every call (unless the compiler
+  elides); taking `const std::string& s` is the read-only idiom;
+  taking `std::string s` *by value and modifying it* is a
+  deliberate move-or-copy-and-use idiom.
+- **`c_str()`'s lifetime**: the pointer is valid until the *next
+  modification* of the string, which is the classic dangling
+  `const char*` when the string is a temporary
+  (`const char* p = (s + t).c_str();` — the temporary dies at the
+  semicolon).
+
+## The parsing/formatting toolkit
+
+`std::stoi(s)` / `std::to_string(x)` for numeric round-trips
+(throwing on garbage input: wrap it), and
+[`std::getline(stream, s, delim)`](https://en.cppreference.com/w/cpp/string/getline)
+for the split-by-delimiter idiom. For heavy text work, a
+`std::stringstream` is the classic answer, and
+[`std::format`](https://en.cppreference.com/w/cpp/utility/format)
+(C++20) is the modern one. The
+[tokenizer](/system-design/fundamentals/search-and-inverted-index)
+entry covers the *design* of text processing; this entry covers
+the type's mechanics.

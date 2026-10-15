@@ -1,0 +1,91 @@
+---
+title: "std::optional"
+summary: "Maybe-value: returning not-found without sentinels."
+---
+
+`std::optional<T>` is a value-or-nothing: **a `T` that may not be
+there**, expressed as a type instead of a sentinel (`-1`, an empty
+string, a null pointer — the "magic value" convention that every
+API document has to explain and every caller forgets to check). The
+type makes absence *explicit and checkable*: the
+[find-vs-operator-brackets](/cpp/unordered-map) discipline, promoted
+to a first-class value.
+
+## The API surface
+
+```cpp
+std::optional<int> maybe;
+maybe.has_value();                   // false
+maybe ? ... : ...;                   // same check, bool conversion
+maybe.value();                       // THROWS if empty
+maybe.value_or(0);                   // the default idiom
+maybe = 42;                          // construct in place
+maybe.reset();                       // empty again
+maybe.emplace(args);                // construct from args, in place
+
+if (auto found = map.find(k); found != map.end()) {
+    // the OTHER idiom for absence: iterator comparison
+}
+std::optional<Value> lookup(const Key& k) {
+    auto it = map.find(k);
+    if (it == map.end()) return std::nullopt;      // explicit "not found"
+    return it->second;
+}
+
+// Call side: absence is FORCED to be handled:
+if (auto v = lookup(k)) {
+    use(*v);                         // *v: the value (checked: we're in the if)
+} else {
+    // the not-found path, unavoidable
+}
+```
+
+## Why it exists: the sentinel catalog
+
+The problems it removes, each a real bug class:
+
+- **Sentinel values** (`-1` for index, `""` for string, `0` for
+  count-when-zero-is-valid): every sentinel is a *convention* the
+  caller must know, and `0`-as-absent is unfixable for APIs where
+  `0` is a real answer ([the two-sum](/dsa/patterns/hash-based-structures/problems/two-sum)
+  family's "not found" is the classic).
+- **Null pointers** for maybe-values: valid for pointers, useless
+  for values (`int*` to return a maybe-int, with the ownership
+  question attached).
+- **Out-parameters + bool return** (`bool found` plus a reference
+  out-param): workable, uncomposable, and the pre-C++17 standard
+  answer.
+
+The `optional` return is all three fixed by one type: the
+signature *says* "may be absent", the caller *must* check, and the
+value's lifetime is handled.
+
+## The mechanics worth knowing
+
+- **The `T` lives inside the optional** (a union with a
+  no-value tag: no heap, no pointer), so `optional` is
+  `sizeof(T)`-plus-a-byte-or-so, on the stack or inside a
+  container — and an `optional` in a
+  [vector](/cpp/vector) is contiguous, real, and cheap.
+- **Engaged optionals' lifetime**: `*maybe` is the value;
+  `maybe.value()` throws `std::bad_optional_access` when empty
+  (the *checked* access, like [vector::at](/cpp/vector));
+  `value_or(default)` is the "give me something either way"
+  idiom.
+- **`std::nullopt`** is the explicit-empty literal
+  (`return std::nullopt;`), and comparisons work as you hope
+  (`nullopt < engaged < value`, all optionals last — the
+  [ordering](https://en.cppreference.com/w/cpp/utility/optional/operator_cmp)
+  that makes optionals sortable keys).
+
+## Where this site uses it
+
+The [trie](/dsa/patterns/trie-prefix-tree)'s `find`-returning-
+nullable is the design's [find-or-absent](/dsa/patterns/design-data-structures/problems/time-based-key-value-store)
+moment; the
+[in-memory file system](/system-design/lld/in-memory-file-system)'s
+`resolve(path)` returning a maybe-node is the "not found is an
+answer, not an error" discipline. Every "what do we return when
+it is not there" conversation on this site has the same three
+answers — sentinel (no), exception (for real errors),
+`optional` (for absence) — and the modern C++ answer is the third.

@@ -7,6 +7,7 @@ import {
   systemDesignTopics,
   systemDesignTrackTitles,
 } from "@/lib/catalog/system-design";
+import { cppEntries } from "@/lib/catalog/cpp";
 import { listProblemsForPattern, patternHasContent } from "@/lib/content/dsa";
 import { topicHasContent } from "@/lib/content/system-design";
 
@@ -97,6 +98,20 @@ export function buildSearchIndex(): SearchEntry[] {
       summary: topic.summary,
       body: readBody(file),
       section: `System Design · ${systemDesignTrackTitles[topic.track]}${topic.group ? ` · ${topic.group}` : ""}`,
+    });
+  }
+
+  for (const entry of cppEntries) {
+    const file = path.join(CONTENT_ROOT, "cpp", `${entry.slug}.mdx`);
+    if (!fs.existsSync(file)) {
+      continue;
+    }
+    entries.push({
+      url: `/cpp/${entry.slug}`,
+      title: entry.title,
+      summary: entry.summary,
+      body: readBody(file),
+      section: "C++ Toolkit",
     });
   }
 

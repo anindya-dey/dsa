@@ -1,0 +1,82 @@
+---
+title: "std::priority_queue"
+summary: "The heap: max-heap by default, the comparator trick, no decrease-key."
+---
+
+`std::priority_queue` is the [heap](/dsa/patterns/heaps-and-priority-queues)
+as a type: an always-sorted-by-priority pop order, O(log n) push and
+pop, O(1) top. Its single most famous property is a *trap*: **it
+is a MAX-heap by default** — `top()` returns the *largest* — and
+every other page on this site that uses a min-heap ("keep the k
+smallest", Dijkstra's frontier) writes the comparator trick that
+inverts it.
+
+## The comparator trick, stated once
+
+```cpp
+// DEFAULT: max-heap ("top" = largest)
+std::priority_queue<int> maxHeap;
+
+// MIN-HEAP: the comparator is "left has LOWER priority than right"
+std::priority_queue<int, std::vector<int>, std::greater<int>> minHeap;
+//                                        ^^^^^^^^^^^^^^^^^^^^^^ the trick
+
+// Custom order (pair by first, then second):
+auto cmp = [](const std::pair<int,int>& a, const std::pair<int,int>& b) {
+    return a.second > b.second;       // ">": min-heap by second
+};
+std::priority_queue<std::pair<int,int>, std::vector<std::pair<int,int>>,
+                    decltype(cmp)> heap(cmp);   // pass the lambda IN
+```
+
+The mental model that prevents the bug: the comparator answers
+"does `a` have *lower* priority than `b`?" — the heap puts
+*lower-priority* elements *lower* in the tree, and `top()` is the
+*highest priority*. So `std::less<int>` (the default: `a < b` means
+"lower priority") puts the *largest* on top (max-heap), and
+`std::greater<int>` puts the *smallest* on top (min-heap). Say it
+as "lower-priority-sinks" and the direction is never ambiguous
+again.
+
+## The API surface, and what is missing
+
+```cpp
+std::priority_queue<int> pq;
+pq.push(x);                        // O(log n)
+pq.pop();                          // O(log n), removes top, RETURNS NOTHING (peek first!)
+pq.top();                          // O(1)
+pq.empty(); pq.size();
+pq.emplace(args...);              // construct in place
+// NOT AVAILABLE: iterate (no begin/end!), decrease-key, remove-arbitrary,
+//                 find-an-element, anything but top
+```
+
+The missing operations are the *design* of the type: **you can only
+see the top.** The consequences, all of them covered in the
+[pattern entry](/dsa/patterns/heaps-and-priority-queues):
+
+- **No decrease-key** (change an in-heap element's priority): the
+  standard workaround is *lazy deletion* — push the updated element
+  and mark the stale one, skipping stale entries when they reach
+  the top ("is this entry's version the current one?" checked at
+  pop): the
+  [Dijkstra](/dsa/patterns/graph-specializations/problems/network-delay-time)
+  pattern's standard form.
+- **No iteration, no find**: you see the top, you commit to it.
+  The [bounded-heap](/dsa/patterns/heaps-and-priority-queues/problems/kth-largest-element-in-an-array)
+  tricks (pop-to-evict, size-k min-heap of the largest) exist
+  *because* the type is opaque.
+- **`pop()` returns void**: peek-then-pop, like the
+  [stack/queue adapters](/cpp/stack-queue).
+
+## The underlying container
+
+`priority_queue` is an *adapter* (like [stack/queue](/cpp/stack-queue))
+over a [vector](/cpp/vector) by default, organized as a
+[binary heap](https://en.wikipedia.org/wiki/Binary_heap) (the
+array-form: parent at i, children at 2i+1 and 2i+2 — the same
+layout as the [segment tree](/dsa/patterns/range-query-structures)'s
+flat array). You cannot choose a non-random-access underlying
+container (the heap algorithms need indexing), so the choice is
+vector (fast) and nothing else — which is also why the type is
+one structure, not a family.

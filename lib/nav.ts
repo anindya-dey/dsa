@@ -22,6 +22,12 @@ export const NAV_ITEMS: NavItem[] = [
     shortLabel: "Cheat Sheet",
     icon: "matrix",
   },
+  {
+    href: "/cpp",
+    label: "C++ Toolkit",
+    shortLabel: "C++",
+    icon: "dsa",
+  },
 ];
 
 function matches(href: string, pathname: string): boolean {

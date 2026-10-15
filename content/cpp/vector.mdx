@@ -1,0 +1,96 @@
+---
+title: "std::vector"
+summary: "The dynamic array: contiguous memory, amortized growth, and the invalidation rules that bite everyone once."
+---
+
+`std::vector` is the default container, and the reason is physics:
+**contiguous memory**, which means index arithmetic (element i at
+`data + i * size`), which means O(1) access, and — the part that
+dominates real performance —
+[prefetching](https://en.wikipedia.org/wiki/Cache_prefetching): the
+CPU loads the neighbors of whatever you touch, so a vector walk is
+sequential memory at full memory bandwidth, while a pointer-chasing
+walk ([the linked list](/dsa/patterns/linear-structures)) is a
+cache miss per step. Prefer `vector` by default; measure before
+choosing anything else.
+
+## The mental model
+
+A vector is three numbers and a buffer: `begin` (the allocation),
+`end` (one past the last element), `capacity_end` (the
+allocation's end). `size()` is `end - begin`; `capacity()` is
+`capacity_end - begin`, and the gap between them is the room to
+grow without reallocating.
+
+```cpp
+std::vector<int> v = {1, 2, 3};
+v.push_back(4);                    // size 4, capacity likely 4
+v.push_back(5);                    // size 5: REALLOCATION, capacity ~8
+// The growth: geometric (roughly 1.5-2x), which is why n pushes
+// are O(n) AMORTIZED: the total copying across all growths is
+// bounded by the final size.
+```
+
+## The rules that matter
+
+**Growth**: `push_back` is amortized O(1) — a single push can
+reallocate (copy everything), but n pushes copy O(n) total, the
+[geometric-growth](https://en.wikipedia.org/wiki/Dynamic_array#Geometric_expansion)
+argument. **Know the size? Say it**: `v.reserve(n)` before a loop
+of pushes eliminates the reallocation entirely, and it is the
+single highest-leverage vector optimization.
+
+**Invalidation, the rule everyone learns once**:
+
+- Any `push_back`/`reserve` that grows **invalidates all iterators,
+  pointers, and references** (the buffer moved).
+- `erase`/`insert` in the middle **invalidates everything at or
+  after the position** (elements shifted).
+- The silent killer: `for (auto& x : v) v.push_back(...)` — the
+  range's end iterator is captured *before* the loop, but the
+  buffer moves *inside* it, and the loop reads freed memory.
+  Growing inside iteration over the vector requires index-based
+  loops (`for (size_t i = 0; i < v.size(); ++i)`) with the size
+  re-checked each iteration.
+
+**The erase idiom**: `v.erase(std::remove_if(...), v.end())` —
+[Erase-remove](https://en.wikipedia.org/wiki/Erase%E2%80%93remove_idiom):
+`remove_if` shifts the kept elements forward and returns the new
+logical end, `erase` truncates. O(n) with no per-element shift,
+vs. O(n²) for erase-in-a-loop.
+
+## The API surface worth knowing
+
+```cpp
+std::vector<int> v;
+v.push_back(x);                   // amortized O(1)
+v.pop_back();                     // O(1)
+v[i];                             // O(1), unchecked: UB past end
+v.at(i);                          // O(1) checked: throws
+v.front(); v.back();              // first, last
+v.insert(v.begin() + i, x);      // O(n): the shift
+v.erase(v.begin() + i);          // O(n)
+v.resize(n);                      // grow (value-init) or truncate
+v.reserve(n);                     // capacity, no size change
+v.clear();                        // size 0, capacity UNCHANGED
+v.shrink_to_fit();               // request capacity == size
+std::sort(v.begin(), v.end());   // [sorting](/dsa/patterns/sorting-and-selection)
+```
+
+## The gotchas, collected
+
+- **`operator[]` vs `at`**: `[]` past the end is undefined behavior
+  (silent), `at` throws. Debug builds of standard libraries
+  usually catch `[]` in debug mode; release builds never do.
+- **`clear()` keeps the capacity**: a cleared vector is fast to
+  refill (the allocation stays), which is usually what you want,
+  and the memory-not-released surprise when you do not.
+- **The bool specialization**: `std::vector<bool>` is a *packed
+  bitset*, not an array of bools — `v[i]` returns a proxy, not a
+  reference, and `&v[i]` does not exist. When you need a real
+  array of bools, `std::vector<char>` (or `std::deque<bool>`) is
+  the workaround; when you wanted the packing, you wanted
+  [`std::bitset`](/dsa/patterns/bit-manipulation).
+- **Move vs copy on reallocation**: elements that are cheap to
+  move (most) make reallocation cheap; elements with expensive
+  copies make `reserve` *mandatory*, not advisory.

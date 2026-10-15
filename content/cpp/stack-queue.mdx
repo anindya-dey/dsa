@@ -1,0 +1,70 @@
+---
+title: "std::stack / std::queue"
+summary: "Adapters over a container: LIFO and FIFO with a chosen underlying store."
+---
+
+`std::stack` and `std::queue` are not containers — they are
+**adapters**: a narrow interface (push/pop/peek) wrapped around a
+*real* container you choose (the template's second parameter),
+defaulting to [deque](/cpp/deque) for both. The design lesson
+worth having: the adapter *removes* access (a stack cannot be
+iterated, a queue cannot be indexed — deliberately), because the
+restricted interface **is the discipline**: the
+[stacks-and-queues pattern](/dsa/patterns/stacks-and-queues) exists
+because "most recent unresolved first" and "oldest first" are
+semantic commitments, and the type enforces them.
+
+## The API surface
+
+```cpp
+std::stack<int> st;                  // over deque by default
+st.push(x);
+st.pop();                            // removes top, RETURNS NOTHING
+st.top();                            // peek
+st.empty(); st.size();
+
+std::queue<int> q;                    // over deque by default
+q.push(x); q.push(x);
+q.pop();                             // removes front, RETURNS NOTHING
+q.front(); q.back();
+q.empty(); q.size();
+
+// The underlying-container choice:
+std::stack<int, std::vector<int>> fastStack;   // contiguous: fastest
+std::queue<int, std::list<int>> listQueue;     // stable references
+```
+
+The trap that everyone hits once: **`pop()` returns void** (both
+adapters), because returning-by-value-and-removing cannot be
+exception-safe (the classic
+[GotW](https://herbsutter.com/2008/01/01/gotw-82-a-few-of-my-favorite-cs-traits/)-era
+argument). The idiom is *peek then pop*:
+
+```cpp
+auto value = q.front();              // copy/move out FIRST
+q.pop();                             // then remove
+```
+
+## Which underlying container, and why it matters
+
+| Adapter over | Fast at | Notes |
+| --- | --- | --- |
+| `deque` (default) | both ends, element-references stable | the safe default, [block storage](/cpp/deque) |
+| `vector` | contiguous, fastest iteration, `reserve` | stack only (needs only back), not queue (front is O(n)) |
+| `list` | O(1) front/back, stable everything | the pool-node world, worst cache behavior |
+
+A stack over `vector` is the common speed choice (it needs only
+one end: [the vector entry](/cpp/vector) with its contiguous
+walk), and `emplace` (construct in place) for both adapters avoids
+the copy at push.
+
+## Where this site uses them
+
+The whole [stacks-and-queues pattern](/dsa/patterns/stacks-and-queues)
+is the semantics entry ([matching](/dsa/patterns/stacks-and-queues/problems/valid-parentheses),
+[undo-redo](/system-design/lld/text-editor-undo-redo),
+[BFS frontiers](/dsa/patterns/graph-traversals/problems/rotting-oranges));
+this entry is the type's mechanics. The two adapters are the
+smallest real example of "a container *plus a policy*" — the same
+design idea as the [state-machine](/system-design/lld/vending-machine)
+interfaces, at type scale: the narrow interface is the product.

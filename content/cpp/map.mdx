@@ -1,0 +1,90 @@
+---
+title: "std::map / std::set"
+summary: "Ordered containers: O(log n) everything, lower_bound/upper_bound, and when order beats hashing."
+---
+
+`std::map` and `std::set` are the **balanced-tree** containers
+(a [red-black tree](https://en.wikipedia.org/wiki/Red%E2%80%93black_tree),
+in every major implementation): elements kept **sorted by key**, every
+operation O(log n) *guaranteed*, and the ordering is the product —
+iteration is sorted, range queries are native, and
+`lower_bound`/`upper_bound` answer the boundary questions that
+[binary search](/dsa/patterns/binary-search-variants) asks of
+sorted data.
+
+## The API surface
+
+```cpp
+std::map<std::string, int> m;
+m["a"] = 1;                        // inserts if missing (same trap as unordered)
+m.at("b");                         // throws if missing
+auto it = m.find("c");             // end() if missing
+m.insert({k, v}); m.emplace(k, v);
+m.erase(k);
+
+// THE ordered-container extras:
+m.lower_bound(k);                  // first element >= k
+m.upper_bound(k);                  // first element >  k
+m.equal_range(k);                  // [lower, upper) pair
+for (auto& [k, v] : m) { }         // SORTED iteration, by key
+m.begin()->first;                  // smallest key
+std::prev(m.end())->first;         // largest key (rbegin() too)
+```
+
+The same API as [unordered_map](/cpp/unordered-map) for the
+lookup half, plus the ordering layer — which is why the choice
+between the two is the choice the
+[hash-based structures entry](/dsa/patterns/hash-based-structures)
+posed as a price list: hash for O(1) average, tree for order.
+
+## The boundary functions: the real reason to reach for map
+
+`lower_bound(k)` returns the first element with key **>= k**, and
+`upper_bound(k)` the first with key **> k**: together they answer
+"everything in [lo, hi)" with two iterator walks:
+
+```cpp
+// Everything from "mango" up to (but not including) "pear":
+for (auto it = m.lower_bound("mango");
+     it != m.upper_bound("pear") && it != m.end();
+     ++it) {
+    // sorted, in-range: the range query
+}
+```
+
+This is the
+[first-and-last-position](/dsa/patterns/binary-search-variants/problems/first-and-last-position-in-sorted-array)
+operation, as a container native: no manual binary search over a
+sorted vector, no careful index arithmetic — the tree *is* the
+sorted array with O(log n) insertion. The
+[DSA entry](/dsa/patterns/binary-search-variants) covers the
+algorithm over arrays (the `std::lower_bound` free-function form
+in [the algorithms entry](/cpp/binary-search-algos)); this entry
+is the container that maintains the sort for you.
+
+## The invalidation and stability rules
+
+- **Insert/erase invalidate only the affected element's iterators**
+  (and, on erase, what it returned): tree nodes don't move, so
+  references and pointers to elements are **stable across
+  insertions** — the guarantee unordered containers give up on
+  rehash, and the reason pointer-to-element designs prefer the
+  tree.
+- **The erase idiom**: `it = m.erase(it)` advances safely
+  ([the invalidation entry](/cpp/invalidation)), the
+  iterate-and-erase-correctly pattern.
+- **`operator[]` inserts-if-missing**: same trap as
+  [unordered_map](/cpp/unordered-map) (reading with `[]`
+  default-constructs), same fix (`find` for reads).
+
+## Choosing map over unordered_map
+
+The ordered container when you need *any* of: sorted iteration
+(the listing), range queries (`lower_bound`/`upper_bound`),
+min/max by key (the ends), guaranteed O(log n) (no pathological
+collisions), **stable references** to elements across inserts, or
+a key type without a hash but with an ordering (the tree needs
+`operator<`; the hash needs a hash function). And the
+[unordered entry](/cpp/unordered-map)'s side when you need none
+of those and want the O(1) average: the default is unordered,
+map is a *feature* choice, not a default.

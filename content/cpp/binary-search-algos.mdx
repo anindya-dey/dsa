@@ -1,0 +1,92 @@
+---
+title: "lower_bound & upper_bound"
+summary: "The boundary functions: the useful half of the binary-search family."
+---
+
+The binary-search family from `<algorithm>`, and the one sentence
+that organizes all of them: **`lower_bound` is the useful function,
+`binary_search` is the least useful, and the boundary pair answers
+every question.** The
+[pattern entry](/dsa/patterns/binary-search-variants) covers the
+algorithm; this entry covers the calls.
+
+## The family
+
+```cpp
+std::lower_bound(v.begin(), v.end(), x);  // FIRST position where x COULD go: first elem >= x
+std::upper_bound(v.begin(), v.end(), x);  // first elem > x
+std::binary_search(v.begin(), v.end(), x); // bool: is x present? (just a wrapper)
+std::equal_range(v.begin(), v.end(), x);   // the [lower, upper) pair
+
+// ALL take a comparator as the last argument (the SAME one that ordered v):
+std::lower_bound(v.begin(), v.end(), x, cmp);
+// ALL return an ITERATOR (not an index!): subtract begin() for the position
+auto it = std::lower_bound(v.begin(), v.end(), x);
+int index = it - v.begin();
+bool present = it != v.end() && *it == x;   // lower_bound alone is not "presence"!
+```
+
+The questions each answers, as the mental model:
+
+- **`lower_bound(x)`**: "where does x *or its slot* begin?" — the
+  first element `>= x`: the [insertion
+  point](/dsa/patterns/binary-search-variants) (insert *at* the
+  iterator, keeping order), and the *lower* edge of x's run.
+- **`upper_bound(x)`**: "where does x's run *end*?" — the first
+  element `> x`: the upper edge.
+- Together: x's run is `[lower, upper)`, its
+  **count is `upper - lower`** without a scan
+  ([equal_range](https://en.cppreference.com/w/cpp/algorithm/equal_range)
+  returns both in one call).
+
+## The idioms, collected
+
+```cpp
+// Presence:
+bool present = std::binary_search(v.begin(), v.end(), x);
+// (or: auto it = lower_bound(...); present = it != end && *it == x;)
+
+// First occurrence (x's run start):
+auto first = std::lower_bound(v.begin(), v.end(), x);
+
+// Last occurrence (x's run end):
+auto last = std::upper_bound(v.begin(), v.end(), x);    // one past
+// count: last - first;  last actual element: std::prev(last)
+
+// Insert position, keeping order:
+auto pos = std::lower_bound(v.begin(), v.end(), x);
+v.insert(pos, x);                        // x goes exactly where it fits
+
+// First element >= x (the "lower bound" as a value):
+auto it = std::lower_bound(...);
+// *it: the smallest element >= x  (it may be end(): all < x)
+
+// First element > x (upper bound as a value):
+auto it2 = std::upper_bound(...);
+```
+
+The whole [first-and-last-position](/dsa/patterns/binary-search-variants/problems/first-and-last-position-in-sorted-array)
+problem, [solved on this site](/dsa/patterns/binary-search-variants/problems/first-and-last-position-in-sorted-array)
+with a hand-written loop, is `lower_bound` + `upper_bound` in
+library form — and the reason the hand-written version is taught is
+the *understanding* (which boundary, off by which one) that the
+library calls then encode.
+
+## The traps
+
+- **The range must be sorted by the SAME comparator** you pass
+  (or by `<` if you pass none): the classic silent-wrong-answer is
+  a descending-sorted range with default `lower_bound`, which
+  returns garbage *without crashing*.
+- **Returns an iterator**: `lower_bound(...) - v.begin()` for the
+  index, and remember `end()` means "past everything," not
+  "found nothing."
+- **`lower_bound` is not presence**: it finds the insertion point
+  whether or not x exists — the `*it == x` check (with the `!=
+  end()` guard) is the caller's half.
+- **On [associative containers](/cpp/map), use the MEMBER
+  functions** (`m.lower_bound(k)`, not
+  `std::lower_bound(m.begin(), m.end(), k)`) — the member version
+  uses the tree's structure (O(log n)) where the free function
+  would walk the tree linearly (O(n)): the classic
+  accidental-quadratic.

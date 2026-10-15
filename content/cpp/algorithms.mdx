@@ -1,0 +1,87 @@
+---
+title: "Sorting & nth_element"
+summary: "sort, stable_sort, nth_element, partial_sort: what each guarantees."
+---
+
+The sorting family from `<algorithm>`: four functions, each with a
+different *guarantee*, and the choice between them is the choice
+between those guarantees. The
+[pattern entry](/dsa/patterns/sorting-and-selection) covers the
+algorithms; this entry covers the calls.
+
+## The family, by guarantee
+
+```cpp
+std::sort(v.begin(), v.end());                    // O(n log n), UNSTABLE, fastest
+std::sort(v.begin(), v.end(), cmp);               // with a [comparator](/cpp/function-lambdas)
+std::stable_sort(v.begin(), v.end());             // O(n log n)-ish, STABLE, allocates
+std::nth_element(v.begin(), v.begin() + k, v.end());   // O(n) average: partition around k
+std::partial_sort(v.begin(), v.begin() + k, v.end());   // top-k, SORTED: O(n log k)
+std::is_sorted(v.begin(), v.end());
+```
+
+**`std::sort`**: the default (introsort in practice:
+[quicksort](/dsa/patterns/sorting-and-selection) that falls back to
+heap sort at bad depths). **Unstable**: equal elements may
+reorder, which is the one guarantee people forget when their sort
+"sometimes" keeps ties and sometimes doesn't (the fix is
+`stable_sort`, or the tiebreak-in-the-comparator idiom, which is
+what every solution on this site does instead: it is cheaper than
+stability).
+
+**`std::stable_sort`**: equal elements keep their relative order
+(the guarantee), which matters when you sort by one key *after*
+arranging by another (the sort-by-X-then-stably-by-Y idiom: the
+second sort preserves the first's work on ties), or when the
+elements carry identity you care about. Costs: extra memory, and
+slower than `sort` in practice.
+
+**`std::nth_element`**: puts the element that *belongs* at
+position k there, with everything before it
+ less-or-equal and everything after greater-or-equal — **the
+[k-th element](/dsa/patterns/sorting-and-selection)
+answer** (quickselect in library form: O(n) average, no full
+sort), and everything else is *unordered* (the sides are
+partitions, not sorted). The idiom: k-th smallest is
+`*nth_element + v.begin() + k`, then `v.begin() + k` dereferenced,
+after the call.
+
+**`std::partial_sort`**: the top-k, *in order* (the first k
+positions are the k smallest, sorted): the "top 10 leaderboard"
+call, O(n log k) — the
+[bounded-heap](/dsa/patterns/sorting-and-selection/problems/kth-largest-element-in-a-stream)
+alternative when the answer must be *sorted*, not just selected.
+
+## The comparator discipline
+
+Every sort takes the comparator, and the
+[strict-weak-ordering](/cpp/function-lambdas) rules apply: "strictly
+before", equal both ways `false`, no `<=` mistakes. The compound
+key (sort by X, then Y) is the idiom:
+
+```cpp
+std::sort(items.begin(), items.end(),
+          [](const Item& a, const Item& b) {
+              if (a.x != b.x) return a.x < b.x;    // primary: ascending
+              return a.y > b.y;                  // tiebreak: DESCENDING y
+          });
+// Equivalently: sort a vector of (x, -y) pairs: [the pair trick](/cpp/pair-tuple)
+```
+
+## The sorting-adjacent calls worth knowing
+
+```cpp
+std::reverse(v.begin(), v.end());
+std::reverse_copy(src.begin(), src.end(), dst.begin());
+std::unique(v.begin(), v.end());                  // AFTER sort: dedupe (erase to resize)
+v.erase(std::unique(v.begin(), v.end()), v.end());
+std::rotate(v.begin(), v.begin() + k, v.end());   // the [rotation](/dsa/patterns/linear-structures/problems/rotate-array) primitive
+std::min_element / max_element(v.begin(), v.end());  // O(n), NO sort needed
+std::minmax_element(...);                        // both, one pass
+```
+
+The "no sort needed" rule is worth stating: **min/max/second-min
+do not need sorting** — `min_element` is O(n), and sorting to get
+a minimum is the classic waste. The
+[heap entry](/dsa/patterns/heaps-and-priority-queues) is the same
+rule for the *repeated* extreme question.

@@ -3,6 +3,7 @@ import path from "node:path";
 import matter from "gray-matter";
 import { dsaPatterns } from "../lib/catalog/dsa.ts";
 import { systemDesignTopics } from "../lib/catalog/system-design.ts";
+import { cppEntries } from "../lib/catalog/cpp.ts";
 
 const root = process.cwd();
 const contentRoot = path.join(root, "content");
@@ -124,6 +125,28 @@ for (const topic of systemDesignTopics) {
   }
 }
 
+const CPP_ROOT = path.join(root, "content", "cpp");
+for (const entry of cppEntries) {
+  const file = path.join(CPP_ROOT, `${entry.slug}.mdx`);
+  if (!fs.existsSync(file)) {
+    errors.push(`C++ Toolkit entry missing: content/cpp/${entry.slug}.mdx`);
+    continue;
+  }
+  const data = readFrontmatter(file);
+  if (!data.title) {
+    errors.push(`Missing title in content/cpp/${entry.slug}.mdx`);
+  }
+}
+const cppFiles = fs.existsSync(CPP_ROOT)
+  ? fs.readdirSync(CPP_ROOT).filter((f) => f.endsWith(".mdx"))
+  : [];
+for (const file of cppFiles) {
+  const slug = file.replace(/\.mdx$/, "");
+  if (!cppEntries.some((e) => e.slug === slug)) {
+    errors.push(`content/cpp/${file} has no catalog entry`);
+  }
+}
+
 for (const warning of warnings) console.warn(`warning: ${warning}`);
 for (const error of errors) console.error(`error: ${error}`);
 
@@ -133,5 +156,5 @@ if (errors.length > 0) {
 }
 
 console.log(
-  `Content check passed (${dsaPatterns.length} DSA patterns, ${systemDesignTopics.length} system design topics).`,
+  `Content check passed (${dsaPatterns.length} DSA patterns, ${systemDesignTopics.length} system design topics, ${cppEntries.length} C++ entries).`,
 );
