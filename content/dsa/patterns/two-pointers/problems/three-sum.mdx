@@ -2,7 +2,9 @@
 title: "3Sum"
 difficulty: "Medium"
 variant: "Converging + Sort"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/3sum/"
 ---
 
 ## Problem
@@ -49,7 +51,7 @@ std::vector<std::vector<int>> threeSumBrute(
 
 O(n³) with a sort and a set per hit: 2.7 * 10^10 inner iterations at
 the limit, hopeless. The waste is layered: every pair rescans the whole
-rest of the array for its complement (the [two-sum](/dsa/patterns/hash-based-structures/problems/two-sum)
+rest of the array for its complement (the [two-sum](/dsa/patterns/hash-based-structures/two-sum)
 lesson, not applied), and every duplicate triplet is *found* four
 times and deduplicated afterward rather than not being enumerated at
 all.
@@ -125,8 +127,13 @@ O(n²) is the known best for this problem (there is a matching
 lower-bound argument in the comparison model, and the 4-sum extension
 is O(n³) by the same layering). This is the canonical
 [converging pointers](/dsa/patterns/two-pointers) problem after
-[container with most water](/dsa/patterns/two-pointers/problems/container-with-most-water):
+[container with most water](/dsa/patterns/two-pointers/container-with-most-water):
 the sort converts "find a pair with a complement" into the
 converging shape, the fixed element reduces k-sum to 2-sum, and the
 n-sum family generalizes by exactly this recursion (sort, fix one,
 recurse on the remainder).
+
+## Related C++ tools
+
+- [std::map / std::set](/cpp/map): ordered keys with O(log n) lookups and lower_bound.
+- [Sorting & nth_element](/cpp/algorithms): sort, nth_element, and what each guarantees.

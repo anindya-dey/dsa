@@ -5,7 +5,7 @@ summary: "Constrain and verify model outputs: schema enforcement, injection defe
 
 A language model's output is *free text*, and most systems need
 *structured, safe, verified* output: valid JSON for the API, no
-leaked PII, no off-policy content, and — the modern hazard — no
+leaked PII, no off-policy content, and, the modern hazard, no
 compliance with instructions *hidden in the input*. **Guardrails**
 are the layer that constrains and validates what the model produces
 (and what it is given), and they exist because a probabilistic
@@ -24,7 +24,7 @@ matter:
   detection** (untrusted content containing instructions), PII
   scrubbing (the [privacy page](/ai-ml/systems/privacy-preserving-ml)),
   input length/format checks, and *policy* filters (the input the
-  system must not process at all) — the
+  system must not process at all), the
   [API-gateway](/system-design/fundamentals/api-gateway-and-service-mesh)
   validators, LLM-shaped).
 - **Output guardrails** (what leaves the model: **schema
@@ -33,7 +33,7 @@ matter:
   [responsible-AI](/ai-ml/systems/responsible-ai-safety)
   filters), **PII/secret detection** (the model leaked something),
   and **groundedness checks** (the answer cites the context: the
-  [RAG](/ai-ml/systems/rag) hallucination guard) — the
+  [RAG](/ai-ml/systems/rag) hallucination guard), the
   *verification* the caller relies on.
 
 ## Schema enforcement: making output structured
@@ -51,30 +51,30 @@ route on), not prose. The approaches, in increasing reliability:
 - **Constrained decoding** (the serving framework *forces* the
   output to match a grammar/schema (only valid tokens for the
   schema are allowed): the *reliable* version, because malformed
-  output is impossible — the reason modern serving frameworks
+  output is impossible, the reason modern serving frameworks
   support JSON-schema-constrained generation, and the strongest
   form of the guardrail).
 - **Validate and retry** (parse the output, and on failure, re-prompt
   with the error: the [retry-with-feedback](/system-design/fundamentals/idempotency-and-exactly-once)
-  loop — the fallback when constrained decoding is unavailable, with
+  loop, the fallback when constrained decoding is unavailable, with
   the cost of the extra call and the bounded retry count).
 
 The design rule: **the system validates; the model is asked
-nicely.** Never trust the prompt to guarantee structure — validate
+nicely.** Never trust the prompt to guarantee structure: validate
 and (ideally) constrain, because the one time the model emits a
 field that breaks the parser is the one time it matters.
 
 ## Prompt injection: the hard one
 
 The genuinely unsolved problem, worth its own treatment because it
-is *the* LLM-era security issue: **prompt injection** — untrusted
+is *the* LLM-era security issue: **prompt injection**, untrusted
 content (a retrieved [RAG](/ai-ml/systems/rag) document, a
 user field, a web page an [agent](/ai-ml/systems/agents-and-tool-use)
 reads) contains text that *is an instruction*, and the model may
 follow it ("ignore previous instructions and..."). Unlike SQL
 injection (fixed by *parameterization*: a hard separation of code
-and data), LLM prompts have **no code/data separation** — it is all
-text to the model — so there is no clean fix, only *defense in
+and data), LLM prompts have **no code/data separation**, it is all
+text to the model, so there is no clean fix, only *defense in
 depth*:
 
 - **Delimit and label untrusted content** (wrap it, tell the model
@@ -82,7 +82,7 @@ depth*:
   eliminate).
 - **Least privilege on tools** (the [agent's](/ai-ml/systems/agents-and-tool-use)
   sandbox: even a successfully injected instruction *cannot* exceed
-  the tool's scoped capability — the *structural* defense, and the
+  the tool's scoped capability, the *structural* defense, and the
   one that actually holds).
 - **Output validation** (the injected instruction's *effect* (a
   leaked secret, a bad action) is caught by the output/action
@@ -90,12 +90,12 @@ depth*:
 - **The honest statement**: injection is *mitigated*, not *solved*,
   and systems that expose powerful tools to untrusted input must
   *assume* the model can be hijacked and design the blast radius
-  accordingly — the [assume-breach](/system-design/fundamentals/security-fundamentals)
+  accordingly, the [assume-breach](/system-design/fundamentals/security-fundamentals)
   posture.
 
 ## The refusal path
 
-What happens when the guardrail *rejects* — the design decision that
+What happens when the guardrail *rejects*, the design decision that
 distinguishes a good guardrail from a broken product: **over-
 refusal** (the guardrail blocks legitimate requests: the
 [false-positive](/system-design/fundamentals/rate-limiting) cost,
@@ -105,7 +105,7 @@ classifier) and the **refusal UX** (the system must *say* it
 declined, gracefully: a blocked request that looks like a bug is a
 support ticket, and the [degradation
 contract](/system-design/fundamentals/availability-and-reliability)
-applies — a guardrail down should *fail closed* for safety but the
+applies, a guardrail down should *fail closed* for safety but the
 product needs a defined behavior, not a hang).
 
 ## Related concepts

@@ -42,7 +42,7 @@ The numbers that shape every edge model:
   NNAPI/vendor NPUs): the *portability* problem is brutal, and it
   is why the runtime layer
   ([TFLite](https://en.wikipedia.org/wiki/TensorFlow_Lite), Core ML,
-  ONNX Runtime Mobile, ExecuTorch) exists — the
+  ONNX Runtime Mobile, ExecuTorch) exists, the
   [runtimes page's](/ai-ml/systems/model-runtimes-compilation)
   edge branch, where the "compiled artifact" must target *many*
   devices.
@@ -56,11 +56,11 @@ The numbers that shape every edge model:
   [LLM](/ai-ml/systems/model-serving-architectures)): the
   hybrid is the norm, and the split is a per-feature product
   decision (privacy requirement? offline requirement? latency
-  budget? model size?) — the same
-  [offline-vs-online](/ai-ml/systems/offline-vs-online-inference)
+  budget? model size?), the same
+  [offline-vs-online](/ai-ml/systems/batch-vs-real-time-prediction)
   framing, at the device boundary.
 - **The federated tie-in** (the [privacy](/ai-ml/systems/privacy-preserving-ml)
-  connection: on-device *training* — the device improves the model
+  connection: on-device *training*, the device improves the model
   locally, only [updates](/ai-ml/systems/privacy-preserving-ml)
   travel, which is exactly federated learning, and the reason the
   edge and privacy pages are neighbors).
@@ -73,11 +73,11 @@ The numbers that shape every edge model:
   and the *A/B* problem (per-device model assignment: the
   [experimentation](/ai-ml/systems/ab-testing-experimentation)
   platform extended to the edge, with the offline devices as the
-  hard case — an offline device cannot be re-bucketed until it
+  hard case, an offline device cannot be re-bucketed until it
   reconnects).
 - **The fallback contract** (the device may not have the model, or
   the accelerator, or the memory: every on-device feature needs a
-  *cloud fallback* or a *degraded local* path — the
+  *cloud fallback* or a *degraded local* path, the
   [degradation discipline](/system-design/fundamentals/availability-and-reliability),
   device-shaped).
 
@@ -86,7 +86,7 @@ The numbers that shape every edge model:
 Edge inference's observability is the *opposite* of the cloud's:
 **you cannot see the device** (no server logs, no live metrics:
 privacy and connectivity forbid it). The answers: **opt-in,
-aggregated telemetry** (crash reports, sampled performance stats —
+aggregated telemetry** (crash reports, sampled performance stats,
 the [privacy-preserving](/ai-ml/systems/privacy-preserving-ml)
 version: aggregated, no raw data), **local evaluation harnesses**
 (the model tested on a device *farm* before release: the
@@ -96,7 +96,7 @@ discipline, run in a lab because production is invisible), and the
 that reaches the fleet over *days-to-weeks*: the edge's
 [deployment](/system-design/fundamentals/reliability-engineering)
 is the *slowest* on this site, which is why edge model *bugs* are
-the most expensive — the [rollback](/system-design/fundamentals/reliability-engineering)
+the most expensive, the [rollback](/system-design/fundamentals/reliability-engineering)
 is a new release, not a config flip).
 
 ## Related concepts
@@ -110,5 +110,5 @@ is a new release, not a config flip).
   the on-device-training tie-in.
 - [Model Caching & Warm Pools](/ai-ml/systems/model-caching-warm-pools):
   the model-delivery/versioning machinery.
-- [Offline vs Online Inference](/ai-ml/systems/offline-vs-online-inference):
+- [Batch vs Real-Time Prediction](/ai-ml/systems/batch-vs-real-time-prediction):
   the edge/cloud split decision.

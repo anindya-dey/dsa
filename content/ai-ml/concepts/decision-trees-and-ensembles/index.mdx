@@ -6,7 +6,7 @@ summary: "Splitting on features, and averaging many trees to reduce variance."
 A decision tree is a model that *asks a series of yes/no questions*
 about the features and returns a prediction at the leaf: "is income
 above 50k? is the account age under a year? then predict default." It
-is the most human-legible model there is — a flowchart — and its
+is the most human-legible model there is, a flowchart, and its
 ensemble (the **random forest**) is one of the strongest classical
 models for tabular data. The pair teaches two big ideas: **recursive
 partitioning** and **ensembling**.
@@ -15,29 +15,29 @@ partitioning** and **ensembling**.
 
 Training a tree is *recursive splitting*: at each node, choose the
 feature and threshold that best separates the labels (the split that
-reduces "impurity" most — the [greedy](/dsa/patterns/greedy-algorithms)
+reduces "impurity" most, the [greedy](/dsa/patterns/greedy-algorithms)
 choice), partition the data, and recurse on each side until the leaves
 are pure or a stopping rule fires. The result is a set of
 axis-aligned rectangular regions, each with a prediction.
 
-Why they are loved: **interpretable** (you can read the rules — the
+Why they are loved: **interpretable** (you can read the rules, the
 reason they appear in regulated domains), **no preprocessing needed**
 (no feature scaling, handles mixed types and non-linearities
 natively), and **capture interactions** (a deep tree represents "this
 AND that" naturally). Why they are limited: a single deep tree
 **overfits badly** (it can memorize the training set by splitting
-until every example is alone — high
+until every example is alone: high
 [variance](/ai-ml/concepts/overfitting-and-bias-variance)), and small
 data changes can produce a *very different* tree (unstable). The fix
-is not to make one tree better — it is to make *many* and average.
+is not to make one tree better: it is to make *many* and average.
 
 ## Bagging: averaging to reduce variance
 
 **Bootstrap aggregating (bagging)**: train many trees, each on a
-*different random sample* of the data (drawn with replacement — a
+*different random sample* of the data (drawn with replacement, a
 "bootstrap" sample), and *average* their predictions. The insight:
 each tree overfits *differently*, and averaging independent errors
-*cancels* them — variance drops, while bias stays the same. This is
+*cancels* them: variance drops, while bias stays the same. This is
 the [ensembling](/ai-ml/concepts/regularization) idea, and it is why
 a *collection of overfit trees* beats a single carefully-pruned one:
 diversity plus averaging is the regularizer.
@@ -52,7 +52,7 @@ helps less), so the ensemble is even more robust. The result is one
 of the best *off-the-shelf* models for tabular data: strong accuracy,
 resistant to overfitting (relative to a single tree), handles missing
 values and mixed types, and gives *feature importances* for free
-(which features the forest relies on — the
+(which features the forest relies on, the
 [interpretability](/ai-ml/concepts/interpretability) surface).
 
 ## The two ideas, generalized
@@ -66,7 +66,7 @@ values and mixed types, and gives *feature importances* for free
 
 The honest modern verdict: on **tabular data**, tree ensembles
 (random forests and especially gradient boosting) remain the models
-to beat — deep learning's edge is on *perception* (images, audio,
+to beat: deep learning's edge is on *perception* (images, audio,
 text), not on tables. Knowing the tree family is knowing the
 tabular-data default.
 

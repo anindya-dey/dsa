@@ -2,7 +2,9 @@
 title: "Validate Binary Search Tree"
 difficulty: "Medium"
 variant: "BST Property"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/validate-binary-search-tree/"
 ---
 
 ## Problem
@@ -37,6 +39,22 @@ For every node, walk its entire left subtree to confirm everything is
 smaller, and its entire right subtree to confirm everything is larger.
 
 ```cpp
+bool allLess(TreeNode* node, int bound) {      // every value < bound?
+    if (node == nullptr) {
+        return true;
+    }
+    return node->val < bound && allLess(node->left, bound) &&
+           allLess(node->right, bound);
+}
+
+bool allGreater(TreeNode* node, int bound) {   // every value > bound?
+    if (node == nullptr) {
+        return true;
+    }
+    return node->val > bound && allGreater(node->left, bound) &&
+           allGreater(node->right, bound);
+}
+
 bool isValidBSTBrute(TreeNode* root) {
     if (root == nullptr) {
         return true;
@@ -65,10 +83,6 @@ children. A node is valid exactly when it lies inside the range its
 ancestors have allowed.
 
 ```cpp
-bool isValidBST(TreeNode* root) {
-    return validate(root, nullptr, nullptr);   // null bound = unbounded
-}
-
 bool validate(TreeNode* node, TreeNode* low, TreeNode* high) {
     if (node == nullptr) {
         return true;
@@ -79,6 +93,10 @@ bool validate(TreeNode* node, TreeNode* low, TreeNode* high) {
     }
     return validate(node->left, low, node) &&      // left: upper bound = node
            validate(node->right, node, high);      // right: lower bound = node
+}
+
+bool isValidBST(TreeNode* root) {
+    return validate(root, nullptr, nullptr);   // null bound = unbounded
 }
 ```
 

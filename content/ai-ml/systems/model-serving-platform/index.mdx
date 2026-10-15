@@ -9,7 +9,7 @@ models, *many* versions, for *many* teams, with the routing,
 warming, scaling, and observability that make it operable. It is the
 [multi-model serving](/ai-ml/systems/multi-model-serving-routing)
 and [serving-architecture](/ai-ml/systems/model-serving-architectures)
-pages as a *platform* — the internal product every ML org builds —
+pages as a *platform*, the internal product every ML org builds,
 and the HLD's job is the *platform* concerns: onboarding, isolation,
 utilization, and the deploy path, on top of the serving tier's
 single-model mechanics.
@@ -29,7 +29,7 @@ single-model mechanics.
 **Non-functional**
 
 - **Reliability** (the platform is *shared infrastructure*: its
-  outage is *every* team's outage — the
+  outage is *every* team's outage, the
   [SLO](/system-design/fundamentals/reliability-engineering) is
   high, and the [blast radius](/system-design/fundamentals/multi-tenancy-and-data-residency)
   containment matters).
@@ -39,7 +39,7 @@ single-model mechanics.
   packing, the [cost](/ai-ml/systems/cost-optimization-ml)
   argument).
 - **Isolation** (teams share the fleet: a bad model must not
-  degrade others — the [multi-tenant](/ai-ml/systems/multi-tenant-ml-platforms)
+  degrade others, the [multi-tenant](/ai-ml/systems/multi-tenant-ml-platforms)
   discipline).
 - **Deploy speed** (a team ships a model in minutes, not days: the
   platform's *usability* is a requirement, or teams route around
@@ -61,19 +61,19 @@ graph TD
 ```
 
 - **Control plane** (the platform's *API*: register a model,
-  configure its routing and resources, manage versions — the
+  configure its routing and resources, manage versions, the
   [metadata plane](/system-design/hld/object-storage-system),
   backed by the [registry](/ai-ml/systems/model-registry)).
 - **The serving fleet** (the shared resource: GPU and CPU pools,
-  running the model instances — the
+  running the model instances, the
   [serving tier](/ai-ml/systems/model-serving-architectures),
   *shared*).
 - **The warm pool** (the [model
   caching](/ai-ml/systems/model-caching-warm-pools): hot
-  models resident, the tail loaded on demand — the *utilization*
+  models resident, the tail loaded on demand, the *utilization*
   mechanism).
 - **The gateway** (the [request routing](/ai-ml/systems/multi-model-serving-routing):
-  model-version-aware, auth, quotas, observability — the
+  model-version-aware, auth, quotas, observability, the
   [LLM-gateway](/ai-ml/systems/llm-gateways) idea,
   platform-wide).
 - **The scheduler** (the [GPU scheduler](/ai-ml/systems/gpu-accelerator-management):
@@ -84,32 +84,32 @@ graph TD
 - **Utilization vs. isolation** (the platform's central tension:
   *pack* models onto GPUs for efficiency (the *reason* for a
   platform), *isolate* them for safety (the *reason* teams distrust
-  one) — the [MIG/MPS](/ai-ml/systems/gpu-accelerator-management)
+  one), the [MIG/MPS](/ai-ml/systems/gpu-accelerator-management)
   partitioning and the per-model resource limits, the dial).
 - **The warm-pool sizing** (which models are warm, how many, at
   what cost: the [hot/cold
   split](/ai-ml/systems/multi-model-serving-routing), a
   *capacity-planning* problem the platform *automates* (teams
-  declare a priority; the platform warms the important ones) — and
+  declare a priority; the platform warms the important ones), and
   the [stampede](/ai-ml/systems/model-caching-warm-pools)
   when a cold model spikes).
 - **Version routing and experiments** (the platform *is* the
   [experimentation](/ai-ml/systems/ab-testing-experimentation)
   platform's serving half: the routing percentages, the sticky
-  assignment, the [canary](/system-design/fundamentals/reliability-engineering)
-  — a *product feature* the platform must expose, or teams build
+  assignment, the [canary](/system-design/fundamentals/reliability-engineering),
+a *product feature* the platform must expose, or teams build
   their own, badly).
 - **The deploy path** (team submits a model → the platform
   validates (the [guardrails](/ai-ml/systems/llm-guardrails-validation)
   and [governance](/ai-ml/systems/model-governance-compliance)
   gates) → loads → routes → monitors: the *paved road* that makes
-  the platform *used* — a bad deploy UX means teams bypass it,
+  the platform *used*, a bad deploy UX means teams bypass it,
   which defeats the platform's whole purpose).
 - **Observability and cost attribution** (the platform sees *all*
   the traffic: the [token/GPU cost per team per
   model](/ai-ml/systems/cost-optimization-ml), the
-  [drift](/ai-ml/systems/model-monitoring-drift) per model —
-  the *unit economics* that justify the platform, and the
+  [drift](/ai-ml/systems/model-monitoring-drift) per model,
+the *unit economics* that justify the platform, and the
   [showback](/ai-ml/systems/multi-tenant-ml-platforms) that
   drives good behavior).
 
@@ -124,7 +124,7 @@ pool](/ai-ml/systems/model-caching-warm-pools)); the tail
 the request gateway is a [stateless,
 autoscaled](/ai-ml/systems/autoscaling-inference) tier; and
 the *platform's* cost is the GPU pool's utilization × the per-GPU
-price — the number the whole platform exists to *minimize*.
+price, the number the whole platform exists to *minimize*.
 
 ## Related concepts
 

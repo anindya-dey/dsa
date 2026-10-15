@@ -1,6 +1,6 @@
 ---
 title: "ML System Design Basics"
-summary: "The lifecycle every ML system walks — train, deploy, monitor, retrain — and where each stage hands its costs to systems engineering."
+summary: "The lifecycle every ML system walks, train, deploy, monitor, retrain, and where each stage hands its costs to systems engineering."
 ---
 
 Every machine-learning system, from a spam filter to a chatbot, walks
@@ -13,7 +13,7 @@ serving is a [latency-budgeted](/system-design/fundamentals/latency-vs-throughpu
 service, monitoring is [observability](/system-design/fundamentals/observability)
 over predictions instead of requests, and the retrain loop is a
 [streaming](/system-design/fundamentals/stream-vs-batch-processing)
-question about feedback. The model itself — the math — is one box in
+question about feedback. The model itself, the math, is one box in
 the diagram, and this site's AI/ML track is the engineering around
 that box.
 
@@ -64,7 +64,7 @@ graph LR
 - **Monitoring** is [observability](/system-design/fundamentals/observability)
   over *predictions* (not just uptime): input distributions
   (drift), output distributions, and the outcomes that reveal
-  whether predictions were *good* — the honest hard part, because
+  whether predictions were *good*, the honest hard part, because
   the ground truth arrives late and biased (the
   [fraud detector](/system-design/hld/fraud-detection)'s
   weeks-late label problem is the canonical example).
@@ -83,7 +83,7 @@ graph LR
 2. **What does the model see at prediction time?** (The raw
   request? Precomputed [features](/system-design/fundamentals/rate-limiting)?
   History? The latency budget and the feature freshness contract
-  fall out of this answer — it is the question that separates
+  fall out of this answer: it is the question that separates
   offline from online inference inference.)
 3. **How does the system learn it was wrong?** (Immediate labels?
   Delayed outcomes? Only *some* outcomes, biased by what the
@@ -101,7 +101,7 @@ This track deliberately covers the *engineering* side:
 [features](/system-design/fundamentals/caching) (as state),
 [serving tiers](/system-design/fundamentals/load-balancing),
 [evaluation](/system-design/fundamentals/reliability-engineering)
-(as measurement with consequences) — the same concepts as the rest
+(as measurement with consequences), the same concepts as the rest
 of this site, wearing ML's vocabulary. It does **not** cover
 gradient descent, backpropagation, or transformer internals: those
 are the *math* of the field, a different course, and the systems

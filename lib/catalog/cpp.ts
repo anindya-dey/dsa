@@ -15,10 +15,14 @@ export const cppEntries: CppEntryMeta[] = [
   { slug: "pair-tuple", title: "std::pair / std::tuple / std::array", summary: "Structured bindings, lexicographic comparison, fixed-size arrays." },
   { slug: "optional", title: "std::optional", summary: "Maybe-value: returning not-found without sentinels." },
   { slug: "function-lambdas", title: "std::function & Lambdas", summary: "Closures, captures, and the comparator pattern used across this site." },
+  { slug: "comparators", title: "Custom Comparators", summary: "Strict weak ordering: the contract every sort, set, map, and heap comparator must keep." },
   { slug: "algorithms", title: "Sorting & nth_element", summary: "sort, stable_sort, nth_element, partial_sort: what each guarantees." },
   { slug: "binary-search-algos", title: "lower_bound & upper_bound", summary: "The boundary functions: the useful half of the binary-search family." },
   { slug: "numeric", title: "Numeric Utilities", summary: "accumulate, iota, gcd, minmax, numeric_limits, pow: the small utilities." },
+  { slug: "integer-overflow", title: "Integer Overflow & Limits", summary: "Where int runs out, why signed overflow is undefined, and the habits that prevent it." },
+  { slug: "bit-operations", title: "Bit Operations", summary: "The operators, the classic tricks, std::bitset, and C++20's <bit> functions." },
   { slug: "invalidation", title: "Iterator Invalidation", summary: "Which operations invalidate which iterators: erase-while-iterating and friends." },
+  { slug: "smart-pointers", title: "Smart Pointers", summary: "unique_ptr, shared_ptr, and weak_ptr: ownership you can read from the type." },
 ];
 
 export function getCppEntry(slug: string): CppEntryMeta | undefined {

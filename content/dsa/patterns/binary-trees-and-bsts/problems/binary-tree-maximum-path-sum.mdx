@@ -1,0 +1,112 @@
+---
+title: "Binary Tree Maximum Path Sum"
+difficulty: "Hard"
+variant: "Post-order with Global Best"
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/binary-tree-maximum-path-sum/"
+---
+
+## Problem
+
+A path is a sequence of nodes where each adjacent pair is joined by an
+edge. Each node appears at most once, and the path does not have to pass
+through the root. Return the largest sum of node values over any
+non-empty path.
+
+**Constraints**
+
+- `1 <= number of nodes <= 3 * 10^4`
+- `-1000 <= node.val <= 1000`
+
+**Example**
+
+```text
+Input:  root = [-10, 9, 20, null, null, 15, 7]
+Output: 42           // 15 -> 20 -> 7
+```
+
+## Brute force
+
+Every path has one highest node, its *peak*. Try each node as the peak.
+For each, find the best downward path into its left and right subtrees,
+and join them through the peak.
+
+```cpp
+int bestDown(TreeNode* node) {            // best path starting here, going down
+    if (node == nullptr) {
+        return 0;
+    }
+    return node->val +
+           std::max({0, bestDown(node->left), bestDown(node->right)});
+}
+
+int maxPathSumBrute(TreeNode* root) {
+    if (root == nullptr) {
+        return std::numeric_limits<int>::min();
+    }
+    int throughRoot = root->val + std::max(0, bestDown(root->left)) +
+                      std::max(0, bestDown(root->right));
+    return std::max({throughRoot, maxPathSumBrute(root->left),
+                     maxPathSumBrute(root->right)});
+}
+```
+
+Each peak re-walks its whole subtree, so a node is visited once per
+ancestor. On a skewed tree that is O(n²). The downward sums are the same
+numbers every time. They are just never saved.
+
+## Optimal: one post-order pass, two answers per node
+
+Compute the downward value bottom-up, once per node, and do the peak check
+at the same moment. At each node, after hearing from both children:
+
+- **Report upward** the best path that *starts* here and goes down one
+  side: `val + max(left, right)`. A parent can only extend a path through
+  one of your branches, because a path cannot fork.
+- **Record globally** the best path that *peaks* here:
+  `val + left + right`. This one uses both branches, so it can never be
+  extended. It is a candidate answer, and you compare it against the best
+  seen so far.
+
+Clamp each child's contribution at 0. A branch with a negative total only
+hurts, so you leave it out.
+
+```cpp
+int gain(TreeNode* node, int& best) {
+    if (node == nullptr) {
+        return 0;
+    }
+    int left = std::max(0, gain(node->left, best));    // drop losing branches
+    int right = std::max(0, gain(node->right, best));
+    best = std::max(best, node->val + left + right);   // path peaking here
+    return node->val + std::max(left, right);          // one branch upward
+}
+
+int maxPathSum(TreeNode* root) {
+    int best = std::numeric_limits<int>::min();        // all values may be < 0
+    gain(root, best);
+    return best;
+}
+```
+
+Starting `best` at the smallest `int`, not 0, handles a tree of all
+negative values. The answer is then the single largest node, and 0 would
+wrongly claim an empty path.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Every node as peak | O(n²) worst | O(h) |
+| Post-order, global best | O(n) | O(h) stack |
+
+The structure here appears again and again in
+[binary trees](/dsa/patterns/binary-trees-and-bsts): what a node *returns*
+to its parent differs from what it *records* as an answer. The
+[diameter](/dsa/patterns/binary-trees-and-bsts/diameter-of-binary-tree)
+problem is the same function with "count edges" in place of "sum values".
+
+## Related C++ tools
+
+- [Integer Overflow & Limits](/cpp/integer-overflow): where int runs out, and how this code stays inside it.

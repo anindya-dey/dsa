@@ -19,7 +19,7 @@ page teaches: *incremental, dual-run, reconciled*.
 The problem: a feature is defined by a computation
 ([the feature-engineering page](/ai-ml/systems/feature-engineering-basics)),
 and the *history* of that feature is whatever the old computation
-produced — so when the computation *changes* (a bug fixed, a window
+produced, so when the computation *changes* (a bug fixed, a window
 resized, a new [embedding model](/ai-ml/systems/embeddings-vector-representations)),
 the historical values are *wrong*, and the training set built on
 them is wrong. A **backfill** recomputes the feature over the past.
@@ -30,7 +30,7 @@ The design, and its hazards:
   job](/system-design/fundamentals/stream-vs-batch-processing) over
   the [event log](/system-design/fundamentals/event-sourcing-and-cqrs)
   (the raw events are immutable, so the history is *recomputable*:
-  the payoff of event sourcing) — the same [training-data
+  the payoff of event sourcing), the same [training-data
   pipeline](/ai-ml/systems/training-data-pipelines), run with
   a historical *as-of* window per timestamp (the
   [point-in-time](/ai-ml/systems/training-data-pipelines)
@@ -39,10 +39,10 @@ The design, and its hazards:
 - **The consistency hazard** (the *offline* store is backfilled, but
   the *online* store now has the *new* computation's values: a
   training set from the backfilled history must match what serving
-  produces — the [training/serving
+  produces, the [training/serving
   skew](/ai-ml/systems/feature-engineering-basics), *created
   by the backfill* if the two computations differ: the backfill and
-  the new serving computation must be *the same code* — the
+  the new serving computation must be *the same code*, the
   [one-definition](/ai-ml/systems/feature-stores) rule, and
   the reason a backfill is a *code deployment* as much as a data
   job).
@@ -55,7 +55,7 @@ The design, and its hazards:
   (which computation produced them), and mixing versions in one
   training set is a [silent bug](/ai-ml/systems/data-versioning-lineage):
   the backfill *creates a new data era*, and the [lineage](/ai-ml/systems/data-versioning-lineage)
-  records the boundary — "before the backfill" and "after" are
+  records the boundary: "before the backfill" and "after" are
   *different datasets*).
 
 ## Model migrations: replacing a model in production
@@ -80,20 +80,20 @@ applied:
 
 - **Dual-run** (the old and new models *both* serve (shadow or
   canary): the [shadow deployment](/ai-ml/systems/offline-vs-online-evaluation),
-  comparing outputs and metrics — the migration *validates* before
+  comparing outputs and metrics, the migration *validates* before
   it cuts over).
 - **Dual-write the derived state** (the new embedding is computed
   *alongside* the old, the new feature *alongside* the old: both
   stored, both versioned, so the rollback is a *pointer*, not a
-  rebuild — the [version-matrix](/ai-ml/systems/multi-model-serving-routing)
+  rebuild, the [version-matrix](/ai-ml/systems/multi-model-serving-routing)
   during the transition).
 - **Cut over incrementally** (route a percentage to the new model,
   watch the guardrails, promote: the [canary](/system-design/fundamentals/reliability-engineering)
   discipline, and the [A/B](/ai-ml/systems/ab-testing-experimentation)
   platform, doing the migration's validation).
 - **Retire the old** (the [strangler's ending](/system-design/hld/large-scale-migration):
-  the old model, its embeddings, its features are *deleted* —
-  or the migration never finishes and the version matrix grows
+  the old model, its embeddings, its features are *deleted*,
+or the migration never finishes and the version matrix grows
   forever: the "last 10%" trap, with a decommission budget).
 
 ## Why these are the hard cases
@@ -106,7 +106,7 @@ this feature" is a query), the [dual-run](/system-design/hld/large-scale-migrati
 is what makes them *safe* (validate before cutting over), and the
 [versioned artifacts](/ai-ml/systems/model-registry) are what
 make them *reversible*. Without those, a backfill is a leap of
-faith and a model migration is a rewrite — which is the whole
+faith and a model migration is a rewrite, which is the whole
 argument for building the lineage and registry machinery *before*
 you need it, because the migration is when you need it most.
 

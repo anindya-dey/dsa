@@ -1,0 +1,118 @@
+---
+title: "House Robber II"
+difficulty: "Medium"
+variant: "Circular Linear DP"
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/house-robber-ii/"
+---
+
+## Problem
+
+Houses stand in a circle, so the first and last house are neighbors. Each
+holds some money. You cannot rob two adjacent houses. Return the most you
+can rob.
+
+**Constraints**
+
+- `1 <= nums.length <= 100`
+- `0 <= nums[i] <= 1000`
+
+**Example**
+
+```text
+Input:  nums = [2, 3, 2]
+Output: 3            // 2 + 2 is illegal: houses 0 and 2 touch
+
+Input:  nums = [1, 2, 3, 1]
+Output: 4            // houses 0 and 2
+```
+
+## Brute force
+
+Try every subset of houses as a bitmask. Keep it only if no two chosen
+houses are adjacent, counting the wrap-around pair.
+
+```cpp
+int robBrute(const std::vector<int>& nums) {
+    int n = static_cast<int>(nums.size());
+    if (n == 1) {
+        return nums[0];
+    }
+    int best = 0;
+    for (int mask = 0; mask < (1 << n); ++mask) {
+        bool legal = true;
+        int total = 0;
+        for (int i = 0; i < n && legal; ++i) {
+            if (mask & (1 << i)) {
+                int next = (i + 1) % n;          // wraps: last touches first
+                legal = !(mask & (1 << next));
+                total += nums[i];
+            }
+        }
+        if (legal) {
+            best = std::max(best, total);
+        }
+    }
+    return best;
+}
+```
+
+That is 2^n subsets. It only runs for small n, around 20. With n up to
+100, it never finishes.
+
+## Optimal: break the circle twice
+
+The circle adds exactly one rule on top of the
+[straight-line version](/dsa/patterns/dynamic-programming/house-robber):
+you cannot take both house 0 and house n-1. So any legal plan skips at
+least one of them. That splits the problem into two straight lines.
+
+- Skip the last house: solve houses `0 .. n-2` as a line.
+- Skip the first house: solve houses `1 .. n-1` as a line.
+
+The answer is the better of the two. Each line is the familiar recurrence:
+at each house, either skip it (keep the best so far) or rob it (add it to
+the best from two houses back).
+
+```cpp
+int robLine(const std::vector<int>& nums, int lo, int hi) {  // houses [lo, hi]
+    int twoBack = 0;                     // best ending two houses ago
+    int oneBack = 0;                     // best ending at the previous house
+    for (int i = lo; i <= hi; ++i) {
+        int current = std::max(oneBack, twoBack + nums[i]);  // skip or rob
+        twoBack = oneBack;
+        oneBack = current;
+    }
+    return oneBack;
+}
+
+int rob(const std::vector<int>& nums) {
+    int n = static_cast<int>(nums.size());
+    if (n == 1) {
+        return nums[0];                  // the only house has no neighbor
+    }
+    return std::max(robLine(nums, 0, n - 2),   // never take the last
+                    robLine(nums, 1, n - 1));  // never take the first
+}
+```
+
+The `n == 1` case needs its own line. With one house, both ranges would be
+empty and return 0, but robbing that single house is legal.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Every subset | O(2^n · n) | O(1) |
+| Two linear passes | O(n) | O(1) |
+
+The move to remember is "break the cycle by cases". When a circular
+constraint links the two ends, enumerate the few ways the ends can be
+handled, and solve each as a line. It is the same trick behind circular
+[maximum subarray](/dsa/patterns/dynamic-programming/maximum-subarray)
+and circular scheduling problems.
+
+## Related C++ tools
+
+- [Bit Operations](/cpp/bit-operations): the operators and tricks behind the bit-level steps.

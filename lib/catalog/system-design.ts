@@ -8,13 +8,13 @@ export const systemDesignTrackTitles: Record<SystemDesignTrack, string> = {
 
 export const systemDesignTrackDescriptions: Record<SystemDesignTrack, string> = {
   fundamentals:
-    "The building blocks every distributed system is made of — scalability, caching, consistency, and the vocabulary you need before designing anything bigger.",
-  lld: "Object-oriented, code-level design for self-contained systems — class diagrams, design patterns, and a working sketch.",
+    "The building blocks every distributed system is made of: scalability, caching, consistency, and the vocabulary you need before designing anything bigger.",
+  lld: "Object-oriented, code-level design for self-contained systems: class diagrams, design patterns, and a working sketch.",
   hld: "Build the components distributed systems are made of, then apply them in full case studies with trade-offs and capacity estimates.",
 };
 
 export const systemDesignTopics: SystemDesignTopicMeta[] = [
-  // Fundamentals — Scalability & Performance
+  // Fundamentals: Scalability & Performance
   {
     slug: "scalability",
     title: "Scalability",
@@ -58,7 +58,7 @@ export const systemDesignTopics: SystemDesignTopicMeta[] = [
     summary: "Edge caching and routing traffic closer to the user.",
   },
 
-  // Fundamentals — Data & Storage
+  // Fundamentals: Data & Storage
   {
     slug: "database-fundamentals",
     title: "Database Fundamentals",
@@ -95,11 +95,32 @@ export const systemDesignTopics: SystemDesignTopicMeta[] = [
     summary: "Geohash, quadtrees, and S2 for answering proximity queries at scale.",
   },
   {
+    slug: "replication",
+    title: "Replication",
+    track: "fundamentals",
+    group: "Data & Storage",
+    summary: "Copies of the same data on several machines: leaders, followers, lag, and failover.",
+  },
+  {
+    slug: "partitioning-and-sharding",
+    title: "Partitioning & Sharding",
+    track: "fundamentals",
+    group: "Data & Storage",
+    summary: "Splitting data too big for one machine: range vs. hash, hot keys, and rebalancing.",
+  },
+  {
     slug: "consistent-hashing",
     title: "Consistent Hashing",
     track: "fundamentals",
     group: "Data & Storage",
     summary: "Distributing keys across nodes without a full remap on resize.",
+  },
+  {
+    slug: "probabilistic-data-structures",
+    title: "Probabilistic Data Structures",
+    track: "fundamentals",
+    group: "Data & Storage",
+    summary: "Bloom filters, HyperLogLog, and count-min sketch: tiny memory, answers that are almost always right.",
   },
   {
     slug: "stream-vs-batch-processing",
@@ -109,13 +130,13 @@ export const systemDesignTopics: SystemDesignTopicMeta[] = [
     summary: "Windowing, watermarks, and exactly-once semantics in data pipelines.",
   },
 
-  // Fundamentals — Communication & APIs
+  // Fundamentals: Communication & APIs
   {
     slug: "networking-basics",
     title: "Networking Basics",
     track: "fundamentals",
     group: "Communication & APIs",
-    summary: "DNS, TCP/UDP, HTTP/HTTPS, and WebSockets — the layers underneath everything.",
+    summary: "DNS, TCP/UDP, HTTP/HTTPS, and WebSockets: the layers underneath everything.",
   },
   {
     slug: "proxies",
@@ -160,7 +181,7 @@ export const systemDesignTopics: SystemDesignTopicMeta[] = [
     summary: "Idempotency keys, deduplication, and why at-least-once is the usual reality.",
   },
 
-  // Fundamentals — Distributed Systems
+  // Fundamentals: Distributed Systems
   {
     slug: "cap-theorem-and-consistency-models",
     title: "CAP Theorem & Consistency Models",
@@ -218,7 +239,7 @@ export const systemDesignTopics: SystemDesignTopicMeta[] = [
     summary: "The real trade-offs behind splitting a system into services.",
   },
 
-  // Fundamentals — Reliability & Operations
+  // Fundamentals: Reliability & Operations
   {
     slug: "availability-and-reliability",
     title: "Availability & Reliability",
@@ -238,7 +259,7 @@ export const systemDesignTopics: SystemDesignTopicMeta[] = [
     title: "Observability",
     track: "fundamentals",
     group: "Reliability & Operations",
-    summary: "Logs, metrics, and tracing — and how they catch what tests don't.",
+    summary: "Logs, metrics, and tracing, and how they catch what tests don't.",
   },
   {
     slug: "rate-limiting",
@@ -255,7 +276,7 @@ export const systemDesignTopics: SystemDesignTopicMeta[] = [
     summary: "Threads, locks, and race conditions: what happens when two requests touch the same data.",
   },
 
-  // Fundamentals — Security
+  // Fundamentals: Security
   {
     slug: "auth-basics",
     title: "Authentication & Authorization Basics",
@@ -278,7 +299,7 @@ export const systemDesignTopics: SystemDesignTopicMeta[] = [
     summary: "Isolating tenant data and meeting rules about where it may physically live.",
   },
 
-  // Fundamentals — Platform Engineering
+  // Fundamentals: Platform Engineering
   {
     slug: "container-orchestration",
     title: "Container Orchestration & Kubernetes",
@@ -294,7 +315,7 @@ export const systemDesignTopics: SystemDesignTopicMeta[] = [
     summary: "The cloud bill as an engineering constraint: where it goes and how to reduce it.",
   },
 
-  // Fundamentals — Reliability & Operations
+  // Fundamentals: Reliability & Operations
   {
     slug: "testing-at-scale",
     title: "Testing at Scale (Load & Chaos)",
@@ -303,7 +324,7 @@ export const systemDesignTopics: SystemDesignTopicMeta[] = [
     summary: "Load, stress, and chaos testing: proving a system survives the load it was built for.",
   },
 
-  // Fundamentals — Security
+  // Fundamentals: Security
   {
     slug: "zero-trust-supply-chain",
     title: "Zero Trust & Supply Chain Security",
@@ -393,7 +414,7 @@ export const systemDesignTopics: SystemDesignTopicMeta[] = [
   },
   {
     slug: "tic-tac-toe",
-    title: "Design Tic-Tac-Toe / Snake & Ladder",
+    title: "Design Tic-Tac-Toe",
     track: "lld",
     summary: "Compact game state machines with win detection and turn management.",
   },
@@ -440,7 +461,7 @@ export const systemDesignTopics: SystemDesignTopicMeta[] = [
     summary: "Line items, pricing rules, discounts, and inventory holds.",
   },
 
-  // High-Level Design — Infrastructure Components
+  // High-Level Design: Infrastructure Components
   {
     slug: "load-balancer-system",
     title: "Design a Load Balancer",
@@ -526,7 +547,7 @@ export const systemDesignTopics: SystemDesignTopicMeta[] = [
     summary: "Low-latency prefix matching and ranking for typeahead search.",
   },
 
-  // High-Level Design — Product Case Studies
+  // High-Level Design: Product Case Studies
   {
     slug: "url-shortener",
     title: "Design a URL Shortener (System-Level)",

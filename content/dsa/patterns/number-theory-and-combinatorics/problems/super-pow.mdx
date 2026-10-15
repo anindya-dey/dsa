@@ -1,0 +1,115 @@
+---
+title: "Super Pow"
+difficulty: "Medium"
+variant: "Modular Exponentiation"
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/super-pow/"
+---
+
+## Problem
+
+Compute `a^b mod 1337`, where `a` is a positive integer and `b` is a huge
+positive integer given as an array of its decimal digits.
+
+**Constraints**
+
+- `1 <= a <= 2^31 - 1`
+- `1 <= b.length <= 2000`
+- `0 <= b[i] <= 9`, and `b` has no leading zeros
+
+**Example**
+
+```text
+Input:  a = 2, b = [1, 0]
+Output: 1024
+
+Input:  a = 2147483647, b = [2, 0, 0]
+Output: 1198
+```
+
+## Brute force
+
+Turn the digits into a number, then multiply `a` into a running product
+that many times, reducing mod 1337 as you go.
+
+```cpp
+int superPowBrute(int a, const std::vector<int>& b) {
+    long long exponent = 0;
+    for (int digit : b) {
+        exponent = exponent * 10 + digit;   // overflows past ~18 digits
+    }
+    long long result = 1;
+    for (long long i = 0; i < exponent; ++i) {
+        result = result * (a % 1337) % 1337;
+    }
+    return static_cast<int>(result);
+}
+```
+
+It fails twice. A 2000-digit exponent does not fit in any integer type, so
+the first loop overflows. Even a 19-digit exponent would need 10^18
+multiplications. You need to avoid ever building the exponent.
+
+## Optimal: one digit at a time
+
+Two facts do all the work. First, you can reduce mod m after every
+multiplication: `(x * y) mod m = ((x mod m) * (y mod m)) mod m`. That keeps
+every intermediate value below 1337² and safely inside a `long long`.
+
+Second, the exponent's digits combine like this. If `b = 10k + d`, then
+`a^b = (a^k)^10 * a^d`. Reading `b` left to right, you already hold
+`a^k mod m` for the digits seen so far. Raising it to the 10th and
+multiplying by `a^d` absorbs the next digit.
+
+Each small power uses binary exponentiation, the iterative squaring from
+[Pow(x, n)](/dsa/patterns/recursion-and-math/pow-x-n-recursive) with a
+modulus added.
+
+```cpp
+int powMod(long long base, int exponent, int mod) {
+    long long result = 1;
+    base %= mod;                            // shrink first: a can be ~2^31
+    while (exponent > 0) {
+        if (exponent & 1) {
+            result = result * base % mod;
+        }
+        base = base * base % mod;           // < 1337^2: no overflow
+        exponent >>= 1;
+    }
+    return static_cast<int>(result);
+}
+
+int superPow(int a, const std::vector<int>& b) {
+    const int mod = 1337;
+    int result = 1;                         // a^0 before any digit
+    for (int digit : b) {
+        long long shifted = powMod(result, 10, mod);   // (a^k)^10
+        result = static_cast<int>(shifted * powMod(a, digit, mod) % mod);
+    }
+    return result;
+}
+```
+
+Walk the example `a = 2, b = [1, 0]`. After digit 1, `result = 1^10 * 2^1
+= 2`. After digit 0, `result = 2^10 * 2^0 = 1024`. 1024 is below 1337, so
+the answer is 1024.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Build exponent, multiply | O(value of b): infeasible | O(1) |
+| Digit by digit, binary powers | O(len(b)) | O(1) |
+
+Each digit costs two `powMod` calls with exponents of at most 10, so a
+constant number of multiplications per digit. The habit to keep is
+"reduce after every multiplication". It is what makes every modular
+counting problem in
+[number theory and combinatorics](/dsa/patterns/number-theory-and-combinatorics)
+safe in fixed-width integers.
+
+## Related C++ tools
+
+- [Bit Operations](/cpp/bit-operations): the operators and tricks behind the bit-level steps.
+- [Integer Overflow & Limits](/cpp/integer-overflow): where int runs out, and how this code stays inside it.

@@ -106,7 +106,7 @@ overlapping would double-count. A range *sum* from a sparse table
 would need the two covering ranges to be disjoint (they cannot cover
 an arbitrary range with two powers of two disjointly), which is why
 sums use the [prefix](/dsa/patterns/prefix-sums-and-difference-arrays)
-or [Fenwick](/dsa/patterns/range-query-structures/problems/range-sum-query-mutable)
+or [Fenwick](/dsa/patterns/range-query-structures/range-sum-query-mutable)
 family and min/max/gcd use this one. The table is O(n log n) memory
 and build, and each query is O(1) *guaranteed*, which is the
 structure's headline: no amortization, no log factor, two lookups.
@@ -123,8 +123,12 @@ precomputation pays for itself a thousand times over. This is the
 canonical second structure of
 [range-query structures](/dsa/patterns/range-query-structures)
 (after the Fenwick
-[sum](/dsa/patterns/range-query-structures/problems/range-sum-query-mutable)
+[sum](/dsa/patterns/range-query-structures/range-sum-query-mutable)
 and before the segment tree): static data, idempotent aggregate,
 O(1) queries, and the discipline of matching the structure to exactly
 the guarantees the problem offers (static: sparse table; updates:
 segment tree; sums only: Fenwick).
+
+## Related C++ tools
+
+- [Bit Operations](/cpp/bit-operations): the operators and tricks behind the bit-level steps.

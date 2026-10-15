@@ -138,7 +138,7 @@ minimum is what makes "free March 12-15" mean "free *every* night of
 subtly wrong (they answer "free on March 12" and "free on March 14"
 separately, and the guest who books the range just stole the 13th).
 The clipping (`std::max(b.checkIn, start)`) is the boundary discipline
-from [merge intervals](/dsa/patterns/intervals-and-sweep-line/problems/merge-intervals):
+from [merge intervals](/dsa/patterns/intervals-and-sweep-line/merge-intervals):
 touching bookings (out on the 15th, in on the 15th) are compatible,
 which half-open ranges `[checkIn, checkOut)` give for free.
 
@@ -180,11 +180,15 @@ decision at small scale).
   model), and the type-level fold becomes the search index rather
   than the source of truth.
 
+## Related C++ tools
+
+- [std::string](/cpp/string): substr, find, and the operations that copy.
+
 ## Related concepts
 
 - [Intervals & Sweep Line](/dsa/patterns/intervals-and-sweep-line)
   is the algorithmic core this design instantiates (the fold is
-  [meeting rooms II](/dsa/patterns/intervals-and-sweep-line/problems/meeting-rooms-ii)'s
+  [meeting rooms II](/dsa/patterns/intervals-and-sweep-line/meeting-rooms-ii)'s
   counting, generalized to "every night").
 - [Design a Movie Ticket Booking](/system-design/lld/movie-ticket-booking)
   is the fixed-seat version (specific resource per booking).

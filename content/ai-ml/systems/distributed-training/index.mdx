@@ -5,11 +5,11 @@ summary: "Data, model, and pipeline parallelism: training a model that does not 
 
 Training a modern model (a large LLM: billions of parameters, a
 trillion tokens) does not fit one machine's memory, and would take
-years on one machine's compute — so training *distributes*: across
-many GPUs, many nodes, for weeks. The three ways to split the work
-— **data parallelism** (split the *batch*), **model parallelism**
+years on one machine's compute, so training *distributes*: across
+many GPUs, many nodes, for weeks. The three ways to split the work,
+**data parallelism** (split the *batch*), **model parallelism**
 (split the *model*), and **pipeline parallelism** (split the
-*layers*) — each has a distinct communication pattern, and the
+*layers*), each has a distinct communication pattern, and the
 whole discipline is about **keeping the expensive accelerators busy
 despite the communication between them** (the
 [GPU-management](/ai-ml/systems/gpu-accelerator-management)
@@ -34,7 +34,7 @@ graph TD
   (model-sized: gigabytes per step), and the bottleneck is the
   interconnect (the all-reduce across GPUs): the reason training
   clusters use fast interconnects ([NVLink,
-  InfiniBand](https://en.wikipedia.org/wiki/InfiniBand)) — *the
+  InfiniBand](https://en.wikipedia.org/wiki/InfiniBand)), *the
   network is the training's bottleneck*, and the whole field's
   engineering (gradient compression, overlapped communication) is
   about hiding it.
@@ -43,12 +43,12 @@ graph TD
   parallelism*): needed when the model does not fit one GPU's
   memory, and *communication-heavy* (the activations must be
   exchanged *within* a layer's forward pass: per-layer
-  communication, not per-step — the tighter coupling, and the
+  communication, not per-step, the tighter coupling, and the
   reason it is used *within* a node (fast NVLink) more than across
   nodes).
 - **Pipeline parallelism** (the *layers* split into stages, each on
   a GPU, and *micro-batches* flow through the pipeline: stage 1
-  processes micro-batch A while stage 2 processes B — the
+  processes micro-batch A while stage 2 processes B, the
   [assembly-line](https://en.wikipedia.org/wiki/Pipeline_(computing))
   idea, hiding the stage-to-stage latency, at the cost of a
   *pipeline bubble* (the fill/drain time where stages idle: the
@@ -63,7 +63,7 @@ encode the combinations. The key modern refinement, worth naming:
 **ZeRO / FSDP** (shard the *optimizer state, gradients, and
 parameters* across GPUs (not just the batch): data parallelism
 where the model's *memory* is distributed, so a model that does not
-fit one GPU *can* be data-parallel — the technique that made
+fit one GPU *can* be data-parallel, the technique that made
 large-model training *practical* on standard clusters, by trading
 communication for memory).
 
@@ -72,20 +72,20 @@ communication for memory).
 - **The interconnect is the design** (the parallelism *choice* is a
   choice of *communication pattern*: data (gradients, per step),
   tensor (activations, per layer), pipeline (activations, per
-  stage) — and the *right* choice is the one matching the
+  stage), and the *right* choice is the one matching the
   *hardware topology* (NVLink within a node: cheap; InfiniBand
   across: expensive), which is why the parallelism is
   *topology-aware*, not a config flag).
 - **Checkpointing** (a weeks-long job *will* fail: periodic
   checkpoints (the model state to [object
   storage](/system-design/fundamentals/object-storage)) let it
-  *resume* rather than restart — the
+  *resume* rather than restart, the
   [job-scheduler's](/system-design/hld/distributed-job-scheduler)
   checkpoint discipline, and the reason a failed node costs minutes,
   not weeks).
 - **Fault tolerance** (a node dies mid-run: the job must *detect*
   (heartbeats), *reconfigure* (the parallelism changes when a GPU
-  is lost), and *resume from checkpoint* — the
+  is lost), and *resume from checkpoint*, the
   [distributed-systems](/system-design/fundamentals/availability-and-reliability)
   discipline, at training scale, and the reason large runs are
   *orchestrated* (the [training platform](/ai-ml/systems/ml-training-platform)).

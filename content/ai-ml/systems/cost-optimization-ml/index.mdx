@@ -3,9 +3,9 @@ title: "Cost Optimization for ML"
 summary: "The training and serving bill: where it goes and how to spend less."
 ---
 
-ML has two bills — **training** (GPUs by the hour, for hours to
+ML has two bills, **training** (GPUs by the hour, for hours to
 weeks, per experiment) and **serving** (GPUs or CPUs by the
-request, forever) — and the discipline of *cost optimization* is
+request, forever), and the discipline of *cost optimization* is
 understanding which dominates (it varies: a research-heavy org
 spends on training, a product-heavy one on serving), where the
 waste is, and which lever addresses it. This is the
@@ -47,19 +47,19 @@ time* and *tokens*.
   checkpoints): the spot discount (often 50-70%) is the single
   biggest training lever, at the cost of the
   [fault-tolerance](/ai-ml/systems/distributed-training)
-  machinery (checkpoint, resume, reconfigure) — the trade the
+  machinery (checkpoint, resume, reconfigure), the trade the
   [job scheduler](/system-design/hld/distributed-job-scheduler)
   handles).
 - **Kill losing runs early** (the [early
   pruning](/ai-ml/systems/hyperparameter-tuning) discipline:
   most trials lose, and the saving is *killing them before they
-  finish* — the [successive-halving](/ai-ml/systems/hyperparameter-tuning)
+  finish*, the [successive-halving](/ai-ml/systems/hyperparameter-tuning)
   machinery, and the biggest *tuning* saving).
 - **Improve utilization** (the GPU waits for data: the *input
   pipeline* (the [data-loader](/system-design/fundamentals/stream-vs-batch-processing)
   feeding the accelerator) is a common bottleneck, and fixing it
-  (prefetching, faster storage, better sharding) is *free* compute —
-  the utilization gap, closed).
+  (prefetching, faster storage, better sharding) is *free* compute,
+the utilization gap, closed).
 
 ## The serving levers
 
@@ -71,16 +71,16 @@ time* and *tokens*.
   batched model is *cheaper per request* than a "cheap" one serving
   one-at-a-time).
 - **Route by cost** (the [gateway's](/ai-ml/systems/llm-gateways)
-  difficulty routing: cheap model for easy requests — the single
+  difficulty routing: cheap model for easy requests, the single
   biggest *LLM* serving lever).
 - **Cache aggressively** (the [LLM caches](/ai-ml/systems/llm-caching):
   the zero-cost request).
 - **Scale to zero (where possible)** (the
   [long tail](/ai-ml/systems/serverless-inference): pay only
-  for what is used — with the [cold-start](/ai-ml/systems/serverless-inference)
+  for what is used, with the [cold-start](/ai-ml/systems/serverless-inference)
   caveat).
 - **Right-size the fleet** (the [autoscaling](/ai-ml/systems/autoscaling-inference)
-  discipline: not over-provisioned, not under — the headroom
+  discipline: not over-provisioned, not under, the headroom
   arithmetic).
 
 ## The organizational view
@@ -98,7 +98,7 @@ discovers it at the end of the quarter, when the bill arrives. The
 [unit economics](/system-design/fundamentals/capacity-planning-and-estimation)
 (cost per prediction, cost per resolved ticket, cost per trained
 model) is the metric that turns ML spending from an opaque
-line-item into an *engineered* quantity — which is the whole
+line-item into an *engineered* quantity, which is the whole
 discipline, in one sentence.
 
 ## Related concepts

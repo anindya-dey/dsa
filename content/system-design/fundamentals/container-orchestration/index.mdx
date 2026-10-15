@@ -6,7 +6,7 @@ summary: "Scheduling containers across a fleet: the deployment substrate under m
 Containers solved *packaging* (an app plus its dependencies in one
 portable image), and that created a *scheduling* problem: hundreds of
 images, thousands of machines, and a constant churn of deploys,
-crashes, and scaling — who decides which container runs where, and
+crashes, and scaling, who decides which container runs where, and
 keeps it running? **Orchestration** is that answer, and Kubernetes is
 the industry's default. This page is the *concepts* a system designer
 needs: the object model, the scheduling and self-healing loop, and
@@ -17,26 +17,26 @@ the operational shape, without the YAML.
 Kubernetes's vocabulary, as the concepts they represent:
 
 - **Pod** (the unit of scheduling: one or more containers that share
-  a network namespace and lifecycle — usually one container per pod;
+  a network namespace and lifecycle, usually one container per pod;
   the *atom* the scheduler places).
 - **Deployment** (the *desired state*: "run N replicas of this
-  image"; the controller reconciles reality to it — the
+  image"; the controller reconciles reality to it, the
   [reconciliation loop](#the-reconciliation-loop), which is the whole
   idea).
 - **Service** (a stable virtual IP and DNS name in front of a
-  changing set of pods — the [load
+  changing set of pods, the [load
   balancer](/system-design/fundamentals/load-balancing) and
   [service discovery](https://en.wikipedia.org/wiki/Service_discovery),
   because pods come and go and their IPs are ephemeral).
-- **Ingress** (HTTP routing from outside to the services inside — the
+- **Ingress** (HTTP routing from outside to the services inside, the
   [API gateway](/system-design/fundamentals/api-gateway-and-service-mesh)
   layer, cluster-shaped).
 - **ConfigMap / Secret** (configuration and credentials injected at
-  runtime, not baked into images — the
+  runtime, not baked into images, the
   [secrets-management](/system-design/fundamentals/security-fundamentals)
   discipline).
 - **Namespace** (a logical partition of the cluster: teams, or
-  environments — the [multi-tenancy](/system-design/fundamentals/multi-tenancy-and-data-residency)
+  environments, the [multi-tenancy](/system-design/fundamentals/multi-tenancy-and-data-residency)
   primitive).
 
 The unifying idea: **you declare the desired state, and controllers
@@ -56,32 +56,32 @@ about failures, because it is *always* comparing desired to actual.
 
 The design consequences: **declarative, not imperative** (you state
 the goal, not the steps), **level-triggered, not edge-triggered**
-(the controller reacts to the *current* state, not to *events* — so a
+(the controller reacts to the *current* state, not to *events*, so a
 missed event is harmless, because the next loop catches it: the
 [eventual-consistency](/system-design/fundamentals/cap-theorem-and-consistency-models)
 discipline, and the reason it is robust), and **idempotent actions**
-(doing the reconciliation twice is fine — the
+(doing the reconciliation twice is fine, the
 [idempotency](/system-design/fundamentals/idempotency-and-exactly-once)
 discipline, everywhere).
 
 ## Scheduling and self-healing
 
 The **scheduler** places each pod on a node: it filters (which nodes
-can run this — resources, affinity, taints) and scores (which is
+can run this, resources, affinity, taints) and scores (which is
 best), then binds. The concepts: **resource requests and limits**
 (the [capacity-planning](/system-design/fundamentals/capacity-planning-and-estimation)
-contract — a pod declares what it needs, and the scheduler respects
+contract, a pod declares what it needs, and the scheduler respects
 it), **affinity/anti-affinity** (place these together / spread these
-apart — the [multi-region](/system-design/fundamentals/multi-region-and-active-active)
+apart, the [multi-region](/system-design/fundamentals/multi-region-and-active-active)
 "spread across failure domains" idea, at node scale), and **taints
-and tolerations** (dedicated nodes: "only GPU workloads here" — the
+and tolerations** (dedicated nodes: "only GPU workloads here", the
 [GPU-management](/ai-ml/systems/gpu-accelerator-management)
 isolation, cluster-shaped).
 
 The **self-healing** machinery: liveness probes (restart a hung
-container — the [health-check](/system-design/fundamentals/load-balancing)
+container, the [health-check](/system-design/fundamentals/load-balancing)
 idea, at the container), readiness probes (do not send traffic to a
-not-yet-ready pod — the [draining](/system-design/fundamentals/load-balancing)
+not-yet-ready pod, the [draining](/system-design/fundamentals/load-balancing)
 discipline), and the replica-set controller (replace a dead pod).
 The honest framing: **Kubernetes does not prevent failure; it
 automates recovery**, which is the
@@ -92,24 +92,24 @@ philosophy in platform form.
 
 - **Deploys** are *rollouts*: a Deployment with a new image rolls
   pods gradually (max-surge, max-unavailable), with automatic
-  rollback on a failed health check — the
+  rollback on a failed health check, the
   [canary/rolling-deploy](/system-design/fundamentals/reliability-engineering)
   discipline, built in.
 - **Scaling** is Horizontal Pod Autoscaler (HPA: scale replicas on
-  CPU/custom metrics — the
+  CPU/custom metrics, the
   [autoscaling](/ai-ml/systems/autoscaling-inference) idea,
   cluster-wide) and Cluster Autoscaler (add nodes when pods cannot
   be scheduled).
 - **Stateless by default**: pods are cattle (killed and replaced
-  freely), so *state* lives outside — in a
+  freely), so *state* lives outside, in a
   [database](/system-design/fundamentals/database-fundamentals), an
   [object store](/system-design/fundamentals/object-storage), or a
-  [cache](/system-design/fundamentals/caching) — which is *why*
+  [cache](/system-design/fundamentals/caching), which is *why*
   Kubernetes fits the stateless tier so well and stateful systems
   need care (StatefulSets, operators).
 - **The cost of the abstraction**: a Kubernetes cluster is itself a
   distributed system to operate (the control plane, the networking,
-  the storage — the [complexity](/system-design/fundamentals/microservices-vs-monolith)
+  the storage, the [complexity](/system-design/fundamentals/microservices-vs-monolith)
   trade, platform-shaped), which is why "do you need Kubernetes?" is
   a real question for small systems (a managed platform or a couple
   of VMs may be the honest answer).

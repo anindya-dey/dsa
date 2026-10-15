@@ -2,7 +2,9 @@
 title: "Permutations"
 difficulty: "Medium"
 variant: "Pick Each Position"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/permutations/"
 ---
 
 ## Problem
@@ -54,7 +56,7 @@ explicit tree.
 ## The pattern: choose which element goes in each slot
 
 The decision is different from
-[subsets](/dsa/patterns/backtracking-and-pruning/problems/subsets): not
+[subsets](/dsa/patterns/backtracking-and-pruning/subsets): not
 "include or skip this element" but "which not-yet-used element fills the
 next position". A `used` bitmask tracks the elements already placed, and
 the undo is clearing the bit and popping the slot.
@@ -123,3 +125,7 @@ backtracking form is the decision points: it is the skeleton that
 constraint problems (n-queens, sudoku, arrangement puzzles) hang their
 validity checks on, as described in
 [backtracking](/dsa/patterns/backtracking-and-pruning).
+
+## Related C++ tools
+
+- [Sorting & nth_element](/cpp/algorithms): sort, nth_element, and what each guarantees.

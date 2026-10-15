@@ -65,8 +65,8 @@ It's about detecting structure in a sequence: cycles, midpoints, and
 duplicates.
 
 ```cpp
-Node* slow = head;
-Node* fast = head;
+ListNode* slow = head;
+ListNode* fast = head;
 while (fast != nullptr && fast->next != nullptr) {
     slow = slow->next;
     fast = fast->next->next;
@@ -99,7 +99,7 @@ and you've replaced re-scanning the structure with a single walk through it.
 
 ## Related C++ tools
 
-- [std::vector](/cpp/vector) — the dynamic array, its growth and invalidation rules.
+- [std::vector](/cpp/vector): the dynamic array, its growth and invalidation rules.
 
 ## Related patterns
 

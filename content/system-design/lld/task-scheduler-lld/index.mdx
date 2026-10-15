@@ -45,7 +45,7 @@ the best, run it, decide its fate.
 
 **The dependency graph** (an implicit DAG) holds tasks that are *not
 ready*: waiting on dependencies. The structure is the standard
-[topological sort](/dsa/patterns/graph-specializations/problems/course-schedule)
+[topological sort](/dsa/patterns/graph-specializations/course-schedule)
 state: an in-degree per task (unsatisfied dependency count) and an
 adjacency list (dependents waiting on each task). When a dependency
 completes successfully, decrement each dependent's in-degree; a
@@ -194,7 +194,7 @@ practice.
 **Ready is a state, not a place.** A task moves between "waiting on
 dependencies" and "ready", and the graph structure's whole job is
 maintaining that boundary. The in-degree map (`unsatisfied_`) is
-[course schedule](/dsa/patterns/graph-specializations/problems/course-schedule)
+[course schedule](/dsa/patterns/graph-specializations/course-schedule)
 exactly: decrement on completion, release at zero, and the failure mode
 (it stays positive forever) is a dependency cycle, which a real
 submission API would reject up front for exactly the reason the
@@ -212,6 +212,12 @@ submission API would reject up front for exactly the reason the
   the graph bookkeeping earns its keep.
 - **Multiple workers**: `runNext` from a pool, still safe under the one
   mutex, still correct because a task is claimed by being popped.
+
+## Related C++ tools
+
+- [std::priority_queue](/cpp/priority-queue): the heap, and why its comparator reads backwards.
+- [std::unordered_map / unordered_set](/cpp/unordered-map): average O(1) lookups, and find versus operator[].
+- [Smart Pointers](/cpp/smart-pointers): owning objects with unique_ptr and shared_ptr.
 
 ## Related concepts
 

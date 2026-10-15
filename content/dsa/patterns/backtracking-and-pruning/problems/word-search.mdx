@@ -1,0 +1,133 @@
+---
+title: "Word Search"
+difficulty: "Medium"
+variant: "Grid DFS with Mark and Unmark"
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/word-search/"
+---
+
+## Problem
+
+Given an `m x n` grid of letters and a string `word`, return whether the
+word can be formed from sequentially adjacent cells. Adjacent means
+up, down, left, or right. A cell may be used at most once per word.
+
+**Constraints**
+
+- `1 <= m, n <= 6`
+- `1 <= word.length <= 15`
+
+**Example**
+
+```text
+Input:  board = [["A","B","C","E"],
+                 ["S","F","C","S"],
+                 ["A","D","E","E"]], word = "ABCCED"
+Output: true
+
+Input:  same board, word = "ABCB"
+Output: false        // the B would have to be reused
+```
+
+## Brute force
+
+From every cell, build every path of the word's length, then compare the
+finished path to the word.
+
+```cpp
+bool anyPath(const std::vector<std::vector<char>>& board,
+             std::vector<std::vector<bool>>& used, int r, int c,
+             std::string& path, const std::string& word) {
+    int m = static_cast<int>(board.size());
+    int n = static_cast<int>(board[0].size());
+    if (r < 0 || r >= m || c < 0 || c >= n || used[r][c]) {
+        return false;
+    }
+    used[r][c] = true;
+    path.push_back(board[r][c]);
+    bool found = false;
+    if (path.size() == word.size()) {
+        found = (path == word);           // compare only when complete
+    } else {
+        found = anyPath(board, used, r + 1, c, path, word) ||
+                anyPath(board, used, r - 1, c, path, word) ||
+                anyPath(board, used, r, c + 1, path, word) ||
+                anyPath(board, used, r, c - 1, path, word);
+    }
+    path.pop_back();
+    used[r][c] = false;
+    return found;
+}
+```
+
+It is correct, and it explores up to 4 · 3^(L-1) paths from each start
+for a word of length L. Most of those paths went wrong at their first or
+second letter, and the brute force keeps extending them anyway.
+
+## Optimal: prune at the first wrong letter
+
+Check each letter as you step onto it. If the cell does not match the
+next letter of the word, stop that branch now. That one test turns most
+of the tree into immediate dead ends.
+
+The second improvement is how you mark a cell as used. Instead of a
+separate `used` grid, overwrite the letter with a sentinel while you are
+standing on it, and put it back when you leave. That is the backtracking
+pattern in miniature: change state, recurse, undo.
+
+```cpp
+bool matchFrom(std::vector<std::vector<char>>& board,
+               const std::string& word, int r, int c, int i) {
+    if (i == static_cast<int>(word.size())) {
+        return true;                       // every letter matched
+    }
+    int m = static_cast<int>(board.size());
+    int n = static_cast<int>(board[0].size());
+    if (r < 0 || r >= m || c < 0 || c >= n || board[r][c] != word[i]) {
+        return false;                      // prune: off-grid or wrong letter
+    }
+    char saved = board[r][c];
+    board[r][c] = '#';                     // mark: used on this path
+    bool found = matchFrom(board, word, r + 1, c, i + 1) ||
+                 matchFrom(board, word, r - 1, c, i + 1) ||
+                 matchFrom(board, word, r, c + 1, i + 1) ||
+                 matchFrom(board, word, r, c - 1, i + 1);
+    board[r][c] = saved;                   // unmark: free for other paths
+    return found;
+}
+
+bool exist(std::vector<std::vector<char>> board, const std::string& word) {
+    for (int r = 0; r < static_cast<int>(board.size()); ++r) {
+        for (int c = 0; c < static_cast<int>(board[0].size()); ++c) {
+            if (matchFrom(board, word, r, c, 0)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+```
+
+The `#` sentinel works because it never equals a letter of the word. The
+same check that prunes wrong letters also refuses to step on a used cell.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Build every path, compare at end | O(m · n · 3^L) with no pruning | O(L) |
+| Prune per letter, in-place mark | O(m · n · 3^L) worst, far less in practice | O(L) stack |
+
+The worst-case bound is the same: a board of all "A"s searching for
+"AAAA...B" really does explore everything. The difference is the typical
+case, where most branches die at the first mismatch. Pruning early is the
+whole skill of
+[backtracking](/dsa/patterns/backtracking-and-pruning). For many words at
+once, the next step is
+[Word Search II](/dsa/patterns/trie-prefix-tree/word-search-ii), which
+shares one walk across all words with a trie.
+
+## Related C++ tools
+
+- [std::string](/cpp/string): substr, find, and the operations that copy.

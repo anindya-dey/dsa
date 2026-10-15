@@ -3,12 +3,12 @@ title: "std::stack / std::queue"
 summary: "Adapters over a container: LIFO and FIFO with a chosen underlying store."
 ---
 
-`std::stack` and `std::queue` are not containers — they are
+`std::stack` and `std::queue` are not containers: they are
 **adapters**: a narrow interface (push/pop/peek) wrapped around a
 *real* container you choose (the template's second parameter),
 defaulting to [deque](/cpp/deque) for both. The design lesson
 worth having: the adapter *removes* access (a stack cannot be
-iterated, a queue cannot be indexed — deliberately), because the
+iterated, a queue cannot be indexed: deliberately), because the
 restricted interface **is the discipline**: the
 [stacks-and-queues pattern](/dsa/patterns/stacks-and-queues) exists
 because "most recent unresolved first" and "oldest first" are
@@ -61,10 +61,10 @@ the copy at push.
 ## Where this site uses them
 
 The whole [stacks-and-queues pattern](/dsa/patterns/stacks-and-queues)
-is the semantics entry ([matching](/dsa/patterns/stacks-and-queues/problems/valid-parentheses),
+is the semantics entry ([matching](/dsa/patterns/stacks-and-queues/valid-parentheses),
 [undo-redo](/system-design/lld/text-editor-undo-redo),
-[BFS frontiers](/dsa/patterns/graph-traversals/problems/rotting-oranges));
+[BFS frontiers](/dsa/patterns/graph-traversals/rotting-oranges));
 this entry is the type's mechanics. The two adapters are the
-smallest real example of "a container *plus a policy*" — the same
+smallest real example of "a container *plus a policy*", the same
 design idea as the [state-machine](/system-design/lld/vending-machine)
 interfaces, at type scale: the narrow interface is the product.

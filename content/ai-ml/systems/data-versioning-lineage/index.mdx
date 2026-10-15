@@ -9,8 +9,8 @@ data, which code, which choices produced this model?**" months
 later, then the model is unfixable (you cannot reproduce it),
 unauditable (you cannot explain it), and undebuggable (you cannot
 compare it to what came before). Data versioning and lineage are the
-discipline that makes ML artifacts *reproducible and explainable*
-— [event sourcing](/system-design/fundamentals/event-sourcing-and-cqrs)'s
+discipline that makes ML artifacts *reproducible and explainable*:
+[event sourcing](/system-design/fundamentals/event-sourcing-and-cqrs)'s
 "the log is the truth" instinct, applied to the artifacts of
 learning, and the prerequisite for every other maturity in the
 [ML lifecycle](/ai-ml/systems/ml-system-design-basics).
@@ -58,7 +58,7 @@ graph TD
   hash is forever, and "re-train on what m-2026-09-01 used" is
   literally resolvable.
 - **Everything in the lineage**: dataset hash, pipeline git sha,
-  feature definitions, hyperparameters, the random seed — the
+  feature definitions, hyperparameters, the random seed, the
   [experiment tracking](https://en.wikipedia.org/wiki/MLOps)
   discipline (the model registry's "reproduce this run" button is
   *the lineage record, materialized*), and the honest bar:
@@ -91,7 +91,7 @@ graph TD
   that differ by one row are two hashes, and two that are identical
   are one, automatically).
 - **The registry** (the metadata plane): dataset versions, model
-  versions, run records, lineage edges — a
+  versions, run records, lineage edges, a
   [metadata/data-plane split](/system-design/hld/object-storage-system)
   (the registry is small and strongly consistent; the artifacts are
   big and immutable), and the same split every artifact system on
@@ -102,7 +102,7 @@ graph TD
 Where lineage pays, concretely:
 
 - **The debugging case** (production model degraded: was it the
-  data? the labels? a feature change? — the lineage answers *which
+  data? the labels? a feature change? , the lineage answers *which
   input changed*, which is 90% of the investigation), and the
   [drift](/ai-ml/systems/ml-system-design-basics) monitoring
   connects here (the model's *input distribution* is part of its
@@ -111,7 +111,7 @@ Where lineage pays, concretely:
 - **The audit case** (regulatory, or the
   [fairness](/system-design/fundamentals/multi-tenancy-and-data-residency)
   review: "what did the model learn from, and was that data
-  legitimately obtained, in this era?" — answerable only with
+  legitimately obtained, in this era?": answerable only with
   lineage).
 - **The collaboration case** (data scientists sharing datasets:
   the version pin is the contract, the same discipline

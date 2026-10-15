@@ -7,7 +7,7 @@ A feature transform pipeline is the *code layer* underneath the
 [feature store](/ai-ml/systems/feature-stores): the
 *composable transforms* (window an aggregate, bucketize a value,
 one-hot an encoding, combine features) that turn raw sources into
-feature values — expressed as *code* so that the *same* transform
+feature values: expressed as *code* so that the *same* transform
 runs in *both* the online and offline paths (the consistency
 guarantee, the [feature-store](/ai-ml/systems/feature-stores)
 core). It is the [text-editor's](/system-design/lld/text-editor-undo-redo)
@@ -152,16 +152,16 @@ The design decisions:
 - **`apply` takes the `asOf` time** (the *point-in-time* discipline
   is in the *interface*: a window ends at `asOf`, not "now", so the
   *same* transform produces the *training* value (as of a past time)
-  and the *serving* value (as of now) — the
+  and the *serving* value (as of now), the
   [feature-store](/ai-ml/systems/feature-stores) consistency,
   enforced at the transform layer).
 - **The composite/command composition** (`Bucketize` *wraps* an
   inner transform: the [composite
   pattern](/system-design/lld/in-memory-file-system), so transforms
-  *nest* and *chain* — the [text-editor's](/system-design/lld/text-editor-undo-redo)
+  *nest* and *chain*, the [text-editor's](/system-design/lld/text-editor-undo-redo)
   command pattern, where each unit is self-contained and composable).
 - **`describe()` for versioning** (each transform can *describe
-  itself*: the pipeline's `version()` is the *concatenation* — the
+  itself*: the pipeline's `version()` is the *concatenation*, the
   [lineage](/ai-ml/systems/data-versioning-lineage) that says
   *which transforms produced this value*, so a transform change is a
   *new version* and a [backfill](/ai-ml/systems/feature-model-backfills)
@@ -169,10 +169,10 @@ The design decisions:
 - **The DAG generalization** (the simple form is a *chain*; real
   pipelines are *DAGs* (multiple features from shared
   intermediates: compute the expensive aggregate once, feed many
-  features) — the [dependency
+  features), the [dependency
   graph](/system-design/lld/task-scheduler-lld) the pipeline
   *is*, and the reason a real pipeline is a
-  [DAG scheduler](/dsa/patterns/graph-specializations/problems/course-schedule),
+  [DAG scheduler](/dsa/patterns/graph-specializations/course-schedule),
   not a list).
 
 ## The consistency lesson
@@ -181,14 +181,14 @@ The page's point, stated once: **the transform is the *unit of
 consistency*.** Because a transform is a *self-contained function*
 (its inputs are explicit, its computation is pure over them), the
 *same transform* can run in the batch (over history) and the stream
-(over the live feed) and produce *the same value* — which is the
+(over the live feed) and produce *the same value*, which is the
 [training/serving skew](/ai-ml/systems/feature-engineering-basics)
 *eliminated by construction*. The design that *works* is the one
 where the transform is *code* (versioned, composable, executable
 anywhere), and the design that *fails* is where the online feature
 and the offline feature are *two implementations* (the skew, always).
 This LLD is the [feature-store's](/ai-ml/systems/feature-stores)
-consistency guarantee, *at the level of the transform* — the smallest
+consistency guarantee, *at the level of the transform*, the smallest
 unit that must be *one thing*.
 
 ## Related concepts

@@ -2,7 +2,9 @@
 title: "Number of Connected Components in an Undirected Graph"
 difficulty: "Medium"
 variant: "Union-Find"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode (Premium)"
+    href: "https://leetcode.com/problems/number-of-connected-components-in-an-undirected-graph/"
 ---
 
 ## Problem
@@ -146,3 +148,8 @@ write. Union-find's advantage is that it is *incremental*: adding an edge
 is one `unite` call, so it handles streaming connectivity, Kruskal's
 minimum spanning tree, and "accounts merged by shared emails" without
 rebuilding anything.
+
+## Related C++ tools
+
+- [std::stack / std::queue](/cpp/stack-queue): the LIFO and FIFO adapters.
+- [Numeric Utilities](/cpp/numeric): accumulate, iota, gcd, and the other small helpers.

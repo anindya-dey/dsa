@@ -2,7 +2,9 @@
 title: "Majority Element"
 difficulty: "Easy"
 variant: "Divide and Conquer"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/majority-element/"
 ---
 
 ## Problem
@@ -58,10 +60,11 @@ disagree, one of the two candidates is the global majority, and one
 linear scan counts both to decide which.
 
 ```cpp
-int countOccurences(const std::vector<int>& nums, int candidate) {
+int countInRange(const std::vector<int>& nums, int candidate,
+                 int lo, int hi) {         // occurrences in nums[lo, hi)
     int count = 0;
-    for (int value : nums) {
-        if (value == candidate) {
+    for (int i = lo; i < hi; ++i) {
+        if (nums[i] == candidate) {
             ++count;
         }
     }
@@ -79,7 +82,7 @@ int majorityInRange(const std::vector<int>& nums, int lo, int hi) {
     if (leftMajority == rightMajority) {
         return leftMajority;             // halves agree: done
     }
-    int leftCount = countOccurencesInRange(nums, leftMajority, lo, hi);
+    int leftCount = countInRange(nums, leftMajority, lo, hi);
     if (leftCount * 2 > hi - lo) {
         return leftMajority;             // left candidate wins globally
     }
@@ -144,3 +147,8 @@ answer from the problem's strongest promise with no bookkeeping at all.
 Choosing between them in an interview is a *presentation* decision, and
 naming what each one trades (space, or time, or nothing but proof
 obligations) is the actual skill on display.
+
+## Related C++ tools
+
+- [std::unordered_map / unordered_set](/cpp/unordered-map): average O(1) lookups, and find versus operator[].
+- [std::pair / std::tuple](/cpp/pair-tuple): pairs, structured bindings, and lexicographic comparison.

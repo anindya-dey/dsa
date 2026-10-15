@@ -27,6 +27,12 @@ then stop" bar the site holds.
 
 Track name: **AI/ML Systems**. Suggested route prefix: `/ai-ml`.
 
+> **Update (2026-10-15):** the scope was later extended. AI/ML became its
+> own vertical at `/ai-ml` with two tracks: **Systems** (this plan) and
+> **Concepts**, which explains how models work in plain language and
+> diagrams. Concepts still avoids derivations, but it does cover model
+> internals (attention, transformers, diffusion) at the conceptual level.
+
 ## Level coverage
 
 - Junior: fundamentals (lifecycle, offline vs online, metrics) and the

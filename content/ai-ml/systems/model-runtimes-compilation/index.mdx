@@ -7,8 +7,8 @@ A trained model is a **computation graph** (the layers, the
 operations, the tensors flowing between them), and the *runtime* is
 what turns that graph into instructions the hardware executes. The
 naive path (a Python interpreter executing ops one at a time) is
-slow — the interpreter overhead per op dominates, and the ops are
-not fused or hardware-tuned — and the *runtime* family exists to fix
+slow, the interpreter overhead per op dominates, and the ops are
+not fused or hardware-tuned, and the *runtime* family exists to fix
 that: **compile the graph into fused, hardware-specific kernels**,
 ahead of time, so serving is pure execution. This is the
 [compilation](/system-design/fundamentals/serialization-and-schema-evolution)
@@ -26,7 +26,7 @@ ONNX-compatible runtime can execute it. The value: **decoupling**
 (the model artifact is portable, the serving tier is not tied to
 the training framework), which is the
 [serialization](/system-design/fundamentals/serialization-and-schema-evolution)
-argument — a stable contract between the trainer and the server.
+argument, a stable contract between the trainer and the server.
 
 ```mermaid
 graph LR
@@ -44,7 +44,7 @@ The transformations the runtimes apply, each a real speedup:
 
 - **Operator fusion** (the biggest win): adjacent ops become *one*
   kernel (conv + bias + activation, executed in one pass over
-  memory) — the interpreter's per-op overhead and the intermediate
+  memory), the interpreter's per-op overhead and the intermediate
   tensor's round-trip to memory both vanish. Fusion is why a
   compiled model can be *several times* faster than the eager one
   with identical math.
@@ -53,7 +53,7 @@ The transformations the runtimes apply, each a real speedup:
   graph-theory optimizations, applied to a tensor program).
 - **Kernel auto-tuning** (TensorRT's core: for each op and each
   hardware, pick the *fastest* kernel implementation from a library,
-  benchmarked on the target — the [systems](/system-design/fundamentals/latency-vs-throughput)
+  benchmarked on the target, the [systems](/system-design/fundamentals/latency-vs-throughput)
   reality that "matmul" has dozens of implementations and the
   fastest depends on the shapes).
 - **Precision and layout selection** (choosing the
@@ -62,13 +62,13 @@ The transformations the runtimes apply, each a real speedup:
   decision that pairs with the model-level quantization).
 - **Ahead-of-time (AOT) compilation** (compile the *whole* graph to
   a binary, no interpreter: the strongest form (TorchScript, XLA,
-  TVM), and the trend — the *serving* path has no Python, no
+  TVM), and the trend, the *serving* path has no Python, no
   framework, just kernels).
 
 ## The runtime landscape, by purpose
 
 - **TensorRT** (NVIDIA: the fastest on NVIDIA GPUs, hardware-tuned,
-  per-GPU compiled — the artifact is *device-specific*, which is a
+  per-GPU compiled, the artifact is *device-specific*, which is a
   real deployment constraint: the compiled engine does not move
   between GPU models).
 - **ONNX Runtime** (cross-platform, CPU + GPU + edge: the portable
@@ -95,11 +95,11 @@ interview content:
 - **Compilation is *build time*** (the graph-to-kernels pass takes
   minutes to hours: it belongs in the *CI/CD* pipeline
   ([MLOps](/ai-ml/systems/ml-system-design-basics)), not the
-  serving path — the [artifact registry](/ai-ml/systems/model-caching-warm-pools)
+  serving path, the [artifact registry](/ai-ml/systems/model-caching-warm-pools)
   holds compiled engines, not just weights).
 - **The warm-up cost** (a compiled engine's first inference
   initializes GPU state: the [cold-start](/ai-ml/systems/serverless-inference)
-  problem, made *worse* by compilation — the runtime's init is a
+  problem, made *worse* by compilation, the runtime's init is a
   real line item in the warmth budget).
 
 ## Related concepts

@@ -9,7 +9,7 @@ cover the system; this is the *code-level* design: the classes and
 interfaces that make "one definition, two serving paths" a
 *structure* rather than a convention. The design's whole point is
 the *consistency* guarantee, so the LLD's whole point is *how the
-code enforces it* — the interfaces that make a skew *impossible to
+code enforces it*, the interfaces that make a skew *impossible to
 express*.
 
 ## The requirements (as code)
@@ -126,7 +126,7 @@ Three design decisions carry the consistency:
 
 - **One `compute`, two stores** (the definition is the *single
   source*; the online and offline stores are *destinations*, not
-  *implementations* — so a feature cannot be "computed two ways",
+  *implementations*, so a feature cannot be "computed two ways",
   which is the skew, *unexpressible* by construction).
 - **The `asOf` parameter is in the *interface*** (both the online
   "now" read and the offline "as of T" read go through the same
@@ -135,7 +135,7 @@ Three design decisions carry the consistency:
 - **The offline store is an *append-only log*** (the
   [event-sourced](/system-design/fundamentals/event-sourcing-and-cqrs)
   form: `(entity, feature, time) -> value`, so `getAsOf` is a
-  *time-indexed* read — the point-in-time query, and the reason the
+  *time-indexed* read, the point-in-time query, and the reason the
   history is *recomputable* (the
   [backfill](/ai-ml/systems/feature-model-backfills))).
 
@@ -143,14 +143,14 @@ Three design decisions carry the consistency:
 
 The code design *enables* a test that *proves* consistency: for a
 sample of entities and past times, `getOffline(entity, name, T)`
-must equal what the *online* store held *at* time T — and the
+must equal what the *online* store held *at* time T, and the
 *structural* guarantee (one `compute`) means the test *passes by
 construction* (unless the *stores* diverge, which is the operational
 monitoring: the [feature-freshness](/ai-ml/systems/feature-stores)
 and consistency checks). The design lesson: **make the correct
 thing the *only expressible* thing** (one compute function, the
 as-of in the signature), so consistency is a *property of the code*,
-not a *discipline of the programmers* — the same
+not a *discipline of the programmers*, the same
 [make-invalid-states-unrepresentable](https://en.wikipedia.org/wiki/Type_system)
 principle as the [design-data-structures](/dsa/patterns/design-data-structures)
 pattern.

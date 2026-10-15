@@ -239,6 +239,12 @@ among its products*.
   its own loop is not on the stack), the deadlock-free answer the
   design above already gives for free.
 
+## Related C++ tools
+
+- [std::deque](/cpp/deque): O(1) pushes and pops at both ends.
+- [std::unordered_map / unordered_set](/cpp/unordered-map): average O(1) lookups, and find versus operator[].
+- [Smart Pointers](/cpp/smart-pointers): owning objects with unique_ptr and shared_ptr.
+
 ## Related concepts
 
 - [Message Queues & Pub/Sub](/system-design/fundamentals/message-queues-and-pubsub)

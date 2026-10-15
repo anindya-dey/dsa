@@ -7,7 +7,7 @@ summary: "Smarter descent: momentum, adaptive learning rates, and why Adam domin
 downhill." The **optimizer** decides *how*: how big the step, whether
 to remember previous steps, whether to use a different step size per
 parameter. These choices, more than almost anything else, decide
-whether a model trains quickly, slowly, or not at all — which is why
+whether a model trains quickly, slowly, or not at all, which is why
 the optimizer is a one-line setting with an outsized effect on
 results.
 
@@ -20,12 +20,12 @@ results.
   gradient's direction is often a poor one (across a narrow valley,
   not along it).
 - **Momentum**: accumulate a running average of past gradients and
-  step in *that* direction — like a ball rolling downhill, it builds
+  step in *that* direction, like a ball rolling downhill, it builds
   speed along consistent directions and dampens oscillation. This
   fixes the "zigzag across a ravine" problem, because the consistent
   component of the gradient accumulates while the oscillating
   component cancels.
-- **RMSProp / Adagrad**: adapt the step size *per parameter* — give
+- **RMSProp / Adagrad**: adapt the step size *per parameter*, give
   parameters with consistently small gradients a larger step, and
   those with large gradients a smaller one, by dividing by a running
   average of gradient magnitudes. This fixes the "one learning rate
@@ -33,14 +33,14 @@ results.
 - **Adam** (the modern default): combines momentum (the first moment)
   with per-parameter scaling (the second moment) and adds bias
   correction. The result: fast, robust, forgiving of a poorly-chosen
-  learning rate, and works well across a huge range of problems —
-  which is why "just use Adam" is the standard answer.
+  learning rate, and works well across a huge range of problems,
+which is why "just use Adam" is the standard answer.
 
 ```mermaid
 graph LR
     G[Gradient] --> M[Running mean: momentum]
     G --> V[Running variance: scale]
-    M --> S[Step = lr * mean / sqrt(variance)]
+    M --> S["Step = lr * mean / sqrt(variance)"]
     V --> S
     S --> W[Update weights]
 ```
@@ -51,7 +51,7 @@ Adam's appeal: **it works without much tuning** (a good default
 learning rate, and it handles differently-scaled parameters
 gracefully), and it converges fast on most problems. Its caveats:
 it sometimes **generalizes slightly worse** than well-tuned SGD with
-momentum (a real, debated result — SGD's noise can find flatter
+momentum (a real, debated result: SGD's noise can find flatter
 minima), and it uses more memory (it stores two running averages per
 parameter, which matters at billions of parameters). The practical
 verdict: Adam for most things, SGD-with-momentum when squeezing the
@@ -61,15 +61,15 @@ last bit of generalization on a large, well-understood training run.
 
 - **Learning rate**: the single most important hyperparameter, even
   with Adam. Too high diverges, too low crawls, and *schedules*
-  (decay it over training, or warm it up — the reason "warmup" appears
+  (decay it over training, or warm it up, the reason "warmup" appears
   in every large-model recipe) matter a lot.
 - **Weight decay**: the [L2
   penalty](/ai-ml/concepts/regularization), handled slightly
-  differently in Adam (AdamW's decoupled decay) — the reason "AdamW"
+  differently in Adam (AdamW's decoupled decay), the reason "AdamW"
   is the current default.
 - **Batch size interacts with the learning rate**: larger batches
   give lower-noise gradients, which usually wants a larger rate (the
-  "linear scaling" rule — a systems-relevant coupling, since batch
+  "linear scaling" rule, a systems-relevant coupling, since batch
   size is also a memory/throughput decision).
 
 ## Related concepts

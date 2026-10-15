@@ -1,0 +1,79 @@
+---
+title: "Integer Overflow & Limits"
+summary: "Where int runs out, why signed overflow is undefined, and the habits that prevent it."
+---
+
+An `int` holds roughly ±2.1 × 10^9. Interview inputs routinely reach
+10^5 elements with values up to 10^9, so a single sum or product can pass
+that limit. For signed integers, going past the limit is *undefined
+behavior*. The compiler may assume it never happens, so the result is not
+even reliably "wrapped around".
+
+## The limits
+
+```cpp
+#include <limits>
+
+std::numeric_limits<int>::max();        //  2147483647   (about 2.1e9)
+std::numeric_limits<int>::min();        // -2147483648
+std::numeric_limits<long long>::max();  //  9223372036854775807 (about 9.2e18)
+INT_MAX; LLONG_MAX;                     // the <climits> spellings
+```
+
+Note the asymmetry: `min()` is one further from zero than `max()`. That
+is why negating `INT_MIN` overflows, the trap in
+[Pow(x, n)](/dsa/patterns/recursion-and-math/pow-x-n-recursive).
+
+## Where overflow hides
+
+- **Sums of many values.** 10^5 values of 10^9 sum to 10^14. Use a
+  `long long` accumulator.
+- **Products.** Two values of 10^5 multiply to 10^10. Cast one operand
+  *before* multiplying.
+- **Midpoints.** `(lo + hi) / 2` overflows when both are large. Write
+  `lo + (hi - lo) / 2`.
+- **Infinity sentinels.** `INT_MAX + weight` in a shortest-path
+  relaxation overflows. Check `dist != INF` before adding.
+- **Accumulate's start value.** `std::accumulate(v.begin(), v.end(), 0)`
+  sums in `int` because `0` is an `int`. Write `0LL`.
+
+```cpp
+long long total = 0;
+for (int x : nums) {
+    total += x;                          // promoted per addition: safe
+}
+
+long long area = 1LL * width * height;  // cast first, then multiply
+int wrong = width * height;             // multiplies in int, then overflows
+
+long long sum = std::accumulate(v.begin(), v.end(), 0LL);
+```
+
+The `1LL *` trick works because C++ converts both operands to the wider
+type before the multiplication happens. Casting the *result* is too late.
+
+## Modular arithmetic
+
+When a problem says "return the answer modulo 10^9 + 7", reduce after
+every operation. Each value stays below the modulus, and a product of two
+of them stays below about 10^18, inside `long long`.
+
+```cpp
+const long long MOD = 1'000'000'007;
+long long result = (a % MOD) * (b % MOD) % MOD;
+```
+
+## Unsigned is not a fix
+
+Unsigned arithmetic wraps around in a defined way, but that only swaps
+undefined behavior for silent wrong answers. Mixing it with signed values
+causes its own bugs: `v.size() - 1` is a huge number when `v` is empty,
+because `size()` is unsigned. Cast sizes to `int` before subtracting, or
+compare `i + 1 < v.size()` instead.
+
+## Catching it
+
+Compile with `-fsanitize=undefined` while testing. It reports signed
+overflow at the exact line, which is how the boundary bug in
+[Longest Consecutive Sequence](/dsa/patterns/hash-based-structures/longest-consecutive-sequence)
+was found on this site.

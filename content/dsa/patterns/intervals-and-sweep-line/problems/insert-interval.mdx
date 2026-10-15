@@ -1,0 +1,109 @@
+---
+title: "Insert Interval"
+difficulty: "Medium"
+variant: "Three-Phase Linear Scan"
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/insert-interval/"
+---
+
+## Problem
+
+You are given a list of non-overlapping intervals sorted by start, and
+one new interval. Insert the new interval and merge wherever needed, so
+the result is still sorted and non-overlapping.
+
+**Constraints**
+
+- `0 <= intervals.length <= 10^4`
+- `intervals` is sorted by start and has no overlaps
+- `0 <= start <= end <= 10^5`
+
+**Example**
+
+```text
+Input:  intervals = [[1,2],[3,5],[6,7],[8,10],[12,16]], newInterval = [4,8]
+Output: [[1,2],[3,10],[12,16]]
+```
+
+## Brute force
+
+Append the new interval, sort everything by start, and run the standard
+[merge](/dsa/patterns/intervals-and-sweep-line/merge-intervals).
+
+```cpp
+std::vector<std::vector<int>> insertBrute(
+        std::vector<std::vector<int>> intervals,
+        const std::vector<int>& newInterval) {
+    intervals.push_back(newInterval);
+    std::sort(intervals.begin(), intervals.end());
+    std::vector<std::vector<int>> merged;
+    for (const auto& interval : intervals) {
+        if (merged.empty() || merged.back()[1] < interval[0]) {
+            merged.push_back(interval);              // gap: start a new one
+        } else {
+            merged.back()[1] = std::max(merged.back()[1], interval[1]);
+        }
+    }
+    return merged;
+}
+```
+
+That is O(n log n), and the sort throws away information you were given
+for free. The list was already sorted. Only one interval is out of place.
+
+## Optimal: before, overlapping, after
+
+Because the list is sorted and disjoint, it splits into three runs
+relative to the new interval:
+
+1. Intervals that end before the new one starts. Copy them unchanged.
+2. Intervals that overlap it. Fold each into the new interval by taking
+   the smaller start and the larger end. Then emit the merged interval
+   once.
+3. Intervals that start after the new one ends. Copy them unchanged.
+
+```cpp
+std::vector<std::vector<int>> insert(
+        const std::vector<std::vector<int>>& intervals,
+        std::vector<int> newInterval) {
+    std::vector<std::vector<int>> result;
+    int i = 0;
+    int n = static_cast<int>(intervals.size());
+
+    while (i < n && intervals[i][1] < newInterval[0]) {
+        result.push_back(intervals[i++]);            // 1. entirely before
+    }
+    while (i < n && intervals[i][0] <= newInterval[1]) {
+        newInterval[0] = std::min(newInterval[0], intervals[i][0]);
+        newInterval[1] = std::max(newInterval[1], intervals[i][1]);
+        ++i;                                         // 2. overlaps: absorb
+    }
+    result.push_back(newInterval);
+    while (i < n) {
+        result.push_back(intervals[i++]);            // 3. entirely after
+    }
+    return result;
+}
+```
+
+Both comparisons treat touching ends as overlap. `[1,3]` and `[3,5]`
+merge into `[1,5]`, which matches the problem's convention. If a problem
+treats touching intervals as separate, change `<` to `<=` in the first
+loop and `<=` to `<` in the second.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Append, sort, merge | O(n log n) | O(n) |
+| Three-phase scan | O(n) | O(n) output |
+
+The lesson for
+[intervals](/dsa/patterns/intervals-and-sweep-line) is to use the order
+you are handed. Sorting is the entry fee for most interval problems.
+When the input already paid it, a single pass is enough.
+
+## Related C++ tools
+
+- [Sorting & nth_element](/cpp/algorithms): sort, nth_element, and what each guarantees.

@@ -2,15 +2,17 @@
 title: "Pow(x, n) - Recursive"
 difficulty: "Medium"
 variant: "Divide and Conquer"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/powx-n/"
 ---
 
 ## Problem
 
-Compute x^n. (This is the recursive framing of
-[pow-x-n](/dsa/patterns/number-theory-and-combinatorics/problems/pow-x-n);
-read that page for the iterative, modular form and the INT_MIN overflow
-trap. This page covers the divide-and-conquer reasoning.)
+Implement `myPow(double x, int n)`, which computes x raised to the power
+n. A negative exponent means 1 / x^|n|. This page derives the recursion;
+the modular-integer form of the same idea is
+[Super Pow](/dsa/patterns/number-theory-and-combinatorics/super-pow).
 
 **Constraints**
 
@@ -26,9 +28,24 @@ Output: 0.25
 
 ## Brute force
 
-Multiply x by itself |n| times: O(|n|) multiplications, hopeless past a
-moderate exponent, and blind to the structure that x^20 contains x^10
-squared.
+Multiply x by itself |n| times.
+
+```cpp
+double myPowBrute(double x, int n) {
+    long long exponent = n;               // careful: |INT_MIN| overflows int
+    if (exponent < 0) {
+        exponent = -exponent;
+    }
+    double result = 1.0;
+    for (long long i = 0; i < exponent; ++i) {
+        result *= x;
+    }
+    return n < 0 ? 1.0 / result : result;
+}
+```
+
+That is O(|n|) multiplications, up to two billion of them. It is blind to
+the structure that x^20 contains x^10 squared.
 
 ## The recursion, derived rather than memorized
 
@@ -86,12 +103,35 @@ of x is appended. The odd case is the "rounding repair", and it recurs in
 every halving recursion that must hit a base case exactly: binary search
 does not need it (any cell is a valid base), this does.
 
+## The same algorithm, unrolled
+
+Remove the recursion and you see where the exponent's bits go:
+
+```cpp
+double powerIterative(double x, long long n) {
+    double result = 1.0;
+    while (n > 0) {
+        if (n & 1) {                      // this binary digit is set
+            result *= x;
+        }
+        x *= x;                           // x^(2^k) for the next digit
+        n >>= 1;
+    }
+    return result;
+}
+```
+
+Each set bit of n contributes one factor of x^(2^k), and the squaring
+chain builds those factors on the fly. Same O(log n) multiplications, O(1)
+space.
+
 ## Complexity
 
 | Approach | Time | Space |
 | --- | --- | --- |
 | Repeated multiplication | O(\|n\|) | O(1) |
 | Divide and conquer, one call reused | O(log \|n\|) | O(log \|n\|) stack |
+| Iterative squaring | O(log \|n\|) | O(1) |
 
 This is the smallest clean example of
 [recursion](/dsa/patterns/recursion-and-math) as a *cost* argument: the
@@ -101,3 +141,8 @@ each) gives O(log n) total. The same skeleton with a modulus is the
 modular exponentiation of
 [number theory](/dsa/patterns/number-theory-and-combinatorics), and with
 matrices instead of numbers it computes linear recurrences.
+
+## Related C++ tools
+
+- [Bit Operations](/cpp/bit-operations): the operators and tricks behind the bit-level steps.
+- [Integer Overflow & Limits](/cpp/integer-overflow): where int runs out, and how this code stays inside it.

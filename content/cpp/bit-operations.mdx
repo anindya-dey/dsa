@@ -1,0 +1,93 @@
+---
+title: "Bit Operations"
+summary: "The operators, the classic tricks, std::bitset, and C++20's <bit> functions."
+---
+
+Bits let you store a set of small integers in one number and test,
+add, or remove members in a single instruction. This entry collects the
+operators, the handful of tricks that keep reappearing, and the standard
+library functions that replace hand-written loops.
+
+## The operators
+
+```cpp
+a & b    // AND: bits set in both
+a | b    // OR: bits set in either
+a ^ b    // XOR: bits set in exactly one
+~a       // NOT: flip every bit
+a << k   // shift left: multiply by 2^k
+a >> k   // shift right: divide by 2^k (for non-negative a)
+```
+
+Precedence trips people up. `x & 1 == 0` parses as `x & (1 == 0)`.
+Always parenthesize: `(x & 1) == 0`.
+
+## The tricks worth memorizing
+
+```cpp
+(x >> i) & 1         // is bit i set?
+x | (1 << i)         // set bit i
+x & ~(1 << i)        // clear bit i
+x ^ (1 << i)         // toggle bit i
+x & (x - 1)          // clear the lowest set bit
+x & -x               // isolate the lowest set bit
+x > 0 && (x & (x - 1)) == 0   // is x a power of two?
+(a ^ a) == 0         // XOR cancels pairs
+```
+
+`x & (x - 1)` drives
+[Number of 1 Bits](/dsa/patterns/bit-manipulation/number-of-1-bits).
+`x & -x` is the step in a Fenwick tree. XOR cancellation solves
+[Single Number](/dsa/patterns/bit-manipulation/single-number) and
+[Missing Number](/dsa/patterns/bit-manipulation/missing-number).
+
+## Shifting safely
+
+`1 << 31` overflows a signed `int`, and shifting by 32 or more is
+undefined for a 32-bit type. When you need wide masks, shift a wider
+value: `1LL << 40`, or use an unsigned type.
+
+## Subsets as masks
+
+With n up to about 20, each subset of n items is one integer from 0 to
+2^n - 1. Bit `i` says whether item `i` is in.
+
+```cpp
+for (int mask = 0; mask < (1 << n); ++mask) {
+    for (int i = 0; i < n; ++i) {
+        if (mask & (1 << i)) {
+            // item i is in this subset
+        }
+    }
+}
+```
+
+This is how
+[Subsets via Bitmask](/dsa/patterns/bit-manipulation/subsets-via-bitmask)
+works, and it is the state representation behind bitmask dynamic
+programming.
+
+## The library versions
+
+C++20's `<bit>` header replaces the compiler-specific `__builtin_*`
+functions. They take unsigned types.
+
+```cpp
+#include <bit>
+
+std::popcount(13u);       // 3: number of set bits
+std::countr_zero(8u);     // 3: trailing zeros
+std::countl_zero(1u);     // 31 for a 32-bit unsigned
+std::has_single_bit(64u); // true: power of two
+std::bit_width(5u);       // 3: bits needed, floor(log2(x)) + 1
+```
+
+`std::bitset<N>` is a fixed-size bit array with readable operations. It
+is useful when N is known at compile time and larger than 64.
+
+```cpp
+std::bitset<1000> seen;
+seen.set(42);
+seen.test(42);            // true
+seen.count();             // number of set bits
+```

@@ -2,7 +2,9 @@
 title: "Kth Largest Element in a Stream"
 difficulty: "Easy"
 variant: "Bounded Heap"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/kth-largest-element-in-a-stream/"
 ---
 
 ## Problem
@@ -103,7 +105,7 @@ Each `add` is O(log k) (one push, at most one pop) against the brute
 force's O(n log n), and memory is O(k) against O(n): on a long stream,
 this is the difference between a bounded structure and an unbounded
 one, which is the streaming-computation version of the same trade
-[kth largest in an array](/dsa/patterns/heaps-and-priority-queues/problems/kth-largest-element-in-an-array)
+[kth largest in an array](/dsa/patterns/heaps-and-priority-queues/kth-largest-element-in-an-array)
 makes against sorting.
 
 ## Complexity
@@ -120,5 +122,11 @@ becomes O(1) to *read* (it is the heap top) and O(log k) to *maintain*.
 The same skeleton answers "top k frequent words" (a heap ordered by
 count, ties broken lexicographically) and every sliding-top-k variant,
 and it composes with the
-[aging queue](/dsa/patterns/stacks-and-queues/problems/number-of-recent-calls)
+[aging queue](/dsa/patterns/stacks-and-queues/number-of-recent-calls)
 when the top k must also expire from the window.
+
+## Related C++ tools
+
+- [std::priority_queue](/cpp/priority-queue): the heap, and why its comparator reads backwards.
+- [Custom Comparators](/cpp/comparators): the ordering contract every comparator must keep.
+- [Sorting & nth_element](/cpp/algorithms): sort, nth_element, and what each guarantees.

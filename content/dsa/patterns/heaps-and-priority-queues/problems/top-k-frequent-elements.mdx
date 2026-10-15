@@ -1,0 +1,116 @@
+---
+title: "Top K Frequent Elements"
+difficulty: "Medium"
+variant: "Bounded Min-Heap"
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/top-k-frequent-elements/"
+---
+
+## Problem
+
+Given an integer array `nums` and an integer `k`, return the `k` most
+frequent values. The answer is guaranteed to be unique, and may be in any
+order.
+
+**Constraints**
+
+- `1 <= nums.length <= 10^5`
+- `k` is between 1 and the number of distinct values
+
+**Example**
+
+```text
+Input:  nums = [1, 1, 1, 2, 2, 3], k = 2
+Output: [1, 2]
+```
+
+## Brute force
+
+Count each value, put the distinct values in a list, sort the whole list
+by count, and take the first `k`.
+
+```cpp
+std::vector<int> topKFrequentBrute(const std::vector<int>& nums, int k) {
+    std::unordered_map<int, int> count;
+    for (int value : nums) {
+        ++count[value];
+    }
+    std::vector<std::pair<int, int>> byCount(count.begin(), count.end());
+    std::sort(byCount.begin(), byCount.end(),
+              [](const auto& a, const auto& b) {
+                  return a.second > b.second;       // most frequent first
+              });
+    std::vector<int> result;
+    for (int i = 0; i < k; ++i) {
+        result.push_back(byCount[i].first);
+    }
+    return result;
+}
+```
+
+With `u` distinct values this is O(n + u log u). It ranks all `u` values
+when you only need the top `k`. If k is 10 and u is 100,000, almost all of
+that sorting is wasted.
+
+## Optimal: keep only the k best
+
+Keep a *min*-heap of at most `k` entries, ordered by count. Push each
+value. When the heap grows past `k`, pop the smallest. The value you pop
+can never be in the top `k`: there are already `k` values at least as
+frequent. What survives is the answer.
+
+The min-heap feels backwards at first. You want the largest counts, so
+why keep the smallest on top? Because the top of the heap is the entry you
+compare new arrivals against. It is the weakest member of the current top
+k, the one that should be evicted next.
+
+```cpp
+std::vector<int> topKFrequent(const std::vector<int>& nums, int k) {
+    std::unordered_map<int, int> count;
+    for (int value : nums) {
+        ++count[value];
+    }
+
+    using Entry = std::pair<int, int>;              // (count, value)
+    std::priority_queue<Entry, std::vector<Entry>, std::greater<Entry>> heap;
+    for (const auto& [value, times] : count) {
+        heap.push({times, value});
+        if (static_cast<int>(heap.size()) > k) {
+            heap.pop();                             // evict the weakest
+        }
+    }
+
+    std::vector<int> result;
+    while (!heap.empty()) {
+        result.push_back(heap.top().second);
+        heap.pop();
+    }
+    return result;
+}
+```
+
+Putting the count *first* in the pair is what makes `std::greater` order
+by frequency. Pairs compare their first field, then their second.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Count, then sort all | O(n + u log u) | O(u) |
+| Count, bounded min-heap | O(n + u log k) | O(u + k) |
+| Count, bucket by frequency | O(n) | O(n) |
+
+The bucket row is worth knowing. A count is at most n, so you can make an
+array of n + 1 buckets, drop each value into `bucket[count]`, and read
+from the top bucket down until you have `k`. It is linear, but it only
+works because counts are small integers. The bounded heap works for any
+score, which is why it is the
+[heap](/dsa/patterns/heaps-and-priority-queues) pattern to reach for
+first.
+
+## Related C++ tools
+
+- [std::priority_queue](/cpp/priority-queue): the heap, and why its comparator reads backwards.
+- [std::unordered_map / unordered_set](/cpp/unordered-map): average O(1) lookups, and find versus operator[].
+- [Custom Comparators](/cpp/comparators): the ordering contract every comparator must keep.

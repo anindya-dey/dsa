@@ -6,7 +6,7 @@ summary: "Classifying user content at scale, with human review and appeal in the
 A content moderation system classifies user content (posts, images,
 videos, comments) against a *policy* (spam, harassment, violence,
 CSAM, misinformation) and *acts* on it (allow, block, flag for
-review, demote) — at the firehose scale of a user-generated-content
+review, demote), at the firehose scale of a user-generated-content
 platform, where the volume forbids human review of everything and
 the stakes (harm, legal, trust) forbid pure automation. It is the
 [fake-detection](/system-design/hld/fraud-detection) shape
@@ -31,9 +31,9 @@ decision affects a user, who can contest it).
 **Non-functional**
 
 - **Latency** (some moderation is *pre-publish* (block before it is
-  seen: the [synchronous](/ai-ml/systems/offline-vs-online-inference)
+  seen: the [synchronous](/ai-ml/systems/batch-vs-real-time-prediction)
   path, with a latency budget), some is *post-publish* (catch it
-  after: the asynchronous path) — the *policy* decides which, and
+  after: the asynchronous path), the *policy* decides which, and
   the two have different budgets).
 - **Scale** (millions of items/day: the
   [throughput](/system-design/fundamentals/capacity-planning-and-estimation),
@@ -41,7 +41,7 @@ decision affects a user, who can contest it).
 - **Precision/recall, weighted by harm** (the [metric](/ai-ml/systems/evaluation-metrics)
   trade: a false positive removes legitimate content (a *censorship*
   complaint), a false negative lets harm through (a *trust/safety*
-  incident) — and the *weight* varies *by category* (CSAM: recall at
+  incident), and the *weight* varies *by category* (CSAM: recall at
   all costs; spam: precision matters), which is the policy's
   arithmetic).
 - **Adversarial** (users *adapt* to the classifier: the
@@ -71,22 +71,22 @@ graph TD
   stack](/ai-ml/systems/inference-optimization): a cheap
   filter (rules + a small model) handles the *bulk* (most content is
   clearly fine, some is clearly bad), and only the *uncertain* goes
-  to a heavier model or a human — the [cascade](https://en.wikipedia.org/wiki/Cascading_classifiers)
+  to a heavier model or a human, the [cascade](https://en.wikipedia.org/wiki/Cascading_classifiers)
   is the *whole design*, because reviewing everything is
   unaffordable and reviewing nothing is unacceptable).
 - **Multimodal** (text, image, video: *different models*, different
-  costs, different pipelines — the video case (frames, audio,
+  costs, different pipelines, the video case (frames, audio,
   captions) is the most expensive, and usually *async*).
 - **Human review** (the [case-management](/system-design/hld/fraud-detection)
   queue: prioritized (the *harmful* categories first), the reviewer
-  UI, the *decisions* that become labels — the human-in-the-loop,
+  UI, the *decisions* that become labels, the human-in-the-loop,
   and the *well-being* dimension (reviewers see the worst content:
   a real operational concern, the [responsible-AI](/ai-ml/systems/responsible-ai-safety)
   page's organizational note)).
 - **Appeal** (the [re-review](/ai-ml/systems/bias-fairness-explainability)
   path: a decision can be contested, and the *appeal* is both a
   fairness requirement and a *label* source (a reviewer overturning
-  a model is a training signal) — the [error-correction](/ai-ml/systems/responsible-ai-safety)
+  a model is a training signal), the [error-correction](/ai-ml/systems/responsible-ai-safety)
   loop).
 - **The feedback loop** (reviewer decisions → labels → retrain: the
   [retraining loop](/ai-ml/systems/concept-drift-retraining),
@@ -107,12 +107,12 @@ graph TD
   boundary)).
 - **Multimodal and adversarial content** (text is easy-ish; images
   and video need heavy models; and the adversarial users *evolve*
-  (leetspeak, adversarial images) — the [adversarial
+  (leetspeak, adversarial images), the [adversarial
   drift](/ai-ml/systems/concept-drift-retraining), continuous).
 - **Precision/recall by category** (the [threshold
   per category](/ai-ml/systems/evaluation-metrics): the
   *policy's* numbers, and the [calibration](/ai-ml/systems/evaluation-metrics)
-  that keeps the thresholds meaningful — a single global threshold
+  that keeps the thresholds meaningful, a single global threshold
   is *wrong* (the categories have different harm weights)).
 - **The appeal and fairness loop** (appeals reveal model errors,
   and *systematic* appeal patterns (a demographic's content flagged

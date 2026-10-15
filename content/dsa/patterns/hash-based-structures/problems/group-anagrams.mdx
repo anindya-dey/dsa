@@ -2,7 +2,9 @@
 title: "Group Anagrams"
 difficulty: "Medium"
 variant: "Frequency Signature"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/group-anagrams/"
 ---
 
 ## Problem
@@ -110,7 +112,13 @@ one insertion per word.
 | Signature hash map | O(n · k) | O(n · k) |
 
 Where n is the number of words and k the word length. The lesson is the one
-from [Two Sum](/dsa/patterns/hash-based-structures/problems/two-sum) at a larger
+from [Two Sum](/dsa/patterns/hash-based-structures/two-sum) at a larger
 scale: stop asking "does X match Y?" for every pair, and ask instead "what
 group must X belong to?" A fingerprint answers the second question in one
 step.
+
+## Related C++ tools
+
+- [std::map / std::set](/cpp/map): ordered keys with O(log n) lookups and lower_bound.
+- [std::pair / std::tuple](/cpp/pair-tuple): pairs, structured bindings, and lexicographic comparison.
+- [Sorting & nth_element](/cpp/algorithms): sort, nth_element, and what each guarantees.

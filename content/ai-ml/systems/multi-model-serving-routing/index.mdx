@@ -5,7 +5,7 @@ summary: "Serving many models (or many versions) from one fleet, and routing eac
 
 A mature ML platform serves **hundreds to thousands of models**: one
 per product, per tenant, per region, per experiment, per model
-*version* — and the naive "one dedicated deployment per model" is
+*version*, and the naive "one dedicated deployment per model" is
 unaffordable (idle [GPUs](/ai-ml/systems/gpu-accelerator-management)
 per model, hundreds of fleets). The design problem: **serve many
 models from a shared fleet**, routing each request to the model
@@ -13,7 +13,7 @@ that should answer it, while keeping the routing itself fast,
 versionable, and experiment-aware. This is the
 [load balancer](/system-design/fundamentals/load-balancing) and
 [API gateway](/system-design/fundamentals/api-gateway-and-service-mesh)
-problem with a *model-identity* dimension added — the request does
+problem with a *model-identity* dimension added, the request does
 not just go "somewhere," it goes to a *specific model version*.
 
 ## The routing dimensions
@@ -40,7 +40,7 @@ What the router decides, per request:
 The routing *key* (user id, tenant, region, a request attribute) is
 the design's first decision, and it must be *available before* the
 model runs (the router sees the request's context, not the model's
-output) — the same "route on what you know at the door" constraint
+output), the same "route on what you know at the door" constraint
 as every [gateway](/system-design/fundamentals/api-gateway-and-service-mesh).
 
 ## The serving strategies
@@ -57,21 +57,21 @@ graph LR
 ```
 
 - **All resident** (every model loaded on every replica: simple,
-  instant routing, and *impossible* at a thousand models — the VRAM
+  instant routing, and *impossible* at a thousand models, the VRAM
   does not hold them).
 - **Hot/cold split** (the standard: the *hot* models (high traffic)
   resident on every replica, the *long tail* (rarely-called models)
   loaded *on demand* from a [warm pool](/ai-ml/systems/model-caching-warm-pools),
-  evicted when idle — the [cache](/system-design/fundamentals/caching)
+  evicted when idle, the [cache](/system-design/fundamentals/caching)
   hierarchy, at the model layer, with the same
   eviction/load-cost trade). The honest dial: *how many models are
-  hot, how fast is a cold load, and how often does the tail get hit*
-  — the [capacity planning](/system-design/fundamentals/capacity-planning-and-estimation)
+  hot, how fast is a cold load, and how often does the tail get hit*,
+the [capacity planning](/system-design/fundamentals/capacity-planning-and-estimation)
   arithmetic per fleet.
 - **Sharded by model** (each model on a *subset* of replicas:
   the [consistent hashing](/system-design/fundamentals/consistent-hashing)
   placement, so a model lives on a few nodes and the router sends
-  its traffic there — higher per-model warmth, lower fleet
+  its traffic there: higher per-model warmth, lower fleet
   utilization, and the hot-model/hot-shard skew to manage).
 
 ## The versioning and rollout machinery
@@ -87,7 +87,7 @@ and the [retraining loop](/ai-ml/systems/concept-drift-retraining):
   experiment is valid).
 - **Canary and shadow** (route 5% to v8, shadow-score with v9:
   the [deployment](/system-design/fundamentals/reliability-engineering)
-  discipline, per model version — and the router is where the
+  discipline, per model version, and the router is where the
   percentages live).
 - **The version matrix** (the *deploy-unit explosion*: N models ×
   M live versions × K [compiled
@@ -95,7 +95,7 @@ and the [retraining loop](/ai-ml/systems/concept-drift-retraining):
   a combinatorial fleet requirement, which is *the* reason the
   [warm-pool and eviction machinery](/ai-ml/systems/model-caching-warm-pools)
   is mandatory, not optional, at scale).
-- **The retirement path** (old versions must be *removed* — the
+- **The retirement path** (old versions must be *removed*, the
   [strangler](/system-design/hld/large-scale-migration) discipline
   for models: the experiment concludes, the loser's version is
   deleted from the fleet, or the "version matrix" grows forever).
@@ -107,8 +107,8 @@ platforms) is, structurally: a **model registry** (the artifacts +
 metadata: [the caching page's](/ai-ml/systems/model-caching-warm-pools)
 subject) + a **router** (the model-identity-aware gateway above) +
 a **warm-pool loader** (load/unload per traffic) + the **GPU
-scheduler** ([the accelerator page](/ai-ml/systems/gpu-accelerator-management))
-— which is to say, a [distributed cache](/system-design/hld/distributed-cache)
+scheduler** ([the accelerator page](/ai-ml/systems/gpu-accelerator-management)),
+which is to say, a [distributed cache](/system-design/hld/distributed-cache)
 whose "entries" are models and whose "keys" are model versions. That
 reframing is the interview's punchline: **a multi-model serving tier
 is a cache of models**, and everything you know about caches

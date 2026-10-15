@@ -2,7 +2,9 @@
 title: "K-th Symbol in Grammar"
 difficulty: "Medium"
 variant: "Recursive Row Shrinkage"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/k-th-symbol-in-grammar/"
 ---
 
 ## Problem
@@ -116,3 +118,7 @@ grammar *defines* a 2^n structure, but a question about one location only
 needs the one path that produced it, and recursing on the smaller
 question (parent) instead of the smaller *structure* (row) is what selects
 the path.
+
+## Related C++ tools
+
+- [std::string](/cpp/string): substr, find, and the operations that copy.

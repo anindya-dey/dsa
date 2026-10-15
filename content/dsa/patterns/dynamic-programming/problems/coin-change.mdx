@@ -2,7 +2,9 @@
 title: "Coin Change"
 difficulty: "Medium"
 variant: "Unbounded Knapsack"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/coin-change/"
 ---
 
 ## Problem
@@ -107,3 +109,7 @@ problem. The same skeleton with a different recurrence solves "how many
 ways" instead of "fewest coins", and the 0/1 knapsack variant, where each
 item is used at most once, changes the loop order: iterate items in the
 outer loop and capacity *descending*, so each item is only counted once.
+
+## Related C++ tools
+
+- [Integer Overflow & Limits](/cpp/integer-overflow): where int runs out, and how this code stays inside it.

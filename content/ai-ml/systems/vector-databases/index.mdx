@@ -9,9 +9,9 @@ A vector database is a **store whose primary access pattern is
 indexed by [ANN](/ai-ml/systems/similarity-search-ann),
 queried by distance, with *metadata and filters riding along*
 (the real query is always "nearest **and** filtered"). The category
-exists as a category — Pinecone, Qdrant, Weaviate, Milvus, and the
+exists as a category, Pinecone, Qdrant, Weaviate, Milvus, and the
 vector types inside Postgres ([pgvector](https://github.com/pgvector/pgvector))
-and the search engines — because the access pattern is
+and the search engines, because the access pattern is
 sufficiently different from both SQL (no exact-match primary path)
 and [document search](/system-design/fundamentals/search-and-inverted-index)
 (no term postings: geometry instead of tokens) that bolting it onto
@@ -35,7 +35,7 @@ graph TD
 ```
 
 - **Vector + payload together** (the item's vector, its id, and its
-  *metadata* — category, price, text, availability: the
+  *metadata*: category, price, text, availability: the
   [dual-write consistency](/system-design/fundamentals/distributed-transactions)
   question, because the metadata lives in the source system *and*
   here): the store must answer "vector *with* its payload",
@@ -44,8 +44,8 @@ graph TD
 - **Filtered search** (the [filtered-query
   problem](/ai-ml/systems/similarity-search-ann): "nearest
   where category = X", the *actual* production query, and the store
-  must implement one of the real answers — index-aware filtering,
-  per-filter partitions — rather than the naive search-then-filter
+  must implement one of the real answers, index-aware filtering,
+  per-filter partitions, rather than the naive search-then-filter
   that starves results).
 - **Hybrid search** (the merge of the
   [inverted index](/system-design/fundamentals/search-and-inverted-index)
@@ -56,9 +56,9 @@ graph TD
 - **Updates and eras** (the [embedding
   versioning](/ai-ml/systems/data-versioning-lineage)
   problem: a new embedding model means re-embedding everything,
-  and the store must support *era migration* — the dual-index
-  during the re-embed, the cutover, the old era's retirement —
-  which is the [strangler](/system-design/hld/large-scale-migration)
+  and the store must support *era migration*, the dual-index
+  during the re-embed, the cutover, the old era's retirement,
+which is the [strangler](/system-design/hld/large-scale-migration)
   discipline, applied to a vector space).
 - **Persistence and rebuilds** (the index is
   [memory-heavy](/ai-ml/systems/similarity-search-ann): HNSW's
@@ -73,13 +73,13 @@ graph TD
 The [sharding](/system-design/fundamentals/consistent-hashing) of
 a vector store: **by entity id** (the metadata and vectors colocated,
 each shard a complete ANN index over its slice: the query fans out
-to all shards, merges top-k — the
+to all shards, merges top-k, the
 [scatter-gather](/system-design/hld/proximity-service) shape, at
 ~10x the fan-out of a geo query), with the honest costs: the
 *fan-out latency* (every query touches every shard: N shards = N
 round trips, merged: the
 [load balancer](/system-design/fundamentals/load-balancing)'s
-least-connections is wrong here — it's always "all"), and the
+least-connections is wrong here, it's always "all"), and the
 *skew* (a shard of hot entities vs cold: the
 [partition-by-key](/system-design/hld/distributed-message-queue)
 skew, which the entity-hash avoids at the price of

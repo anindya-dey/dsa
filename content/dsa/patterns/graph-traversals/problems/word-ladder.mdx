@@ -2,7 +2,9 @@
 title: "Word Ladder"
 difficulty: "Hard"
 variant: "BFS Shortest Path"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/word-ladder/"
 ---
 
 ## Problem
@@ -126,7 +128,7 @@ int ladderLength(const std::string& beginWord,
 
 Three design decisions carry it. **Level-granular BFS**
 (`levelSize` snapshot, same as
-[level order traversal](/dsa/patterns/binary-trees-and-bsts/problems/binary-tree-level-order-traversal)):
+[level order traversal](/dsa/patterns/binary-trees-and-bsts/binary-tree-level-order-traversal)):
 each level is exactly one transformation step, so the level count is the
 ladder length, which is why the answer comes out as `steps + 1` (edges
 plus one, since the length counts words). **Marking on enqueue**
@@ -161,3 +163,9 @@ canonical "implicit graph" problem, and the lesson is the
 (words, locks, chess positions, poured jugs) are graphs in disguise,
 the states are the vertices, the moves are the edges, and "minimum
 moves" is BFS, always.
+
+## Related C++ tools
+
+- [std::unordered_map / unordered_set](/cpp/unordered-map): average O(1) lookups, and find versus operator[].
+- [std::stack / std::queue](/cpp/stack-queue): the LIFO and FIFO adapters.
+- [std::string](/cpp/string): substr, find, and the operations that copy.

@@ -3,7 +3,7 @@ title: "Design a CTR / Ad Ranking System"
 summary: "Predicting click-through at bidding time: features, latency, and calibration."
 ---
 
-An ad-ranking (or any CTR — click-through-rate — prediction) system
+An ad-ranking (or any CTR, click-through-rate, prediction) system
 is the classic *real-time prediction* HLD, and it is a demanding one
 because the constraints are tight and *all at once*: predict a
 probability for *millions* of candidate ads, for *every* ad
@@ -28,15 +28,15 @@ it exercises the whole AI/ML serving track at once.
 
 - **Latency: ~10-50ms for the whole scoring** (the auction is in the
   page-render path: the [bidding budget](/system-design/fundamentals/latency-vs-throughput),
-  and the hardest constraint — the model and *all* its features must
+  and the hardest constraint, the model and *all* its features must
   fit in it).
 - **Throughput: millions of predictions/sec** (each opportunity ×
   each candidate ad: the [scale](/system-design/fundamentals/capacity-planning-and-estimation),
   and the reason the scoring is *simple and fast*, not large and
   accurate).
 - **Calibration** (the predicted probability must *mean* what it
-  says: a 0.05 must click ~5% of the time, because it is a *price*
-  — the [evaluation](/ai-ml/systems/evaluation-metrics)
+  says: a 0.05 must click ~5% of the time, because it is a *price*,
+the [evaluation](/ai-ml/systems/evaluation-metrics)
   requirement, and the reason CTR models are
   [calibrated](/ai-ml/systems/evaluation-metrics), not just
   ranked).
@@ -63,19 +63,19 @@ graph TD
 - **Candidate retrieval** (the [recommendation's two-stage
   shape](/system-design/hld/recommendation-system): from millions
   of ads, a *cheap* filter (targeting, budget, relevance) narrows
-  to the hundreds worth scoring — the *only* way the latency budget
+  to the hundreds worth scoring, the *only* way the latency budget
   works).
 - **Feature fetching** (the [feature store's](/ai-ml/systems/feature-stores)
   *online* tier: user features (history, demographics), ad features,
   context features, and *cross* features (this user's engagement
-  with this ad's category) — fetched in *milliseconds*, which is why
+  with this ad's category): fetched in *milliseconds*, which is why
   the features are *precomputed* (the [batch-vs-realtime](/ai-ml/systems/batch-vs-real-time-prediction)
   split: the expensive aggregates offline, the *fresh* session
   signals streaming).
 - **The model** (a *small, fast* model (logistic regression,
   GBDT, a small net): the latency budget forbids a large model, and
-  the field's wisdom is that *features beat model size* for CTR —
-  the [inference-optimization](/ai-ml/systems/inference-optimization)
+  the field's wisdom is that *features beat model size* for CTR,
+the [inference-optimization](/ai-ml/systems/inference-optimization)
   trade, decided *early* by the latency).
 - **The auction** (the [pricing](/system-design/hld/stock-exchange)
   layer: score × bid, second-price or otherwise, the *business*
@@ -91,17 +91,17 @@ graph TD
 - **The latency budget vs. the feature richness** (the *central
   tension*: more features = better predictions = more latency; the
   budget is ~tens of ms, so the design is a *relentless* exercise in
-  *which features fit* — the reason CTR features are *precomputed
+  *which features fit*, the reason CTR features are *precomputed
   aggregates*, not on-the-fly joins: the [feature
   store](/ai-ml/systems/feature-platform), mandatory).
 - **Calibration** (the model must produce *prices*, so it is
   *calibrated* (the [metric](/ai-ml/systems/evaluation-metrics):
   reliability diagrams, isotonic/Platt correction), and *monitored*
-  for calibration drift — a miscalibrated CTR model is a *money
+  for calibration drift, a miscalibrated CTR model is a *money
   bug* (the auction prices wrong), not just a ranking bug).
 - **The feedback loop and the exploration problem** (only the ads
   the system *served* have outcomes: the training data is
-  *biased* by the previous policy — the
+  *biased* by the previous policy, the
   [exploration](/ai-ml/systems/supervised-unsupervised-rl)
   discipline (log propensities, explore deliberately) is *required*,
   not optional, and the [A/B platform](/ai-ml/systems/ab-testing-experimentation)
@@ -110,7 +110,7 @@ graph TD
   something: the [streaming feature
   tier](/ai-ml/systems/feature-platform) (the [stream-vs-batch](/system-design/fundamentals/stream-vs-batch-processing)
   compute), and the [online store's](/ai-ml/systems/feature-stores)
-  update latency — a stale session feature is a *worse* prediction,
+  update latency, a stale session feature is a *worse* prediction,
   and the freshness *contract* is per-feature).
 - **Scale of the training data** (billions of impressions × features:
   the [data platform](/system-design/fundamentals/olap-vs-oltp) is

@@ -3,9 +3,9 @@ title: "Multi-Tenant ML Platforms"
 summary: "Sharing training and serving infrastructure across teams and customers, safely."
 ---
 
-A multi-tenant ML platform serves *many consumers* — internal teams
+A multi-tenant ML platform serves *many consumers*, internal teams
 (each with its own models and data), or external customers (each
-with its own fine-tuned models and private data) — from *shared*
+with its own fine-tuned models and private data), from *shared*
 infrastructure: shared [GPUs](/ai-ml/systems/gpu-accelerator-management),
 shared [serving fleets](/ai-ml/systems/multi-model-serving-routing),
 shared [pipelines](/ai-ml/systems/mlops-cicd). The reason it
@@ -27,7 +27,7 @@ Each resource the tenants share, and its isolation mechanism:
   training yields to the latency-sensitive serving), and the
   *sharing* trade (MIG/MPS partitioning: packing vs. isolation, the
   [accelerator page's](/ai-ml/systems/gpu-accelerator-management)
-  dial) — the fairness problem (one team's run must not starve
+  dial), the fairness problem (one team's run must not starve
   another's serving) is the [noisy
   neighbor](/system-design/fundamentals/multi-tenancy-and-data-residency),
   at GPU scale).
@@ -36,19 +36,19 @@ Each resource the tenants share, and its isolation mechanism:
   (each tenant's requests route to *their* models) and the
   [warm-pool](/ai-ml/systems/model-caching-warm-pools)
   *residency* policy (a tenant's hot model is warm; a tenant's cold
-  model is not, and *their* traffic pattern decides) — plus the
+  model is not, and *their* traffic pattern decides), plus the
   *fairness* of the fleet's capacity (one tenant's viral model must
   not evict another's production model from the warm pool: the
   [cache-isolation](/system-design/fundamentals/multi-tenancy-and-data-residency)
   problem).
 - **Data** (the *sensitive* dimension: each tenant's training data,
-  features, and models are *private* — isolation via the
+  features, and models are *private*, isolation via the
   [storage/authz](/system-design/fundamentals/security-fundamentals)
   discipline (per-tenant buckets, row-level security, scoped
   credentials) and the *training* isolation (a tenant's job reads
   only *their* data: the [least-privilege](/system-design/fundamentals/security-fundamentals)
-  rule, enforced at the pipeline), and — for external customers —
-  the [residency](/system-design/fundamentals/multi-tenancy-and-data-residency)
+  rule, enforced at the pipeline), and, for external customers,
+the [residency](/system-design/fundamentals/multi-tenancy-and-data-residency)
   constraint (their data may not leave their region).
 - **Pipelines and registries** (the shared [MLOps](/ai-ml/systems/mlops-cicd)
   machinery: each tenant's runs, models, and lineage are *scoped*
@@ -57,8 +57,8 @@ Each resource the tenants share, and its isolation mechanism:
   the platform a platform (build once, every tenant uses it).
 - **Cost** (the platform's bill, attributed *per tenant*: the
   [cost-optimization](/ai-ml/systems/cost-optimization-ml)
-  discipline, with the *chargeback/showback* question — internal
-  teams pay their share, external customers are billed — which
+  discipline, with the *chargeback/showback* question, internal
+  teams pay their share, external customers are billed, which
   *drives* the utilization behavior (a team that pays for idle GPUs
   stops wasting them): the [unit-economics](/system-design/fundamentals/capacity-planning-and-estimation)
   metric, per tenant).
@@ -71,7 +71,7 @@ approval workflows: the [metadata
 plane](/system-design/hld/object-storage-system)) over a **shared
 resource plane** (the GPU scheduler, the serving fleet, the storage
 and pipelines), with the **isolation** enforced at the seams
-(authz on data, routing on models, quotas on compute) — which is
+(authz on data, routing on models, quotas on compute), which is
 the [multi-tenancy](/system-design/fundamentals/multi-tenancy-and-data-residency)
 architecture, at ML scale, with the GPU as the shared scarce
 resource that makes it *interesting*.
@@ -88,13 +88,13 @@ spectrum, applied here:
 - **Shared control plane, isolated data plane** (the common
   production shape: one platform, per-tenant serving/model/data
   isolation: the efficiency of shared ops with the safety of
-  isolated compute) — and the *external-customer* answer, where
+  isolated compute), and the *external-customer* answer, where
   isolation is *contractual* (a customer's model must not share a
   GPU with a competitor's, for trust reasons even when technically
   safe).
 - **Dedicated tiers** (the enterprise SKU: a customer pays for
   isolation: the [multi-tenancy page's](/system-design/fundamentals/multi-tenancy-and-data-residency)
-  dedicated model, and the ML version — dedicated GPUs, dedicated
+  dedicated model, and the ML version: dedicated GPUs, dedicated
   model residency, dedicated pipelines).
 
 ## Related concepts

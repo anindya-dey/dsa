@@ -30,7 +30,7 @@ export async function generateMetadata({
 
   return {
     title: page.frontmatter.title,
-    description: `${page.frontmatter.title} — ${page.meta.title} pattern, solved from brute-force to optimal in C++.`,
+    description: `${page.frontmatter.title}: ${page.meta.title} pattern, solved from brute-force to optimal in C++.`,
   };
 }
 

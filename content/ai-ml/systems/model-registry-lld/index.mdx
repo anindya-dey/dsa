@@ -7,7 +7,7 @@ The [model registry concept](/ai-ml/systems/model-registry)
 covers the system; this is the code-level design: the classes for
 models, versions, stages, and lineage, and the *invariants* the
 code enforces (immutable versions, one production version, valid
-stage transitions). The design's value is the *guarantees* — the
+stage transitions). The design's value is the *guarantees*, the
 registry is the *system of record*, so its rules must be
 *structural*, not conventional.
 
@@ -50,7 +50,7 @@ classDiagram
 ```
 
 The two invariants the code enforces: **versions are immutable**
-(a registered `ModelVersion` is never mutated — a fix is a *new*
+(a registered `ModelVersion` is never mutated, a fix is a *new*
 version), and **a model has exactly one `production` version** (the
 promotion *moves* the pointer, atomically, and the previous
 production version is retained for rollback).
@@ -143,12 +143,12 @@ private:
 The design decisions:
 
 - **The version counter is per-model and monotonic** (never reused:
-  a *deleted* version's number is *retired*, not recycled — the
+  a *deleted* version's number is *retired*, not recycled, the
   [immutability](/system-design/fundamentals/event-sourcing-and-cqrs)
   discipline, so "model v7" means the same artifact forever).
 - **`promote` demotes the previous production *in the same critical
-  section*** (the *one-production* invariant, enforced atomically —
-  the [concurrency](/system-design/fundamentals/concurrency-and-parallelism)
+  section*** (the *one-production* invariant, enforced atomically,
+the [concurrency](/system-design/fundamentals/concurrency-and-parallelism)
   discipline: no window where two versions are production, and no
   window where *none* is).
 - **The artifact is a *reference*, not the bytes** (the registry
@@ -170,7 +170,7 @@ the [governance](/ai-ml/systems/model-governance-compliance)
 gates the `promote` (the stage transition *requires* the approval
 record); and the [lineage](/ai-ml/systems/data-versioning-lineage)
 is what makes the [reproducibility](/ai-ml/systems/reproducibility-metadata)
-and migration queries answerable — the registry is the *hub* the
+and migration queries answerable, the registry is the *hub* the
 whole AI/ML track's other systems read and write.
 
 ## Related concepts

@@ -2,7 +2,9 @@
 title: "Contains Duplicate"
 difficulty: "Easy"
 variant: "Complexity Tradeoff"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/contains-duplicate/"
 ---
 
 ## Problem
@@ -110,7 +112,7 @@ the hash is ~10^5 (fastest), which is the actual arithmetic behind
 
 The *interesting* interview variant is the constrained one: "what if
 memory is tight?" (sort: O(n log n) with no extra memory, or the
-[bounded-heap](/dsa/patterns/heaps-and-priority-queues/problems/kth-largest-element-in-an-array)
+[bounded-heap](/dsa/patterns/heaps-and-priority-queues/kth-largest-element-in-an-array)
 style streaming trick if duplicates must merely be *probabilistically*
 detected). "What if the data is mostly-duplicated and early?" (the
 short-circuit favors whichever structure exits fastest, and pairwise
@@ -130,3 +132,8 @@ This is the smallest problem that makes the complexity *axes*
 why it opens the [asymptotic analysis](/dsa/patterns/asymptotic-analysis)
 pattern's problem set: the lesson is not "use a hash set", it is "name
 what each solution pays, and choose on purpose".
+
+## Related C++ tools
+
+- [std::unordered_map / unordered_set](/cpp/unordered-map): average O(1) lookups, and find versus operator[].
+- [Sorting & nth_element](/cpp/algorithms): sort, nth_element, and what each guarantees.

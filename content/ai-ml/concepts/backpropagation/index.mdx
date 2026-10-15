@@ -5,7 +5,7 @@ summary: "The chain rule, applied efficiently: how networks assign credit to wei
 
 A neural network can have millions of weights, and training must
 answer one question for each of them: *if I nudge this weight, how
-much does the loss change?* — the
+much does the loss change?*, the
 [gradient](/ai-ml/concepts/gradient-descent). Computing that for
 every weight, efficiently, is the job of **backpropagation**, and it
 is the algorithm that made training deep networks feasible. The idea
@@ -20,7 +20,7 @@ A network is a chain of operations: inputs → layer 1 → layer 2 → ...
 → output → loss. The loss depends on every weight through this chain,
 and a weight early in the network affects the loss through *everything
 after it*. The naive way to compute each weight's gradient (perturb
-it, re-run, measure) would cost *one forward pass per weight* —
+it, re-run, measure) would cost *one forward pass per weight*:
 millions of passes per training step, impossibly slow. Backpropagation
 does it in **one backward pass**.
 
@@ -48,24 +48,24 @@ graph LR
 The efficiency comes from **reuse**: the backward pass computes each
 layer's gradient *once* and passes it to the previous layer, so the
 whole gradient computation is roughly as expensive as the forward
-pass — one extra pass per training step, regardless of how many
+pass, one extra pass per training step, regardless of how many
 weights there are. That is the algorithmic breakthrough.
 
 ## The practical consequences
 
 - **Gradients can vanish or explode** (through many layers, the
-  chained multiplications can shrink toward zero or blow up — the
+  chained multiplications can shrink toward zero or blow up, the
   [activation-function](/ai-ml/concepts/activation-functions) and
   [normalization](/ai-ml/concepts/normalization-and-initialization)
   choices exist largely to keep gradients healthy, and
-  [residual connections](https://en.wikipedia.org/wiki/Residual_neural_network)
+  residual connections
   give gradients a shortcut).
 - **Memory is the cost** (the forward pass caches intermediates so the
   backward pass can use them: training a deep model uses *much* more
-  memory than inference, because inference needs no backward pass —
-  a real systems consequence, and why training GPUs are memory-hungry).
+  memory than inference, because inference needs no backward pass,
+a real systems consequence, and why training GPUs are memory-hungry).
 - **It requires differentiable operations** (every layer must have a
-  defined gradient, which shapes architecture design — the reason
+  defined gradient, which shapes architecture design, the reason
   "which operations can I use" is really "which operations have a
   gradient").
 

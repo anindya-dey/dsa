@@ -2,7 +2,9 @@
 title: "Subarray Sum Equals K"
 difficulty: "Medium"
 variant: "Prefix Sum + Hash Map"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/subarray-sum-equals-k/"
 ---
 
 ## Problem
@@ -101,3 +103,8 @@ question into a question about two points, and the
 [hash map](/dsa/patterns/hash-based-structures) answers "how many earlier
 points had this value" in O(1). When a problem involves both ranges and
 counting, look for exactly this combination.
+
+## Related C++ tools
+
+- [std::unordered_map / unordered_set](/cpp/unordered-map): average O(1) lookups, and find versus operator[].
+- [Integer Overflow & Limits](/cpp/integer-overflow): where int runs out, and how this code stays inside it.

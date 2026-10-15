@@ -27,7 +27,7 @@ export default function AiMlRoadmapPage() {
       <PageHeader
         eyebrow="Concepts → systems"
         title="AI/ML"
-        description="How the models actually work (concepts, not mathematics), then the engineering that ships them — data, serving, evaluation, MLOps, and the GenAI-era machinery."
+        description="How the models actually work (concepts, not mathematics), then the engineering that ships them: data, serving, evaluation, MLOps, and the GenAI-era machinery."
       />
 
       <div className="space-y-10 lg:space-y-14">

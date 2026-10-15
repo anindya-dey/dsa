@@ -17,35 +17,35 @@ verify what you build and ship).
 ## Zero trust: never trust, always verify
 
 The premise: **the network is not a security boundary.** Being "inside
-the VPC" grants *nothing*; every request — from a user, from a
-service, from "inside" — must be authenticated and authorized on its
+the VPC" grants *nothing*; every request, from a user, from a
+service, from "inside", must be authenticated and authorized on its
 own merits. The principles:
 
 - **Verify explicitly** (authenticate and authorize *every* request
   from *every* source: the [auth](/system-design/fundamentals/auth-basics)
-  discipline, with no "trusted network" exemptions — a service
+  discipline, with no "trusted network" exemptions, a service
   authenticates as *itself* (the workload identity), and a request
   carries its proof).
 - **Least privilege** (each service, each identity, gets the minimum
-  access — the [security-fundamentals](/system-design/fundamentals/security-fundamentals)
+  access, the [security-fundamentals](/system-design/fundamentals/security-fundamentals)
   principle, applied *service to service*, not just at the edge:
   the reason [service meshes](/system-design/fundamentals/api-gateway-and-service-mesh)
-  and [mTLS](/system-design/fundamentals/networking-basics) matter —
-  every internal hop is authenticated, so a compromised service
+  and [mTLS](/system-design/fundamentals/networking-basics) matter,
+every internal hop is authenticated, so a compromised service
   cannot freely call its neighbors).
 - **Assume breach** (design as if the attacker is *already inside*:
   segment the network so lateral movement is hard, encrypt internal
-  traffic, and log everything — the
+  traffic, and log everything, the
   [observability](/system-design/fundamentals/observability) that
   detects the *unexpected* call).
 
 The systems consequences: **mTLS everywhere** (not just at the edge:
 the internal mesh's default), **service identity** (short-lived
-credentials, workload identities — the
+credentials, workload identities, the
 [auth](/system-design/fundamentals/auth-basics) token discipline, for
 machines), and **micro-segmentation** (services can reach only what
 they must, which is a *policy* the [mesh](/system-design/fundamentals/api-gateway-and-service-mesh)
-enforces — the "least privilege" of the network, made real).
+enforces, the "least privilege" of the network, made real).
 
 ## Supply chain: your dependencies are your attack surface
 
@@ -54,7 +54,7 @@ people's code, and if you do not know *what* you shipped, you shipped
 whatever the attacker wanted.** The attack vectors: a **compromised
 dependency** (a malicious version of a library you install), a
 **typosquat** (a package named almost like the real one), a
-**compromised build** (the CI pipeline itself attacked — the
+**compromised build** (the CI pipeline itself attacked, the
 SolarWinds shape), and a **vulnerable transitive dependency** (a flaw
 in something your dependency depends on, three levels down).
 
@@ -62,35 +62,35 @@ The defenses, and the artifacts:
 
 - **Software Bill of Materials (SBOM)** (a machine-readable *inventory*
   of every component in your artifact: what you shipped, and
-  therefore what you must patch when a CVE lands — the
+  therefore what you must patch when a CVE lands, the
   [lineage](/ai-ml/systems/data-versioning-lineage) discipline,
   for software supply chains).
 - **Dependency scanning and pinning** (scan dependencies for known
   vulnerabilities continuously, and *pin* versions (lockfiles) so a
   build is reproducible and a silent upgrade cannot inject a
-  compromised version — the [reproducibility](/ai-ml/systems/reproducibility-metadata)
+  compromised version, the [reproducibility](/ai-ml/systems/reproducibility-metadata)
   discipline, security-shaped).
 - **Signed artifacts and provenance** (sign the build output, and
   record *how* it was built (the [SLSA](https://slsa.dev/) framework:
-  a verifiable chain from source to artifact) — so a tampered build
+  a verifiable chain from source to artifact), so a tampered build
   is *detectable*, and "where did this binary come from" has a
   cryptographic answer).
 - **Least-privilege builds** (the CI/CD pipeline has minimal
   credentials: a compromised build step cannot exfiltrate the
-  production keys — the [secrets](/system-design/fundamentals/security-fundamentals)
+  production keys, the [secrets](/system-design/fundamentals/security-fundamentals)
   discipline, and the containment that limits a build compromise).
 
 ## Why it is a systems topic
 
 Both are *architectural*, not product features: zero trust changes
 *how services authenticate and communicate* (every internal call is
-authenticated — a design decision, not a setting), and supply-chain
+authenticated, a design decision, not a setting), and supply-chain
 security changes *how you build and ship* (SBOMs, signing, and
 provenance are pipeline *architecture*). They also both follow the
 [defense-in-depth](/system-design/fundamentals/security-fundamentals)
 principle: no single control is trusted, so the network is segmented
 *and* every request is authenticated *and* the artifact is signed
-*and* the build is least-privilege — so one broken layer is an
+*and* the build is least-privilege, so one broken layer is an
 incident, not a breach. The honest framing for a design review:
 "what is the blast radius if *this* component is compromised?" is the
 question both practices answer, and it belongs in the design, not

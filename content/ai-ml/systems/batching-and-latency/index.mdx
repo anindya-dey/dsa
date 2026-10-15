@@ -6,7 +6,7 @@ summary: "Dynamic batching, the throughput/latency trade, and tail latency under
 The [latency-vs-throughput](/system-design/fundamentals/latency-vs-throughput)
 trade has a *specific, sharp* form in model serving: a **forward
 pass is expensive and (for many models) *parallelizable across
-requests*** — a batch of 32 requests can be scored in barely more
+requests***, a batch of 32 requests can be scored in barely more
 time than one, because the [GPU](/ai-ml/systems/gpu-accelerator-management)
 is built for wide parallel work. So the serving tier's central
 optimization is **batching**: collect several requests, run them
@@ -27,8 +27,8 @@ The two regimes, and the dial between them:
   and the worst latency (every request waits for a full batch).
 - **Dynamic batching** (the production answer): the server holds
   requests in a short queue and forms a batch as soon as *either*
-  the batch is full *or* a **timeout** (a few milliseconds) fires —
-  so a busy server batches naturally (requests arrive fast: the
+  the batch is full *or* a **timeout** (a few milliseconds) fires,
+so a busy server batches naturally (requests arrive fast: the
   batch fills) and a quiet server serves immediately (the timeout
   fires with a small batch). This is the standard mechanism
   (Triton, TorchServe, vLLM all have it), and the two parameters
@@ -57,7 +57,7 @@ void batchLoop() {
 
 The arithmetic that justifies it: if a forward pass costs `c` (fixed)
 plus `k` per example (small), then batch-size-B latency is `c + kB`
-and throughput is `B / (c + kB)` — which rises steeply toward
+and throughput is `B / (c + kB)`, which rises steeply toward
 `1/k` as B grows (the fixed cost amortized), so the *throughput*
 gain from batching is the amortization of `c`, and the *latency*
 cost is the wait for the batch.
@@ -77,7 +77,7 @@ the design's real content:
 - **Bound the queue** (a request that cannot be served within the
   latency budget is *shed*, not queued: the
   [backpressure](/system-design/fundamentals/backpressure-and-flow-control)
-  discipline, at the serving tier — the honest admission that a
+  discipline, at the serving tier, the honest admission that a
   heavily loaded batching server *must* refuse, or its p99 is
   unbounded).
 - **Separate the latency classes** (a real-time request and a
@@ -88,7 +88,7 @@ the design's real content:
 - **Measure the queue, not just the model** (the
   [observability](/system-design/fundamentals/observability) signal
   that matters: `model_latency` is stable while `request_latency`
-  climbs, and monitoring the former hides the outage — a classic
+  climbs, and monitoring the former hides the outage, a classic
   serving dashboard bug).
 
 ## The LLM case: continuous batching
@@ -102,7 +102,7 @@ pass, for each request's whole sequence), a naive batch waits for
 the *longest* sequence (short requests idle in the batch, wasting
 the GPU). Continuous batching re-forms the batch *every iteration*:
 a finished request leaves, a new one joins, and the GPU stays
-saturated with a *variable* set of sequences — the technique behind
+saturated with a *variable* set of sequences, the technique behind
 vLLM's throughput, and the reason LLM serving is its own framework
 family ([paged attention](https://en.wikipedia.org/wiki/Attention_(machine_learning))
 being its memory companion: the [KV cache](/ai-ml/systems/model-serving-architectures)

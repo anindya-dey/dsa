@@ -23,15 +23,15 @@ p < q;                                // LEXICOGRAPHIC: first, then second
 
 The comparison rule, stated once because it powers half the
 algorithms on this site: **`a < b` compares `a.first < b.first`,
-ties broken by `a.second < b.second`** — pairs sort the way a
+ties broken by `a.second < b.second`**, pairs sort the way a
 [dictionary sorts two-word phrases](/cpp/string), and the
 consequences:
 
 - A [vector of pairs](/cpp/vector) + `std::sort` is a "sort by X,
   then Y" for free (the compound-comparator idiom).
 - A `priority_queue<pair<int,int>>` is a max-heap by first, ties
-  by second — and `pair<int, pair<int,int>>` extends it (the
-  [Dijkstra](/dsa/patterns/graph-specializations/problems/network-delay-time)
+  by second, and `pair<int, pair<int,int>>` extends it (the
+  [Dijkstra](/dsa/patterns/graph-specializations/network-delay-time)
   idiom: `(distance, node)` pops nearest-first with a *min-heap
   comparator*, ties broken by node id, all from one type's
   comparison).
@@ -74,7 +74,7 @@ std::sort(counts.begin(), counts.end());  // full container interface
 `std::array` is the answer where this site's code writes
 `std::array<int, 26>` for letter counts and `std::array<TrieNode*, 26>`
 for [trie children](/dsa/patterns/trie-prefix-tree): a
-compile-time-sized, contiguous, zero-initializable aggregate — the
+compile-time-sized, contiguous, zero-initializable aggregate, the
 C array's semantics with a real type's interface. The
 `{}`-initializer ("all zeros") is the idiom that C arrays lacked.
 
@@ -85,6 +85,6 @@ carry their values and *define* their order, which is the
 difference between a container's elements and a bag of fields.
 When a solution on this site sorts `pair`s, pops `pair`s, or maps
 `touple`s, the type's lexicographic comparison is doing quiet
-algorithmic work — the same work a hand-written comparator does
+algorithmic work, the same work a hand-written comparator does
 when the natural order is not enough, which is when
 [the lambda entry](/cpp/function-lambdas) takes over.

@@ -4,7 +4,7 @@ summary: "Finding and outlining objects, from bounding boxes to per-pixel masks.
 ---
 
 [Image classification](/ai-ml/concepts/image-classification) says
-*what* is in an image; **object detection** says *what and where* —
+*what* is in an image; **object detection** says *what and where*:
 it finds every object and draws a bounding box around it.
 **Segmentation** goes further, outlining objects *per pixel* (a mask
 for each object, or a label for every pixel). Together they are the
@@ -18,17 +18,17 @@ harder.
 
 The output is a set of boxes, each with a class and a confidence.
 The core challenge: an image has a *variable* number of objects, at
-*unknown* positions and sizes — so the model cannot just output a
+*unknown* positions and sizes, so the model cannot just output a
 fixed-size answer. The standard approach: generate many **candidate
 regions** (or a dense grid of predictions) and, for each, predict
 "is there an object here, what is it, and how should the box be
-adjusted?" — then **suppress overlapping duplicates** (a step called
+adjusted?", then **suppress overlapping duplicates** (a step called
 non-maximum suppression: keep the best box per object, discard its
 near-duplicates).
 
 The evolution: **two-stage detectors** (propose regions, then classify
-each — accurate, slower; the R-CNN family) → **one-stage detectors**
-(predict boxes and classes directly from a grid, in one pass — faster,
+each, accurate, slower; the R-CNN family) → **one-stage detectors**
+(predict boxes and classes directly from a grid, in one pass, faster,
 the YOLO/SSD family, and the modern default for real-time) → **anchor-free
 and transformer-based detectors** (DETR: treat detection as a
 sequence-prediction problem with
@@ -41,26 +41,26 @@ live video where latency is critical.
 Segmentation assigns a label to *every pixel*, which gives precise
 outlines rather than boxes. Variants:
 
-- **Semantic segmentation** (every pixel gets a *class* — all cars are
+- **Semantic segmentation** (every pixel gets a *class*, all cars are
   one label, so two adjacent cars merge).
-- **Instance segmentation** (each *object* gets its own mask — the two
+- **Instance segmentation** (each *object* gets its own mask, the two
   cars stay distinct).
 - **Panoptic segmentation** (both: all objects, all classes).
 
 The classic architecture is the **encoder-decoder** (downsample to
 capture context, then upsample back to full resolution to produce the
-pixel-level mask — the U-Net shape, which is also dominant in medical
+pixel-level mask, the U-Net shape, which is also dominant in medical
 imaging), and transformers (ViT-based) now compete there too.
 
 ## Why these are harder (and what they share)
 
-Both tasks require *spatial reasoning* — not just "what is this
-image?" but "what is where?" — which means the model needs to preserve
+Both tasks require *spatial reasoning*, not just "what is this
+image?" but "what is where?", which means the model needs to preserve
 positional information that a plain classifier discards. They also
 face the same real-world issues: **class imbalance** (most of an image
 is background), **small objects** (hard to detect), **crowded scenes**
 (overlapping objects), and **the annotation cost** (drawing boxes and
-masks is expensive — a major practical constraint, and the reason
+masks is expensive, a major practical constraint, and the reason
 [labeling](/ai-ml/systems/data-labeling-annotation) pipelines matter).
 
 ## The multimodal turn

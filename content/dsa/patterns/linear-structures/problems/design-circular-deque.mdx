@@ -2,7 +2,9 @@
 title: "Design Circular Deque"
 difficulty: "Medium"
 variant: "Circular Buffer"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/design-circular-deque/"
 ---
 
 ## Problem
@@ -153,7 +155,7 @@ The wrap arithmetic `(front_ - 1 + capacity_) % capacity_` is the only
 fiddly line, and the `+ capacity_` inside is load-bearing: C++ modulo of
 a negative number is negative, so stepping back from `front_ == 0`
 naively would index at -1. This is the same "make the index safe for
-negatives" move as the [hash map](/dsa/patterns/design-data-structures/problems/design-hashmap)
+negatives" move as the [hash map](/dsa/patterns/design-data-structures/design-hashmap)
 bucket function.
 
 ## Complexity
@@ -168,7 +170,11 @@ ring is the array price-list answer from
 [linear structures](/dsa/patterns/linear-structures) with the growth
 clause removed. This structure is what every bounded buffer actually is:
 audio buffers, keyboard event queues, sliding windows over streams (the
-[recent calls](/dsa/patterns/stacks-and-queues/problems/number-of-recent-calls)
+[recent calls](/dsa/patterns/stacks-and-queues/number-of-recent-calls)
 aging queue is this ring with one more eviction rule), and the internal
 storage of `std::deque`, which is a ring of fixed-size blocks for
 exactly this reason.
+
+## Related C++ tools
+
+- [std::vector](/cpp/vector): the dynamic array underneath almost every solution.

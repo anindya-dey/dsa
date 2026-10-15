@@ -1,0 +1,92 @@
+---
+title: "Custom Comparators"
+summary: "Strict weak ordering: the contract every sort, set, map, and heap comparator must keep."
+---
+
+Every ordered tool in the standard library takes a comparator: `sort`,
+`stable_sort`, `nth_element`, `set`, `map`, `priority_queue`,
+`lower_bound`. They all assume the same contract, called a *strict weak
+ordering*. Keep it and they work. Break it and the behavior is undefined.
+That can mean wrong answers, an infinite loop, or a crash that only shows
+up on some inputs.
+
+## The contract
+
+A comparator `comp(a, b)` answers one question: must `a` come strictly
+before `b`? For that answer to be usable, it must be:
+
+- **Irreflexive.** `comp(a, a)` is false. Nothing comes before itself.
+- **Transitive.** If `comp(a, b)` and `comp(b, c)`, then `comp(a, c)`.
+- **Consistent about ties.** If neither `a` nor `b` comes first, they are
+  equivalent, and equivalence is also transitive.
+
+The everyday violation is writing `<=` instead of `<`. Then `comp(a, a)`
+is true, irreflexivity fails, and `std::sort` is allowed to read past the
+end of your array.
+
+```cpp
+std::sort(v.begin(), v.end(),
+          [](int a, int b) { return a <= b; });   // WRONG: undefined behavior
+std::sort(v.begin(), v.end(),
+          [](int a, int b) { return a < b; });    // right
+```
+
+## Common shapes
+
+Sort by one field, descending:
+
+```cpp
+std::sort(people.begin(), people.end(),
+          [](const Person& a, const Person& b) {
+              return a.age > b.age;               // > is fine: still strict
+          });
+```
+
+Sort by several fields. Compare tuples, which compare field by field for
+you:
+
+```cpp
+std::sort(rows.begin(), rows.end(), [](const Row& a, const Row& b) {
+    return std::tie(a.score, a.name) > std::tie(b.score, b.name);
+});
+```
+
+`std::tie` builds a tuple of references, and tuples compare
+lexicographically. That is far less error-prone than a chain of `if`s.
+
+Order a container by a key:
+
+```cpp
+auto byEnd = [](const Interval& a, const Interval& b) {
+    return a.end < b.end;
+};
+std::set<Interval, decltype(byEnd)> active(byEnd);
+```
+
+In a `set` or `map`, two elements that are *equivalent* under the
+comparator count as the same key. If you order intervals only by `end`,
+two different intervals with the same end collapse into one entry. Add a
+tie-breaker when distinct elements can compare equal.
+
+## The heap inversion
+
+`std::priority_queue` puts the *largest* element on top, as judged by its
+comparator. So `std::less` gives a max-heap, and `std::greater` gives a
+min-heap. Read the comparator as "which element sinks", not "which
+rises".
+
+```cpp
+std::priority_queue<int, std::vector<int>, std::greater<int>> minHeap;
+```
+
+## Checking a comparator you invented
+
+When the order is clever, as in
+[Largest Number](/dsa/patterns/sorting-and-selection/largest-number)'s
+`a + b > b + a`, ask the two questions before trusting it. Is it false
+for equal inputs? Is it transitive? If you cannot argue transitivity, the
+sort may still pass your tests and fail on others.
+
+Debug builds help here. Compiling with `-D_GLIBCXX_DEBUG` on GCC, or with
+libc++ hardening enabled, turns many comparator violations into immediate
+assertion failures instead of silent corruption.

@@ -5,9 +5,9 @@ summary: "Construction, comparison, substr, and the operations that copy."
 
 `std::string` is a `vector<char>` with attitude: contiguous, growable,
 and O(1) length (it stores its size, unlike C strings). Almost
-everything from [the vector entry](/cpp/vector) transfers — the
+everything from [the vector entry](/cpp/vector) transfers, the
 growth, the
-[invalidation rules](/cpp/invalidation), the amortized argument —
+[invalidation rules](/cpp/invalidation), the amortized argument,
 with a string-specific layer on top: small-string optimization
 (SSO), and a copy-semantics trap that C++ interviewers love.
 
@@ -59,7 +59,7 @@ the reason string keys in `std::map` behave like a dictionary.
 - **`c_str()`'s lifetime**: the pointer is valid until the *next
   modification* of the string, which is the classic dangling
   `const char*` when the string is a temporary
-  (`const char* p = (s + t).c_str();` — the temporary dies at the
+  (`const char* p = (s + t).c_str();`, the temporary dies at the
   semicolon).
 
 ## The parsing/formatting toolkit

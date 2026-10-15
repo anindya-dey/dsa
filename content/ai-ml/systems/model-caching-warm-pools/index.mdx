@@ -5,8 +5,8 @@ summary: "Keeping the right model loaded where it is needed, so no request pays 
 
 "Model caching" is the unglamorous infrastructure that makes
 everything else on the serving pages work: **keeping the model
-resident** — in RAM, in [VRAM](/ai-ml/systems/gpu-accelerator-management),
-on the right node — so that serving is pure execution and no
+resident**, in RAM, in [VRAM](/ai-ml/systems/gpu-accelerator-management),
+on the right node, so that serving is pure execution and no
 request pays the [cold start](/ai-ml/systems/serverless-inference).
 It is, structurally, a [cache](/system-design/fundamentals/caching)
 whose entries are *models* and whose miss cost is *seconds-to-minutes*
@@ -40,7 +40,7 @@ graph TD
   *hot everywhere* (the high-traffic models, resident on every
   replica), *warm somewhere* (the mid-tail, resident on a subset
   with [consistent-hash](/system-design/fundamentals/consistent-hashing)
-  routing), *cold* (load on demand) — the
+  routing), *cold* (load on demand), the
   [multi-model routing's](/ai-ml/systems/multi-model-serving-routing)
   hot/cold split, as a policy).
 - **The eviction** (the [LRU/LFU](/system-design/fundamentals/caching)
@@ -54,7 +54,7 @@ graph TD
   inference runs (the runtime init, the GPU warm-up: the
   [cold start's](/ai-ml/systems/serverless-inference) last
   stage), so the pool loads *and warms* before marking the entry
-  available — the "warm pool" name, and the reason a naive
+  available, the "warm pool" name, and the reason a naive
   "load on miss" still pays a stall).
 
 ## The warm pool, precisely
@@ -66,14 +66,14 @@ Its parameters, each a
 decision:
 
 - **Size** (how many warm: the traffic floor, the burst headroom, and
-  the cost — the [warm-floor
+  the cost, the [warm-floor
   trade](/ai-ml/systems/serverless-inference), sized by the
   [autoscaling](/ai-ml/systems/autoscaling-inference) signal).
 - **Composition** (which models are warm: the traffic distribution's
-  head — the top-K models cover the bulk, and the tail is cold).
+  head, the top-K models cover the bulk, and the tail is cold).
 - **Replenishment** (how fast a cold model becomes warm under a
   spike: the load+download+init latency, which is the
-  *responsiveness* of the pool — the reason the
+  *responsiveness* of the pool, the reason the
   [node-local artifact cache](/system-design/fundamentals/caching)
   and the [snapshot/restore](/ai-ml/systems/serverless-inference)
   techniques matter).
@@ -84,7 +84,7 @@ The [cache-stampede](/system-design/fundamentals/caching) problem
 appears here with an unusually expensive miss: a popular model
 *evicted* (or a fleet restart) and a burst of requests all miss
 simultaneously, all triggering *loads* of the same multi-GB
-artifact — N concurrent downloads, N concurrent loads, the node's
+artifact: N concurrent downloads, N concurrent loads, the node's
 memory thrashing, and an outage made of *the fix attempting itself*.
 The mitigations are the [caching page's](/system-design/fundamentals/caching),
 verbatim: **single-flight** (one loader per model, the rest wait),
@@ -97,7 +97,7 @@ at model scale).
 
 The cache-specific metrics, which are the *operational* heart of the
 serving tier: **hit rate** (what fraction of requests hit a warm
-model: the number that determines the p99 — a low hit rate is a
+model: the number that determines the p99, a low hit rate is a
 latency outage waiting to happen), **load latency** (the miss cost),
 **eviction rate** (thrashing: the pool is too small), and **warm
 count per model** (the residency policy's actual state vs. intended).

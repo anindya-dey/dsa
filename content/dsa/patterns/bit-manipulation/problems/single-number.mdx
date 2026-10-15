@@ -2,7 +2,9 @@
 title: "Single Number"
 difficulty: "Easy"
 variant: "XOR Parity"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/single-number/"
 ---
 
 ## Problem
@@ -78,7 +80,7 @@ That "xor is parity counting" reading is the one to carry away, because
 it tells you exactly when the trick applies: **every value an even number
 of times except exactly one value an odd number of times**, and the
 answer is the xor of them all. It is the same fold as the
-[hash-based grouping](/dsa/patterns/hash-based-structures/problems/group-anagrams)
+[hash-based grouping](/dsa/patterns/hash-based-structures/group-anagrams)
 signature idea (a fingerprint invariant under reordering), with XOR as
 the fingerprint for *multiplicity* instead of *membership*.
 
@@ -104,3 +106,9 @@ the problem made. It is the smallest complete example of
 tool (rather than an implementation detail), and the standard door-opener
 to the XOR family: find the duplicate, missing number, and the
 two-single-numbers variant above.
+
+## Related C++ tools
+
+- [std::unordered_map / unordered_set](/cpp/unordered-map): average O(1) lookups, and find versus operator[].
+- [Bit Operations](/cpp/bit-operations): the operators and tricks behind the bit-level steps.
+- [std::pair / std::tuple](/cpp/pair-tuple): pairs, structured bindings, and lexicographic comparison.

@@ -26,7 +26,7 @@ graph TD
 - `push_front` fills the first block *backward*: the same trick in
   the other direction, which is the whole point.
 - Indexing is **two arithmetic steps** (map lookup + block
-  offset): O(1), like vector — but *two cache-unfriendly steps*
+  offset): O(1), like vector, but *two cache-unfriendly steps*
   (the map, then the block), which is why
   [contiguous](/cpp/vector) still beats it for iteration speed.
 
@@ -59,16 +59,16 @@ d.resize(n);
   **deque invalidates iterators more readily than vector, but
   invalidates references less readily**, and it is the container
   of choice when you need *both-end* growth with *stable-element*
-  guarantees — [the sliding-window
+  guarantees, [the sliding-window
   structures](/dsa/patterns/monotonic-structures) that hold
   indices-into-a-deque rely on exactly this.
 
 ## Where this site uses it
 
-The [monotonic deque](/dsa/patterns/monotonic-structures/problems/sliding-window-maximum)
+The [monotonic deque](/dsa/patterns/monotonic-structures/sliding-window-maximum)
 is the canonical consumer: a window's maximum maintained by
 pushing/popping at both ends with O(1), which
-[the circular-deque design](/dsa/patterns/linear-structures/problems/design-circular-deque)
+[the circular-deque design](/dsa/patterns/linear-structures/design-circular-deque)
 implements from scratch (a fixed-capacity ring, the same idea with
 a single block instead of a block map). The
 [priority queue](/cpp/priority-queue) is the *other* end-focused

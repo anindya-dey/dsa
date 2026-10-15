@@ -5,7 +5,7 @@ summary: "Maybe-value: returning not-found without sentinels."
 
 `std::optional<T>` is a value-or-nothing: **a `T` that may not be
 there**, expressed as a type instead of a sentinel (`-1`, an empty
-string, a null pointer — the "magic value" convention that every
+string, a null pointer, the "magic value" convention that every
 API document has to explain and every caller forgets to check). The
 type makes absence *explicit and checkable*: the
 [find-vs-operator-brackets](/cpp/unordered-map) discipline, promoted
@@ -47,7 +47,7 @@ The problems it removes, each a real bug class:
 - **Sentinel values** (`-1` for index, `""` for string, `0` for
   count-when-zero-is-valid): every sentinel is a *convention* the
   caller must know, and `0`-as-absent is unfixable for APIs where
-  `0` is a real answer ([the two-sum](/dsa/patterns/hash-based-structures/problems/two-sum)
+  `0` is a real answer ([the two-sum](/dsa/patterns/hash-based-structures/two-sum)
   family's "not found" is the classic).
 - **Null pointers** for maybe-values: valid for pointers, useless
   for values (`int*` to return a maybe-int, with the ownership
@@ -65,7 +65,7 @@ value's lifetime is handled.
 - **The `T` lives inside the optional** (a union with a
   no-value tag: no heap, no pointer), so `optional` is
   `sizeof(T)`-plus-a-byte-or-so, on the stack or inside a
-  container — and an `optional` in a
+  container, and an `optional` in a
   [vector](/cpp/vector) is contiguous, real, and cheap.
 - **Engaged optionals' lifetime**: `*maybe` is the value;
   `maybe.value()` throws `std::bad_optional_access` when empty
@@ -74,18 +74,18 @@ value's lifetime is handled.
   idiom.
 - **`std::nullopt`** is the explicit-empty literal
   (`return std::nullopt;`), and comparisons work as you hope
-  (`nullopt < engaged < value`, all optionals last — the
+  (`nullopt < engaged < value`, all optionals last, the
   [ordering](https://en.cppreference.com/w/cpp/utility/optional/operator_cmp)
   that makes optionals sortable keys).
 
 ## Where this site uses it
 
 The [trie](/dsa/patterns/trie-prefix-tree)'s `find`-returning-
-nullable is the design's [find-or-absent](/dsa/patterns/design-data-structures/problems/time-based-key-value-store)
+nullable is the design's [find-or-absent](/dsa/patterns/design-data-structures/time-based-key-value-store)
 moment; the
 [in-memory file system](/system-design/lld/in-memory-file-system)'s
 `resolve(path)` returning a maybe-node is the "not found is an
 answer, not an error" discipline. Every "what do we return when
 it is not there" conversation on this site has the same three
-answers — sentinel (no), exception (for real errors),
-`optional` (for absence) — and the modern C++ answer is the third.
+answers, sentinel (no), exception (for real errors),
+`optional` (for absence), and the modern C++ answer is the third.

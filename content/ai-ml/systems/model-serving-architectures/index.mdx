@@ -7,8 +7,8 @@ The [lifecycle](/ai-ml/systems/ml-system-design-basics) ends
 with a model artifact (a few hundred MB to a few GB of weights), and
 **serving** is turning that artifact into an endpoint that answers
 requests. It looks like any
-[stateless service](/system-design/fundamentals/scalability) —
-requests in, responses out, scaled horizontally — with three
+[stateless service](/system-design/fundamentals/scalability),
+requests in, responses out, scaled horizontally, with three
 ML-specific twists that shape the whole design: the **artifact is
 big** (loading it is slow, so it must be *warm*), the **compute is
 special** (often a [GPU](/ai-ml/systems/gpu-accelerator-management),
@@ -37,7 +37,7 @@ graph TD
   the [features](/ai-ml/systems/feature-stores) fetched
   per-request, the response synchronous. The engineering: model
   loading and versioning, warm pools, and the
-  [degradation contract](/ai-ml/systems/offline-vs-online-inference).
+  [degradation contract](/ai-ml/systems/batch-vs-real-time-prediction).
 - **Batch (offline)**: the model applied to a whole dataset on a
   schedule (the [churn-score](/ai-ml/systems/batch-vs-real-time-prediction)
   shape): a [batch job](/system-design/fundamentals/stream-vs-batch-processing),
@@ -61,7 +61,7 @@ Each decision the tier makes, and its shape:
   the *intended* model version: the [multi-model
   routing](/ai-ml/systems/multi-model-serving-routing)
   problem, and the reason the [A/B platform](/ai-ml/systems/ab-testing-experimentation)
-  and the serving tier are coupled — the routing *is* the
+  and the serving tier are coupled, the routing *is* the
   experiment assignment).
 - **Warmness** (the model must be in memory before the request
   arrives: the [warm-pool](/ai-ml/systems/model-caching-warm-pools)
@@ -73,8 +73,8 @@ Each decision the tier makes, and its shape:
   search fails to a fallback ranker, a feed serves the cache).
 - **Observability** (the model's *own* metrics: prediction
   distribution, latency p99, and the
-  [drift](/ai-ml/systems/model-monitoring-drift) signals —
-  the serving tier is where the [exposure log](/ai-ml/systems/model-monitoring-drift)
+  [drift](/ai-ml/systems/model-monitoring-drift) signals,
+the serving tier is where the [exposure log](/ai-ml/systems/model-monitoring-drift)
   is written).
 
 ## The infrastructure underneath
@@ -88,8 +88,8 @@ choice), the fleet is [autoscaled](/ai-ml/systems/autoscaling-inference)
 on the *right* signal (queue depth, not CPU: the forward pass is
 often not CPU-bound), and the routing is the
 [gateway's](/system-design/fundamentals/api-gateway-and-service-mesh)
-machinery with a *model-version* dimension added. Everything else —
-health checks, rolling deploys, canaries — is the standard
+machinery with a *model-version* dimension added. Everything else,
+health checks, rolling deploys, canaries, is the standard
 [reliability](/system-design/fundamentals/reliability-engineering)
 discipline, with the twist that the *artifact* is the deploy unit
 (a model rollout is an artifact rollout, and its failures are
@@ -106,7 +106,7 @@ batching](/ai-ml/systems/batching-and-latency) optimizations
 that the autoregressive generation demands), and **Ray
 Serve/BentoML** (the Python-native composition layer). The
 interview-grade point is not the product names but the *shapes*
-above — and the recognition that "build a model serving tier" is
+above, and the recognition that "build a model serving tier" is
 "build a latency-budgeted, GPU-backed, model-versioned stateless
 service," which is this page.
 
@@ -121,5 +121,5 @@ service," which is this page.
   the warmth problem, both answers.
 - [Autoscaling for Inference](/ai-ml/systems/autoscaling-inference):
   the scaling signal.
-- [Offline vs Online Inference](/ai-ml/systems/offline-vs-online-inference):
+- [Batch vs Real-Time Prediction](/ai-ml/systems/batch-vs-real-time-prediction):
   which shape, per product.

@@ -2,7 +2,9 @@
 title: "Alien Dictionary"
 difficulty: "Hard"
 variant: "Topological Sort from Pairs"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode (Premium)"
+    href: "https://leetcode.com/problems/alien-dictionary/"
 ---
 
 ## Problem
@@ -57,7 +59,7 @@ first position where they differ, add the edge
 and stop scanning the pair (later positions are masked). Build this
 edge set, and the answer is a **topological order** of that graph,
 which is exactly the
-[course schedule](/dsa/patterns/graph-specializations/problems/course-schedule)
+[course schedule](/dsa/patterns/graph-specializations/course-schedule)
 machinery applied to a *derived* graph.
 
 ```cpp
@@ -155,3 +157,8 @@ at most 26 nodes. This is the canonical *derived-graph* problem in
 graph is not given, it is *read out of the data by a stated rule*, and
 that reading (plus the two contradictions that can invalidate it) is
 the entire difficulty, with the algorithm itself being standard.
+
+## Related C++ tools
+
+- [std::stack / std::queue](/cpp/stack-queue): the LIFO and FIFO adapters.
+- [std::string](/cpp/string): substr, find, and the operations that copy.

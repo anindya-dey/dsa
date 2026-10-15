@@ -5,8 +5,8 @@ summary: "Prompts as versioned artifacts: templates, evaluation, and the discipl
 
 "Prompt engineering" is often framed as a craft (word the instruction
 better), and for a *system* the framing is wrong: a prompt is **an
-input to a model that changes its behavior**, which makes it *code*
-— versioned, tested, reviewed, and rolled out like any other
+input to a model that changes its behavior**, which makes it *code*:
+versioned, tested, reviewed, and rolled out like any other
 behavioral change. The systems view: a prompt is a **template**
 (parameterized, reused across requests), a **behavioral
 specification** (it encodes what the model should do), and a
@@ -20,12 +20,12 @@ The structure that makes prompts manageable:
 
 - **Templates, not string literals** (the prompt is a template with
   *slots*: `{system_instructions}`, `{retrieved_context}`,
-  `{user_question}` — filled per request), so the *logic* is
+  `{user_question}`, filled per request), so the *logic* is
   separate from the *content*, and the same template serves every
   request. The template is the artifact; the filled prompt is the
   request.
 - **Versioning** (each template has a version, and the version is
-  *recorded with every generation* — the
+  *recorded with every generation*, the
   [lineage](/ai-ml/systems/data-versioning-lineage) discipline,
   applied to prompts: "which prompt produced this output" is
   answerable, and a regression is traceable to a template change,
@@ -33,7 +33,7 @@ The structure that makes prompts manageable:
 - **The prompt registry** (the templates stored, versioned, and
   *rolled out* like config: a change to a prompt is a *deployment*
   (canary, [A/B](/ai-ml/systems/ab-testing-experimentation),
-  rollback), not a code-free edit — because it *is* a behavioral
+  rollback), not a code-free edit, because it *is* a behavioral
   change, and the [reliability](/system-design/fundamentals/reliability-engineering)
   discipline applies.
 
@@ -41,23 +41,23 @@ The structure that makes prompts manageable:
 
 The trap that makes prompts dangerous: **a prompt change that
 "seems better" is a hypothesis**, and the only honest evaluation is
-the [eval suite](/ai-ml/systems/evaluating-llm-systems) —
+the [eval suite](/ai-ml/systems/evaluating-llm-systems),
 the same [offline/online](/ai-ml/systems/offline-vs-online-evaluation)
 discipline as any model change, prompt-shaped:
 
 - **A prompt eval set** (a curated set of inputs with expected
   behaviors: the [golden
   set](https://en.wikipedia.org/wiki/Test_data), run on every
-  template version — the prompt's regression tests, and the reason
+  template version, the prompt's regression tests, and the reason
   a template change is a *tested* change).
 - **The failure modes prompts create** (a prompt that fixes one
   case breaks three others: the classic, because natural-language
-  instructions *interact* — "be concise" and "include all relevant
+  instructions *interact*, "be concise" and "include all relevant
   details" fight each other, and only the eval set catches the
   regression the fix introduced).
 - **The prompt-model coupling** (a prompt tuned for model A is
   *not* portable to model B: the templates are per-model, which is
-  why a model upgrade is a *prompt migration* — the
+  why a model upgrade is a *prompt migration*, the
   [version-matrix](/ai-ml/systems/multi-model-serving-routing)
   problem, at the prompt layer, and the reason
   [gateways](/ai-ml/systems/llm-gateways) keep prompt
@@ -70,11 +70,11 @@ The prompt techniques that matter to the *system*, not the craft:
 - **Structured output** (instructing the model to emit JSON/a
   schema: the [guardrails page's](/ai-ml/systems/llm-guardrails-validation)
   subject, and the reason "prompt engineering" and "output
-  validation" are the same conversation — the prompt *asks* for the
+  validation" are the same conversation, the prompt *asks* for the
   format, the validator *enforces* it).
 - **Context assembly** (the prompt is built from *parts*: system
   instructions, retrieved [RAG](/ai-ml/systems/rag) context,
-  conversation history, the user turn — and the *assembly* is a
+  conversation history, the user turn, and the *assembly* is a
   [system-design](/ai-ml/systems/rag) problem: how much
   history, which retrieved chunks, in what order, under the
   [context-window](/ai-ml/systems/llm-serving) budget).
@@ -88,14 +88,14 @@ The prompt techniques that matter to the *system*, not the craft:
 - **Determinism and the sampling knobs** (temperature, top-p: the
   *generation* parameters are part of the prompt's contract, and
   the [reproducibility](/ai-ml/systems/data-versioning-lineage)
-  question — "the same prompt, twice, different answers" is a
+  question: "the same prompt, twice, different answers" is a
   property to *design for* (low temperature for structured tasks,
   caching for idempotence), not to be surprised by).
 
 ## The systems summary
 
 The reframe this page delivers: **a prompt is a piece of behavioral
-code, and it deserves the same lifecycle as code** — version
+code, and it deserves the same lifecycle as code**: version
 control, code review (a prompt diff is reviewed like a logic diff),
 tests (the eval set), staged rollout (canary/A/B), observability
 (the version recorded with every generation), and rollback (the

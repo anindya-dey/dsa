@@ -2,7 +2,9 @@
 title: "Combination Sum"
 difficulty: "Medium"
 variant: "Backtracking with Reuse"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/combination-sum/"
 ---
 
 ## Problem
@@ -142,9 +144,13 @@ branches at their first divergence.
 
 This is the canonical second problem in
 [backtracking](/dsa/patterns/backtracking-and-pruning) after
-[subsets](/dsa/patterns/backtracking-and-pruning/problems/subsets):
+[subsets](/dsa/patterns/backtracking-and-pruning/subsets):
 same apply-recurse-undo, with the "sorted order prevents duplicates"
 and "loop start encodes reuse" decisions layered on, and the natural
-stepping stone to [word break](/dsa/patterns/dynamic-programming/problems/word-break)'s
+stepping stone to [word break](/dsa/patterns/dynamic-programming/word-break)'s
 DP version (when the question is *count* or *exists* rather than
 *enumerate*).
+
+## Related C++ tools
+
+- [std::vector](/cpp/vector): the dynamic array underneath almost every solution.

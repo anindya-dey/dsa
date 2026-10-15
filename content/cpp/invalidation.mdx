@@ -3,7 +3,7 @@ title: "Iterator Invalidation"
 summary: "Which operations invalidate which iterators: erase-while-iterating and friends."
 ---
 
-The collected invalidation rules — the one page that every
+The collected invalidation rules, the one page that every
 [container entry](/cpp/vector) points to when it says "and the
 invalidation rules that bite everyone once." The subject: **which
 operations invalidate which iterators, references, and pointers,
@@ -21,7 +21,7 @@ and the idioms that make the common cases safe.**
 
 The two dimensions that vary: **iterators** (positions: invalidated
 liberally) and **references/pointers** (to elements: invalidated
-rarely — anything node-based or block-based keeps elements where
+rarely, anything node-based or block-based keeps elements where
 they are). The
 [vector](/cpp/vector) is the pessimist (growth moves everything);
 the [tree containers](/cpp/map) are the optimists (erase touches
@@ -60,7 +60,7 @@ element once (O(n)) and the final `erase` truncates. For
 node-based containers ([map](/cpp/map),
 [unordered_map](/cpp/unordered-map)), the iterator-returning
 `erase` form is the idiom (no shift, O(1) per erase:
-`m.erase(it++)` or `it = m.erase(it)` — the loop form that the
+`m.erase(it++)` or `it = m.erase(it)`, the loop form that the
 [linked-list](/dsa/patterns/linear-structures) entries write by
 hand).
 
@@ -68,13 +68,13 @@ hand).
 
 - **`reserve`/`push_back` growth inside iteration over the same
   container**: the loop's iterators (captured at loop start) are
-  dead after the growth — the [vector entry's](/cpp/vector)
+  dead after the growth, the [vector entry's](/cpp/vector)
   self-modifying loop. Index-based loops with a re-checked `size()`
   when growing; iterator loops only when not growing.
 - **`rehash` (unordered containers) on insert**: *any* insert may
   rehash (size crosses the
-  [load factor](/cpp/unordered-map)), invalidating all iterators —
-  but *references* stay (the elements did not move), so
+  [load factor](/cpp/unordered-map)), invalidating all iterators,
+but *references* stay (the elements did not move), so
   pointer-to-element designs survive where iterator-holding
   designs do not.
 - **Dangling by-reference [lambda
@@ -82,14 +82,14 @@ hand).
   the same disease (a pointer into a scope that ended): the
   closure must not outlive what it captured by reference.
 - **`c_str()` on a [string](/cpp/string) then modifying the
-  string**: the pointer was valid *until the next modification* —
-  the [string entry's](/cpp/string) dangling form.
+  string**: the pointer was valid *until the next modification*,
+the [string entry's](/cpp/string) dangling form.
 
 ## The rule of thumb
 
 **When you mutate, you do not hold iterators.** Save indices, or
 use the mutating-operation's *return value* (erase returns the
-next iterator: the idiom), or re-find after mutation — and when
+next iterator: the idiom), or re-find after mutation, and when
 you must hold a stable handle across mutation,
 [node-based containers](/cpp/map) hold references where
 [vectors](/cpp/vector) cannot.

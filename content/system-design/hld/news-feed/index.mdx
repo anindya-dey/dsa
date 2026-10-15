@@ -126,13 +126,16 @@ expensive backfill design.
 
 ## Capacity sketch
 
-Assume 200M daily users, 100M open the app 10 times a day, 20 posts/second
-average (peak 10x). Feed reads: ~1 billion/day, i.e. ~12,000/second average,
-peaking at 100,000/second. The precomputed-timeline cache is what makes
-12,000 reads/second tractable: each read is a top-N lookup, not a merge.
-Fan-out writes: 20 posts/second times average follower count (say 200) is
-~4,000 timeline appends/second average, spiking with celebrity posts, which
-the queue absorbs.
+Assume 200M daily users, 100M of whom open the app 10 times a day, and 10%
+of users post once a day. Feed reads: ~1 billion/day, i.e. ~12,000/second
+average, peaking at 100,000/second. The precomputed-timeline cache is what
+makes that tractable: each read is a top-N lookup, not a merge. Posts: 20M
+a day is ~230/second average, ~2,300/second at a 10x peak. Fan-out writes:
+230 posts/second times an average of 200 followers is ~46,000 timeline
+appends/second, ~460,000 at peak, with celebrity posts spiking far above
+that. This is why the fan-out runs through a queue, and why celebrities are
+switched to pull: one post from a 50M-follower account would otherwise be
+50M appends.
 
 ## Related concepts
 

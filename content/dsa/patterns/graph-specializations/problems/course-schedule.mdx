@@ -2,7 +2,9 @@
 title: "Course Schedule"
 difficulty: "Medium"
 variant: "Topological Sort"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/course-schedule/"
 ---
 
 ## Problem
@@ -46,7 +48,9 @@ bool canFinishBrute(int numCourses,
                 continue;
             }
             bool ready = true;
-            for (const auto& [a, b] : prerequisites) {
+            for (const auto& edge : prerequisites) {
+                int a = edge[0];
+                int b = edge[1];
                 if (a == c && !taken[b]) {
                     ready = false;
                     break;
@@ -83,7 +87,9 @@ bool canFinish(int numCourses, const std::vector<std::vector<int>>& prerequisite
     std::vector<std::vector<int>> adj(numCourses);
     std::vector<int> inDegree(numCourses, 0);
 
-    for (const auto& [a, b] : prerequisites) {
+    for (const auto& edge : prerequisites) {   // edge = {a, b}: b before a
+        int a = edge[0];
+        int b = edge[1];
         adj[b].push_back(a);               // b unlocks a
         ++inDegree[a];
     }
@@ -135,3 +141,7 @@ ordering family of
 Kahn's skeleton answers "find a valid course order" (return the order) and
 "minimum semesters" (count BFS levels, since courses without dependencies
 can be taken in parallel).
+
+## Related C++ tools
+
+- [std::stack / std::queue](/cpp/stack-queue): the LIFO and FIFO adapters.

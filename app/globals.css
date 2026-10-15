@@ -9,7 +9,7 @@
   --color-paper: oklch(0.985 0.003 106);
   --color-ink: oklch(0.24 0.012 260);
   --color-ink-soft: oklch(0.42 0.012 260);
-  --color-ink-faint: oklch(0.55 0.008 260);
+  --color-ink-faint: oklch(0.5 0.008 260);
   --color-line: oklch(0.912 0.005 106);
   --color-accent: oklch(0.55 0.14 165);
   --color-accent-deep: oklch(0.42 0.11 165);

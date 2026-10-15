@@ -4,7 +4,7 @@ summary: "Why non-linearity is essential, and the ReLU-era choices."
 ---
 
 Between the weighted sums of a neural network sit the **activation
-functions** — small non-linear functions applied to each neuron's
+functions**: small non-linear functions applied to each neuron's
 output. They look like a detail and they are actually the *reason
 neural networks can learn anything interesting*: without them, a stack
 of layers would collapse into a single linear function, and depth
@@ -14,7 +14,7 @@ with real consequences for training.
 ## Why non-linearity is the whole point
 
 Consider two layers with no activation between them:
-`output = W₂ · (W₁ · x) = (W₂W₁) · x` — a *single* linear
+`output = W₂ · (W₁ · x) = (W₂W₁) · x`, a *single* linear
 transformation. Any number of linear layers compose into one linear
 layer, so a deep network without activations is just a
 [linear model](/ai-ml/concepts/linear-and-logistic-regression) with
@@ -38,7 +38,7 @@ and arbitrarily complex patterns. **The activation is what makes
   gradient problem (the gradient is 1 for positive inputs, so it does
   not shrink through depth), which is why the ReLU era unlocked deep
   networks. Its issue: **dying ReLUs** (a neuron stuck outputting
-  zero for all inputs stops learning — the fix is variants).
+  zero for all inputs stops learning, the fix is variants).
 - **ReLU variants** (Leaky ReLU, ELU, GELU, SiLU): tweaks that keep a
   small gradient for negative inputs (avoiding dead neurons) or
   smooth the curve. **GELU and SiLU** are the modern defaults in
@@ -50,8 +50,8 @@ and arbitrarily complex patterns. **The activation is what makes
 ## The design considerations
 
 - **The output activation matches the task** (softmax for
-  multi-class, sigmoid for binary, *none* (linear) for regression —
-  a common mistake is applying an activation to a regression output,
+  multi-class, sigmoid for binary, *none* (linear) for regression,
+a common mistake is applying an activation to a regression output,
   which clips the predictions to a range).
 - **Hidden activations affect trainability** (the ReLU family for
   hidden layers, sigmoid/tanh only where their squashing is wanted).

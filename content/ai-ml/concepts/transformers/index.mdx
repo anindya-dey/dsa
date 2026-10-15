@@ -5,8 +5,8 @@ summary: "Attention is all you need: the architecture behind modern AI."
 
 The transformer is the architecture that took over AI. Introduced in
 2017 with the paper "Attention Is All You Need", it replaced
-recurrence with [**self-attention**](/ai-ml/concepts/attention-mechanism)
-— letting every position in a sequence look at every other position,
+recurrence with [**self-attention**](/ai-ml/concepts/attention-mechanism):
+letting every position in a sequence look at every other position,
 in parallel. That single change made models **parallelizable**
 (trainable on enormous data and hardware) and **better at long-range
 dependencies**, and it is the foundation of essentially every large
@@ -27,7 +27,7 @@ sub-layers:
 
 Wrapped around each are **[residual connections and LayerNorm](/ai-ml/concepts/normalization-and-initialization)**
 (the training-stability plumbing), and before attention,
-**positional encodings** are added — because attention itself is
+**positional encodings** are added, because attention itself is
 *order-blind* (it sees a *set* of tokens, not a sequence), so the
 model must be told where each token is.
 
@@ -41,14 +41,14 @@ graph LR
 
 Three variants share the architecture: **encoder-only** (BERT-style:
 understand a sequence, for classification/embedding),
-**decoder-only** (GPT-style: generate a sequence — what most modern
+**decoder-only** (GPT-style: generate a sequence, what most modern
 chat models are), and **encoder-decoder** (translation-style:
 [seq2seq](/ai-ml/concepts/sequence-to-sequence)).
 
 ## Why it won
 
 - **Parallelism**: unlike an RNN, all positions are processed at once,
-  so training exploits GPUs/TPUs fully — the reason models could scale
+  so training exploits GPUs/TPUs fully, the reason models could scale
   to billions of parameters and trillions of tokens.
 - **Direct long-range connections**: any two positions interact in one
   step, so dependencies do not have to survive a long recurrence.
@@ -56,13 +56,13 @@ chat models are), and **encoder-decoder** (translation-style:
   structure, so the *same* architecture works on text, images (as
   patches), audio, and more.
 - **Scalability**: the architecture scales predictably with data,
-  compute, and parameters — the [scaling
+  compute, and parameters, the [scaling
   laws](/ai-ml/concepts/language-models-and-scaling) that justified
   the enormous training runs.
 
 The cost: **quadratic attention** (every token attends to every other,
 so cost grows with the *square* of sequence length), which is the
-central efficiency problem — motivating the entire field of efficient
+central efficiency problem: motivating the entire field of efficient
 attention, long-context tricks, and [Mixture-of-Experts](/ai-ml/concepts/mixture-of-experts)
 for cheaper scaling.
 

@@ -2,7 +2,9 @@
 title: "Linked List Cycle Detection"
 difficulty: "Easy"
 variant: "Fast & Slow"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/linked-list-cycle/"
 ---
 
 ## Problem
@@ -24,9 +26,9 @@ arrive at a node that's already in the set, there's a cycle. If you reach
 `nullptr`, there isn't.
 
 ```cpp
-bool hasCycleBruteForce(Node* head) {
-    std::unordered_set<Node*> visited;
-    Node* current = head;
+bool hasCycleBruteForce(ListNode* head) {
+    std::unordered_set<ListNode*> visited;
+    ListNode* current = head;
 
     while (current != nullptr) {
         if (visited.count(current)) {
@@ -54,9 +56,9 @@ tortoise from behind.
 We do exactly that. `slow` moves one node per step, `fast` moves two:
 
 ```cpp
-bool hasCycle(Node* head) {
-    Node* slow = head;
-    Node* fast = head;
+bool hasCycle(ListNode* head) {
+    ListNode* slow = head;
+    ListNode* fast = head;
 
     while (fast != nullptr && fast->next != nullptr) {
         slow = slow->next;
@@ -88,3 +90,7 @@ than pass each other.
 Floyd's algorithm keeps the same O(n) time and drops the extra memory
 entirely, which is why it's the expected answer in interviews. It is the
 fast-and-slow shape of [Two Pointers](/dsa/patterns/two-pointers).
+
+## Related C++ tools
+
+- [std::unordered_map / unordered_set](/cpp/unordered-map): average O(1) lookups, and find versus operator[].

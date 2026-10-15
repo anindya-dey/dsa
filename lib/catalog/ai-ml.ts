@@ -7,13 +7,13 @@ export const aiMlTrackTitles: Record<AiMlTrack, string> = {
 
 export const aiMlTrackDescriptions: Record<AiMlTrack, string> = {
   concepts:
-    "How the models actually work, conceptually — neural networks, architectures, and the ideas behind modern AI. Intuition and diagrams, not mathematics.",
+    "How the models actually work, conceptually: neural networks, architectures, and the ideas behind modern AI. Intuition and diagrams, not mathematics.",
   systems:
     "The engineering of ML: data, features, serving, evaluation, MLOps, and the GenAI-era machinery that turns models into products.",
 };
 
 export const aiMlTopics: AiMlTopicMeta[] = [
-  // Systems — The Learning Problem
+  // Systems: The Learning Problem
   {
     slug: "ml-system-design-basics",
     title: "ML System Design Basics",
@@ -27,13 +27,6 @@ export const aiMlTopics: AiMlTopicMeta[] = [
     track: "systems",
     group: "The Learning Problem",
     summary: "The three learning families and what each asks of the data and the system.",
-  },
-  {
-    slug: "offline-vs-online-inference",
-    title: "Offline vs Online Inference",
-    track: "systems",
-    group: "The Learning Problem",
-    summary: "Batch scoring of everything versus millisecond scoring of one request, and their opposite infrastructures.",
   },
   {
     slug: "batch-vs-real-time-prediction",
@@ -491,8 +484,8 @@ export const aiMlTopics: AiMlTopicMeta[] = [
     summary: "Composable feature transforms as code: definitions, execution, and consistency.",
   },
 
-  // Concepts — (see below)
-  // Concepts — Foundations of Learning
+  // Concepts: (see below)
+  // Concepts: Foundations of Learning
   { slug: "what-is-machine-learning", title: "What Machine Learning Is", track: "concepts", group: "Foundations of Learning", summary: "Learning a function from examples, and how it differs from writing rules." },
   { slug: "loss-functions-and-risk", title: "Loss Functions & Empirical Risk", track: "concepts", group: "Foundations of Learning", summary: "Scoring how wrong a prediction is, and why the choice of loss shapes everything." },
   { slug: "gradient-descent", title: "Gradient Descent", track: "concepts", group: "Foundations of Learning", summary: "Walking downhill on the loss surface: the core optimization loop, conceptually." },
@@ -501,21 +494,21 @@ export const aiMlTopics: AiMlTopicMeta[] = [
   { slug: "train-validation-test", title: "Train, Validation & Test", track: "concepts", group: "Foundations of Learning", summary: "The three splits, why they must be separate, and cross-validation." },
   { slug: "curse-of-dimensionality", title: "The Curse of Dimensionality", track: "concepts", group: "Foundations of Learning", summary: "Why high-dimensional space behaves strangely, and what it means for models." },
 
-  // Concepts — Classical Models
+  // Concepts: Classical Models
   { slug: "linear-and-logistic-regression", title: "Linear & Logistic Regression", track: "concepts", group: "Classical Models", summary: "The two simplest models, and why they remain baselines worth knowing." },
   { slug: "decision-trees-and-ensembles", title: "Decision Trees, Bagging & Random Forests", track: "concepts", group: "Classical Models", summary: "Splitting on features, and averaging many trees to reduce variance." },
   { slug: "gradient-boosting", title: "Gradient Boosting", track: "concepts", group: "Classical Models", summary: "Building an ensemble one corrective tree at a time: the tabular-data workhorse." },
   { slug: "support-vector-machines", title: "Support Vector Machines", track: "concepts", group: "Classical Models", summary: "Finding the widest separating margin, and the kernel trick, conceptually." },
   { slug: "clustering-and-knn", title: "Clustering & k-Nearest Neighbors", track: "concepts", group: "Classical Models", summary: "Grouping by similarity, and predicting from the nearest examples." },
 
-  // Concepts — Neural Networks
+  // Concepts: Neural Networks
   { slug: "perceptrons-and-mlps", title: "Perceptrons & Multilayer Perceptrons", track: "concepts", group: "Neural Networks", summary: "From a single neuron to stacked layers that learn non-linear functions." },
   { slug: "activation-functions", title: "Activation Functions", track: "concepts", group: "Neural Networks", summary: "Why non-linearity is essential, and the ReLU-era choices." },
   { slug: "backpropagation", title: "Backpropagation", track: "concepts", group: "Neural Networks", summary: "The chain rule, applied efficiently: how networks assign credit to weights." },
   { slug: "optimizers", title: "Optimizers: SGD, Momentum & Adam", track: "concepts", group: "Neural Networks", summary: "Smarter descent: momentum, adaptive learning rates, and why Adam dominates." },
   { slug: "normalization-and-initialization", title: "Normalization & Initialization", track: "concepts", group: "Neural Networks", summary: "BatchNorm, LayerNorm, and weight init: keeping deep networks trainable." },
 
-  // Concepts — Architectures
+  // Concepts: Architectures
   { slug: "convolutional-neural-networks", title: "Convolutional Neural Networks (CNN)", track: "concepts", group: "Architectures", summary: "Sliding filters that exploit spatial structure: the vision architecture." },
   { slug: "recurrent-neural-networks", title: "Recurrent Neural Networks (RNN)", track: "concepts", group: "Architectures", summary: "Networks with memory over sequences, and why they are hard to train." },
   { slug: "lstm-and-gru", title: "LSTMs & GRUs", track: "concepts", group: "Architectures", summary: "Gated recurrences that learn long-range dependencies in sequences." },
@@ -528,20 +521,20 @@ export const aiMlTopics: AiMlTopicMeta[] = [
   { slug: "graph-neural-networks", title: "Graph Neural Networks", track: "concepts", group: "Architectures", summary: "Learning on graphs by passing messages between connected nodes." },
   { slug: "mixture-of-experts", title: "Mixture of Experts", track: "concepts", group: "Architectures", summary: "Scaling model capacity without scaling compute, by routing to expert sub-networks." },
 
-  // Concepts — NLP
+  // Concepts: NLP
   { slug: "word-embeddings", title: "Word Embeddings", track: "concepts", group: "NLP", summary: "Words as vectors: how meaning became geometry, from Word2Vec onward." },
   { slug: "language-models-and-scaling", title: "Language Models & Scaling Laws", track: "concepts", group: "NLP", summary: "Predicting the next token, and the empirical laws behind bigger models." },
   { slug: "transfer-learning", title: "Transfer Learning", track: "concepts", group: "NLP", summary: "Pretrain once, adapt everywhere: why modern ML starts from a foundation model." },
 
-  // Concepts — Computer Vision
+  // Concepts: Computer Vision
   { slug: "image-classification", title: "Image Classification", track: "concepts", group: "Computer Vision", summary: "Assigning a label to an image: the vision task, and its evolution." },
   { slug: "object-detection-and-segmentation", title: "Object Detection & Segmentation", track: "concepts", group: "Computer Vision", summary: "Finding and outlining objects, from bounding boxes to per-pixel masks." },
 
-  // Concepts — Speech & Multimodal
+  // Concepts: Speech & Multimodal
   { slug: "speech-recognition-and-synthesis", title: "Speech Recognition & Synthesis", track: "concepts", group: "Speech & Multimodal", summary: "Turning audio into text and text into audio, and the models that do it." },
   { slug: "vision-language-models", title: "Vision–Language Models", track: "concepts", group: "Speech & Multimodal", summary: "Models that connect images and text: CLIP, captioning, and multimodal LLMs." },
 
-  // Concepts — Reinforcement Learning & Safety
+  // Concepts: Reinforcement Learning & Safety
   { slug: "reinforcement-learning-basics", title: "Reinforcement Learning Basics", track: "concepts", group: "Reinforcement Learning & Safety", summary: "Agents, environments, and rewards: learning from interaction rather than labels." },
   { slug: "rlhf", title: "Reinforcement Learning from Human Feedback (RLHF)", track: "concepts", group: "Reinforcement Learning & Safety", summary: "Aligning models to human preferences: the training method behind instruction-following LLMs." },
   { slug: "interpretability", title: "Interpretability", track: "concepts", group: "Reinforcement Learning & Safety", summary: "Understanding what a model learned, and why it made a decision." },

@@ -63,9 +63,9 @@ moot.
 contiguous, "the region I have written" and "the region I am reading" can
 share memory, with two indices marking the boundary. This is how
 deduplication, in-place partitioning (the [Dutch national
-flag](/dsa/patterns/sorting-and-selection/problems/sort-colors)), and
+flag](/dsa/patterns/sorting-and-selection/sort-colors)), and
 merging [without extra
-space](/dsa/patterns/sorting-and-selection/problems/merge-sorted-array)
+space](/dsa/patterns/sorting-and-selection/merge-sorted-array)
 all work: a write index that only ever advances, and the untouched tail
 beyond it.
 
@@ -85,7 +85,7 @@ int removeDuplicates(std::vector<int>& nums) {
 Read the invariant off the variables: `nums[0..write)` is always the
 deduplicated prefix, `read` scans ahead, and each kept element is written
 at most once. That prefix-plus-scan shape is the same one behind
-[rotate array](/dsa/patterns/linear-structures/problems/rotate-array) and
+[rotate array](/dsa/patterns/linear-structures/rotate-array) and
 every "compact this array" problem, and it is the array-side sibling of
 the [linked list surgery](/dsa/patterns/linked-list-manipulation)
 discipline.
@@ -96,7 +96,7 @@ an order that never leaves the structure half-attached, and draw the
 before/after diagrams before writing code. Those are the rules
 [linked list manipulation](/dsa/patterns/linked-list-manipulation) exists
 to drill, and the [design a linked
-list](/dsa/patterns/linear-structures/problems/design-linked-list) problem
+list](/dsa/patterns/linear-structures/design-linked-list) problem
 is where you implement them from raw nodes.
 
 ## When each side wins
@@ -113,8 +113,8 @@ prices can I afford" is the skill.
 
 ## Related C++ tools
 
-- [std::vector](/cpp/vector) — the dynamic array, its growth and invalidation rules.
-- [std::deque](/cpp/deque) — double-ended queue, block storage.
+- [std::vector](/cpp/vector): the dynamic array, its growth and invalidation rules.
+- [std::deque](/cpp/deque): double-ended queue, block storage.
 
 ## Related patterns
 

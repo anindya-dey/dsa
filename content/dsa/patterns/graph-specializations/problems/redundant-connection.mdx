@@ -2,7 +2,9 @@
 title: "Redundant Connection"
 difficulty: "Medium"
 variant: "Union-Find"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/redundant-connection/"
 ---
 
 ## Problem
@@ -151,8 +153,13 @@ world per query.
 Each edge is one `unite` call (near-constant), and the answer is
 found on the failing call. This problem is the standard union-find
 interview (with [number of connected
-components](/dsa/patterns/graph-specializations/problems/number-of-connected-components)
+components](/dsa/patterns/graph-specializations/number-of-connected-components)
 as its simpler sibling), and the natural bridge into Kruskal's
 minimum spanning tree from [advanced
 graphs](/dsa/patterns/advanced-graphs), where "does this edge close a
 cycle" is asked for *every* edge of a sorted list.
+
+## Related C++ tools
+
+- [std::stack / std::queue](/cpp/stack-queue): the LIFO and FIFO adapters.
+- [Numeric Utilities](/cpp/numeric): accumulate, iota, gcd, and the other small helpers.

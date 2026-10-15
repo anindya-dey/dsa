@@ -2,7 +2,9 @@
 title: "Unique Paths"
 difficulty: "Medium"
 variant: "Grid DP / Combinatorics"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/unique-paths/"
 ---
 
 ## Problem
@@ -87,7 +89,7 @@ coefficient:
     paths = C(m + n - 2, m - 1)
 
 ```cpp
-long long binomial(int n, int k) {       // exact for n <= 200 here
+long long binomial(int n, int k) {       // safe while the answer fits in int
     if (k > n - k) {
         k = n - k;
     }
@@ -126,3 +128,7 @@ grid gains obstacles ("unique paths II"), the closed form dies (obstacles
 break the uniform counting) and DP carries the day; when it does not,
 counting is strictly better. Recognizing which side of that line a problem
 is on is the skill this problem teaches.
+
+## Related C++ tools
+
+- [Integer Overflow & Limits](/cpp/integer-overflow): where int runs out, and how this code stays inside it.

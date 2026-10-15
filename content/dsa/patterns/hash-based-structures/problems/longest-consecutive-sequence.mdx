@@ -2,7 +2,9 @@
 title: "Longest Consecutive Sequence"
 difficulty: "Medium"
 variant: "Hash Set"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/longest-consecutive-sequence/"
 ---
 
 ## Problem
@@ -37,8 +39,11 @@ int longestConsecutiveBruteForce(const std::vector<int>& nums) {
     int best = 0;
     for (int value : nums) {
         int length = 1;
-        while (values.count(value + length)) {
+        long long next = static_cast<long long>(value) + 1;
+        while (next <= std::numeric_limits<int>::max() &&
+               values.count(static_cast<int>(next))) {
             ++length;
+            ++next;
         }
         best = std::max(best, length);
     }
@@ -63,12 +68,16 @@ int longestConsecutive(const std::vector<int>& nums) {
     std::unordered_set<int> values(nums.begin(), nums.end());
     int best = 0;
     for (int value : values) {
-        if (values.count(value - 1)) {
+        if (value != std::numeric_limits<int>::min() &&
+            values.count(value - 1)) {
             continue;            // mid-run: this run is walked from elsewhere
         }
         int length = 1;
-        while (values.count(value + length)) {
+        long long next = static_cast<long long>(value) + 1;  // no INT_MAX overflow
+        while (next <= std::numeric_limits<int>::max() &&
+               values.count(static_cast<int>(next))) {
             ++length;
+            ++next;
         }
         best = std::max(best, length);
     }
@@ -93,3 +102,8 @@ The lesson generalizes: hashing gave O(1) lookups, but the brute force was
 still quadratic because it asked good questions in a wasteful order. The fix
 was a *guard condition*, a one-line check that makes each unit of work
 happen once instead of many times.
+
+## Related C++ tools
+
+- [std::unordered_map / unordered_set](/cpp/unordered-map): average O(1) lookups, and find versus operator[].
+- [Integer Overflow & Limits](/cpp/integer-overflow): where int runs out, and how this code stays inside it.

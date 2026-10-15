@@ -164,7 +164,7 @@ is a shared resource, and the design decision is the standard one
    event (lock-free or a small mutex on the ring) and return; a worker
    thread drains to the sinks. Now the caller's cost is O(1) memory
    rather than an I/O stall, and this is where the
-   [ring buffer](/dsa/patterns/linear-structures/problems/design-circular-deque)
+   [ring buffer](/dsa/patterns/linear-structures/design-circular-deque)
    with drop-policy appears (log frameworks are the classic
    "drop-oldest under load" system, which is
    [backpressure](/system-design/fundamentals/backpressure-and-flow-control)
@@ -173,7 +173,7 @@ is a shared resource, and the design decision is the standard one
    stall a fast one (stdout).
 
 The async option is where the [circular
-deque](/dsa/patterns/linear-structures/problems/design-circular-deque)
+deque](/dsa/patterns/linear-structures/design-circular-deque)
 from this site's DSA section becomes an LLD component: bounded ring,
 drop-oldest on overflow, one draining thread. Worth connecting out
 loud.
@@ -191,6 +191,10 @@ loud.
   the layout merges in, the threading discipline this site's
   [tracing](/system-design/fundamentals/observability) discussion
   wants.
+
+## Related C++ tools
+
+- [std::string](/cpp/string): substr, find, and the operations that copy.
 
 ## Related concepts
 

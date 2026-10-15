@@ -1,0 +1,107 @@
+---
+title: "K Closest Points to Origin"
+difficulty: "Medium"
+variant: "Quickselect"
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/k-closest-points-to-origin/"
+---
+
+## Problem
+
+Given an array of points `[x, y]` on a plane and an integer `k`, return
+the `k` points closest to the origin `(0, 0)`. Distance is Euclidean. The
+answer may be in any order.
+
+**Constraints**
+
+- `1 <= k <= points.length <= 10^4`
+- `-10^4 <= x, y <= 10^4`
+
+**Example**
+
+```text
+Input:  points = [[3,3],[5,-1],[-2,4]], k = 2
+Output: [[3,3],[-2,4]]
+```
+
+## Brute force
+
+Sort every point by distance and keep the first `k`.
+
+```cpp
+std::vector<std::vector<int>> kClosestBrute(
+        std::vector<std::vector<int>> points, int k) {
+    std::sort(points.begin(), points.end(),
+              [](const auto& a, const auto& b) {
+                  return a[0] * a[0] + a[1] * a[1] <
+                         b[0] * b[0] + b[1] * b[1];
+              });
+    points.resize(k);
+    return points;
+}
+```
+
+This is correct, and at O(n log n) it is not slow. It does more than you
+asked, though. It puts all n points in order, while you only need to know
+which k fall below a cut-off. That extra work is what selection removes.
+
+Notice the comparison uses *squared* distance. Square root is monotonic,
+so it never changes the order, and skipping it avoids floating point
+entirely. The largest squared distance is 2 * 10^8, which fits in an `int`.
+
+## Optimal: partition, do not sort
+
+Quickselect is quicksort that only recurses into one side. Pick a pivot
+and partition: closer points to the left, farther points to the right. If
+the pivot lands at index k, you are done. The first k slots are the
+answer, in no particular order. If it lands past k, recurse left. If it
+lands before k, recurse right. Each step discards one side, so the
+expected work is n + n/2 + n/4 + ..., which is O(n).
+
+The standard library ships this as `std::nth_element`. After the call, the
+element at position `k` is the one a full sort would put there. Everything
+before it compares less than or equal to it.
+
+```cpp
+std::vector<std::vector<int>> kClosest(
+        std::vector<std::vector<int>> points, int k) {
+    auto squaredDistance = [](const std::vector<int>& p) {
+        return p[0] * p[0] + p[1] * p[1];
+    };
+    std::nth_element(points.begin(), points.begin() + k, points.end(),
+                     [&](const auto& a, const auto& b) {
+                         return squaredDistance(a) < squaredDistance(b);
+                     });
+    points.resize(k);                      // the k closest, unordered
+    return points;
+}
+```
+
+When `k == n`, `points.begin() + k` is `end()`. That is a valid argument
+and the call simply does nothing.
+
+`nth_element` is introselect. It runs quickselect and falls back to a
+guaranteed-linear method if partitions keep going badly. That fallback
+removes the O(n²) worst case that a hand-written quickselect with a naive
+pivot suffers on adversarial input.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Sort everything | O(n log n) | O(log n) |
+| Max-heap of size k | O(n log k) | O(k) |
+| Quickselect (`nth_element`) | O(n) average | O(1) extra |
+
+The heap row is the streaming answer. Use it when points arrive one at a
+time and you cannot hold them all, as in
+[Kth Largest Element in a Stream](/dsa/patterns/heaps-and-priority-queues/kth-largest-element-in-a-stream).
+When the whole array is in memory, selection beats both: you never pay
+for order you do not need.
+
+## Related C++ tools
+
+- [Custom Comparators](/cpp/comparators): the ordering contract every comparator must keep.
+- [std::function & Lambdas](/cpp/function-lambdas): closures, captures, and recursive lambdas.
+- [Sorting & nth_element](/cpp/algorithms): sort, nth_element, and what each guarantees.

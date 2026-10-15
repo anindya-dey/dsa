@@ -38,7 +38,7 @@ slower than `sort` in practice.
 
 **`std::nth_element`**: puts the element that *belongs* at
 position k there, with everything before it
- less-or-equal and everything after greater-or-equal — **the
+ less-or-equal and everything after greater-or-equal, **the
 [k-th element](/dsa/patterns/sorting-and-selection)
 answer** (quickselect in library form: O(n) average, no full
 sort), and everything else is *unordered* (the sides are
@@ -48,8 +48,8 @@ after the call.
 
 **`std::partial_sort`**: the top-k, *in order* (the first k
 positions are the k smallest, sorted): the "top 10 leaderboard"
-call, O(n log k) — the
-[bounded-heap](/dsa/patterns/sorting-and-selection/problems/kth-largest-element-in-a-stream)
+call, O(n log k), the
+[bounded-heap](/dsa/patterns/heaps-and-priority-queues/kth-largest-element-in-a-stream)
 alternative when the answer must be *sorted*, not just selected.
 
 ## The comparator discipline
@@ -75,13 +75,13 @@ std::reverse(v.begin(), v.end());
 std::reverse_copy(src.begin(), src.end(), dst.begin());
 std::unique(v.begin(), v.end());                  // AFTER sort: dedupe (erase to resize)
 v.erase(std::unique(v.begin(), v.end()), v.end());
-std::rotate(v.begin(), v.begin() + k, v.end());   // the [rotation](/dsa/patterns/linear-structures/problems/rotate-array) primitive
+std::rotate(v.begin(), v.begin() + k, v.end());   // the [rotation](/dsa/patterns/linear-structures/rotate-array) primitive
 std::min_element / max_element(v.begin(), v.end());  // O(n), NO sort needed
 std::minmax_element(...);                        // both, one pass
 ```
 
 The "no sort needed" rule is worth stating: **min/max/second-min
-do not need sorting** — `min_element` is O(n), and sorting to get
+do not need sorting**, `min_element` is O(n), and sorting to get
 a minimum is the classic waste. The
 [heap entry](/dsa/patterns/heaps-and-priority-queues) is the same
 rule for the *repeated* extreme question.

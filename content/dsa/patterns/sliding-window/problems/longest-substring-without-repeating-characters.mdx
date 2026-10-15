@@ -2,7 +2,9 @@
 title: "Longest Substring Without Repeating Characters"
 difficulty: "Medium"
 variant: "Dynamic Window"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/longest-substring-without-repeating-characters/"
 ---
 
 ## Problem
@@ -87,3 +89,9 @@ most once, so the total work is O(n), not O(n²). This is the dynamic shape of
 
 The set uses extra memory, but it's bounded by the number of distinct
 characters, which for ASCII is a small constant.
+
+## Related C++ tools
+
+- [std::unordered_map / unordered_set](/cpp/unordered-map): average O(1) lookups, and find versus operator[].
+- [std::string](/cpp/string): substr, find, and the operations that copy.
+- [Iterator Invalidation](/cpp/invalidation): which operations break iterators you are holding.

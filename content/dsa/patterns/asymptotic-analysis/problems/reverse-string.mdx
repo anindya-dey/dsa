@@ -2,7 +2,9 @@
 title: "Reverse String"
 difficulty: "Easy"
 variant: "Two Pointers"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/reverse-string/"
 ---
 
 ## Problem
@@ -75,9 +77,9 @@ of the asymptotic-analysis point that [complexity has two
 axes](/dsa/patterns/asymptotic-analysis), and that "the same time
 complexity" can still hide a real improvement. The in-place swap is
 also the exact move that powers
-[rotate array](/dsa/patterns/linear-structures/problems/rotate-array)
+[rotate array](/dsa/patterns/linear-structures/rotate-array)
 (a triple reversal) and
-[reverse linked list](/dsa/patterns/linked-list-manipulation/problems/reverse-linked-list)
+[reverse linked list](/dsa/patterns/linked-list-manipulation/reverse-linked-list)
 (the pointer-surgery version of the same idea).
 
 ## Complexity
@@ -90,3 +92,7 @@ also the exact move that powers
 Linear time is optimal (every element must move), so the pointer version
 is the honest optimum: same time, minimal space, and the template for
 every symmetric in-place transformation.
+
+## Related C++ tools
+
+- [std::vector](/cpp/vector): the dynamic array underneath almost every solution.

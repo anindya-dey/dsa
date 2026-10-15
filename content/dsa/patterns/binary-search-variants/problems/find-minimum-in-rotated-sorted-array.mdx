@@ -1,0 +1,97 @@
+---
+title: "Find Minimum in Rotated Sorted Array"
+difficulty: "Medium"
+variant: "Search on a Predicate"
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/find-minimum-in-rotated-sorted-array/"
+---
+
+## Problem
+
+A sorted array of unique values was rotated some number of times, for
+example `[0,1,2,4,5,6,7]` became `[4,5,6,7,0,1,2]`. Return the minimum
+value in O(log n) time.
+
+**Constraints**
+
+- `1 <= nums.length <= 5000`
+- All values are unique
+
+**Example**
+
+```text
+Input:  nums = [4, 5, 6, 7, 0, 1, 2]
+Output: 0
+
+Input:  nums = [11, 13, 15, 17]
+Output: 11           // rotated a full cycle: still sorted
+```
+
+## Brute force
+
+Scan the whole array and keep the smallest value.
+
+```cpp
+int findMinBrute(const std::vector<int>& nums) {
+    return *std::min_element(nums.begin(), nums.end());
+}
+```
+
+That is O(n), and it ignores everything you know about the array. The
+array is two sorted runs, and the minimum is where the second run begins.
+
+## Optimal: compare the middle with the right end
+
+Look at `nums[mid]` and the last element `nums[hi]`. There are two cases.
+
+- `nums[mid] > nums[hi]`. The middle is in the *first* run, the one that
+  was rotated to the front. Every value up to and including `mid` is too
+  big. The minimum is strictly to the right: `lo = mid + 1`.
+- `nums[mid] < nums[hi]`. From `mid` to `hi` is sorted, so nothing to the
+  right of `mid` is smaller. The minimum is `mid` or to its left:
+  `hi = mid`.
+
+Keep halving until `lo == hi`. That single position is the minimum.
+
+```cpp
+int findMin(const std::vector<int>& nums) {
+    int lo = 0;
+    int hi = static_cast<int>(nums.size()) - 1;
+    while (lo < hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (nums[mid] > nums[hi]) {
+            lo = mid + 1;                 // mid is in the rotated-front run
+        } else {
+            hi = mid;                     // mid..hi sorted: min is at or left
+        }
+    }
+    return nums[lo];
+}
+```
+
+Why compare with the right end and not the left? `nums[lo]` cannot tell
+the two cases apart when the array is not rotated at all, because then
+`nums[lo] <= nums[mid]` in every case. `nums[hi]` always separates them.
+The loop also never needs an "equals" branch, since values are unique and
+`mid < hi` throughout.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Linear scan | O(n) | O(1) |
+| Binary search against the right end | O(log n) | O(1) |
+
+This is binary search on a *predicate*, not on a target. The predicate
+"is `nums[i] <= nums.back()`?" is false for the first run and true for the
+second, and you are searching for the first true. Once you find the
+minimum's index, you have also found the rotation amount. That is the
+first step of
+[Search in Rotated Sorted Array](/dsa/patterns/binary-search-variants/search-in-rotated-sorted-array),
+and it is the core move of
+[binary search variants](/dsa/patterns/binary-search-variants).
+
+## Related C++ tools
+
+- [std::vector](/cpp/vector): the dynamic array underneath almost every solution.

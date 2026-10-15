@@ -2,7 +2,9 @@
 title: "Time-Based Key-Value Store"
 difficulty: "Medium"
 variant: "Binary Search over Time"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/time-based-key-value-store/"
 ---
 
 ## Problem
@@ -118,7 +120,7 @@ about which bound it is. The wanted entry is the *last* with
 `upper_bound`; the "first greater-or-equal" position (`lower_bound`) would
 step back onto the wrong element whenever an exact match exists. This is
 the same lower/upper-bound distinction as
-[first and last position](/dsa/patterns/binary-search-variants/problems/first-and-last-position-in-sorted-array),
+[first and last position](/dsa/patterns/binary-search-variants/first-and-last-position-in-sorted-array),
 applied to a rolling store instead of a static array.
 
 Note what the design quietly relies on: the problem guarantees `set`
@@ -143,3 +145,9 @@ upper-bound lookup answers it. It is the same pattern as
 [binary search on sorted data](/dsa/patterns/binary-search-variants),
 wearing a [design data structures](/dsa/patterns/design-data-structures)
 costume.
+
+## Related C++ tools
+
+- [std::unordered_map / unordered_set](/cpp/unordered-map): average O(1) lookups, and find versus operator[].
+- [lower_bound & upper_bound](/cpp/binary-search-algos): the library's boundary searches.
+- [std::pair / std::tuple](/cpp/pair-tuple): pairs, structured bindings, and lexicographic comparison.

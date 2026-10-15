@@ -20,11 +20,15 @@ export interface SearchEntry {
   section: string;
 }
 
-const MAX_BODY_CHARS = 6000;
+const MAX_BODY_CHARS = 4000;
 
 export function mdxToPlainText(raw: string): string {
   const { content } = matter(raw);
-  return content
+  // "Related ..." end sections are link lists to other pages; indexing them
+  // makes every page match its neighbours' titles.
+  const related = content.search(/^## Related /m);
+  const prose = related === -1 ? content : content.slice(0, related);
+  return prose
     .replace(/```[\s\S]*?```/g, " ")
     .replace(/`([^`\n]*)`/g, "$1")
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")

@@ -3,30 +3,30 @@ title: "Batch vs Real-Time Prediction"
 summary: "Scoring on a schedule versus scoring in the request path: what each mode buys, what it costs, and where the retraining loop plugs in."
 ---
 
-[Offline vs online inference](/ai-ml/systems/offline-vs-online-inference)
-covers the *architectural* split (two infrastructures, one model).
-This page covers the *product* side of the same decision: **when
-predictions are made, what that buys, and which products can
-tolerate which staleness.** The distinction sounds like a
-restatement, but the design conversation is different — this is
-about picking the mode per product, per feature, per prediction,
-and about the **retraining loop** that plugs into whichever mode
-you chose.
+Every model is used in one of two modes. **Batch** scores a whole table
+on a schedule: a million churn scores tonight, read tomorrow from a
+table. **Real-time** scores one request in the request path, in a few
+milliseconds, with features fetched on the spot. The two modes need
+opposite infrastructure, and most products end up using both.
+
+This page covers when predictions are made, what each mode buys, which
+products can tolerate which staleness, how each mode fails, and where the
+**retraining loop** plugs in.
 
 ## The product decision: staleness, cost, and blast radius
 
 The three questions, product-first:
 
 - **How fast does a prediction become stale?** ("Is this user
-  likely to churn?" — a week-stale score is identical to a fresh
+  likely to churn?", a week-stale score is identical to a fresh
   one, because churn is slow. "Will this user click *this* item
-  *now*?" — the prediction dies with the request.) The faster the
+  *now*?", the prediction dies with the request.) The faster the
   staleness, the further toward online.
 - **How expensive is one prediction?** (A tiny
   [GBDT](https://en.wikipedia.org/wiki/Gradient_boosting) score:
   microseconds, affordable per request. A
   [LLM](/ai-ml/systems/ml-system-design-basics) call: hundreds
-  of milliseconds and real money — per request is a *budget*
+  of milliseconds and real money, per request is a *budget*
   conversation, and "batch the nightly" is how most expensive
   models ship.) The more expensive, the further toward batch.
 - **What happens when the prediction is wrong or stale?** (A stale
@@ -53,8 +53,8 @@ pipeline: **join** the event data into feature tables, **score**
 every row (the model applied as a pure function: no request, no
 serving tier, just a [batch](/system-design/fundamentals/stream-vs-batch-processing)
 transform), **publish** the scores as a versioned table (per run:
-the scores are derived data, rebuildable, and their *provenance*
-— which model version, which data window — is part of the output),
+the scores are derived data, rebuildable, and their *provenance*,
+which model version, which data window, is part of the output),
 and the product **reads** the table with a known staleness
 contract.
 
@@ -78,7 +78,7 @@ tier: the model in memory (or on a
 on the [stateless tier](/system-design/fundamentals/scalability),
 the request's features fetched in milliseconds (the
 [feature store](/ai-ml/systems/feature-stores)'s online
-half), and the score returned synchronously — the
+half), and the score returned synchronously, the
 [fraud-scoring](/system-design/hld/fraud-detection) shape, in
 full, on this site.
 
@@ -118,6 +118,29 @@ is fine per request and the *features* are the impossible part,
 which is the [feature store](/ai-ml/systems/feature-stores)'s
 entire reason for existing.
 
+## The failure modes, per mode
+
+**Online's** classic failures: the model *loading* cold (the
+[multi-GB](/system-design/fundamentals/scalability) artifact
+pulled into a new pod: warm pools), the *feature lookup* as the
+real latency (the model is microseconds, the 10-store fan-out is
+the budget), and the **degradation contract** (when scoring
+fails, what does the request do? fail-open, fail-closed, or
+challenge, a product decision, designed like any
+[fallback](/system-design/fundamentals/availability-and-reliability)).
+
+**Offline's** classic failures: the *stale score* consumed
+confidently (the dashboard reads yesterday's churn scores as if
+current: the [CQRS](/system-design/fundamentals/event-sourcing-and-cqrs)
+read-model staleness, wearing ML clothes), the **pipeline
+dependency** (the nightly job is late, everything downstream is
+late: the [job scheduler](/system-design/hld/distributed-job-scheduler)'s
+whole subject), and the *silent* one, the model was retrained and
+the offline scores changed meaning, and nobody noticed that the
+churn-score distribution moved (the
+[drift](/system-design/fundamentals/observability) discipline,
+applied to your own outputs).
+
 ## The retraining loop plugs in here
 
 The mode decision determines the **feedback cadence**: batch
@@ -128,14 +151,12 @@ outcomes → streaming
 → daily or continuous retraining). The [fraud
 detector](/system-design/hld/fraud-detection) is the extreme case
 (adversarial drift demands *fast* retraining), and the honest
-question — *how fast does the model need to improve?* — is often
+question, *how fast does the model need to improve?*, is often
 the real answer to "batch or real-time": not "how fresh are the
 predictions" but "how fresh is the *learning*."
 
 ## Related concepts
 
-- [Offline vs Online Inference](/ai-ml/systems/offline-vs-online-inference):
-  the architecture side of this same decision.
 - [Feature Stores](/ai-ml/systems/feature-stores): the
   hybrid's machinery.
 - [Stream vs. Batch](/system-design/fundamentals/stream-vs-batch-processing):

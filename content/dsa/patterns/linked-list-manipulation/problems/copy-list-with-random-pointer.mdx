@@ -2,7 +2,9 @@
 title: "Copy List with Random Pointer"
 difficulty: "Medium"
 variant: "Interleaving Trick"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/copy-list-with-random-pointer/"
 ---
 
 ## Problem
@@ -54,7 +56,7 @@ Node* copyRandomListMap(Node* head) {
 ```
 
 Correct, O(n) time, O(n) extra memory, and a perfectly reasonable
-answer (it is the [clone graph](/dsa/patterns/graph-traversals/problems/clone-graph)
+answer (it is the [clone graph](/dsa/patterns/graph-traversals/clone-graph)
 solution: the map *is* the visited set). The problem exists because
 there is an O(1)-extra-memory version, and the trick behind it is the
 lesson.
@@ -118,7 +120,7 @@ Walk the three passes, because each exists for one reason:
   problem requires the input unmodified) and chaining the copies.
 
 The dummy head in the split pass is the same
-[weaving discipline](/dsa/patterns/linked-list-manipulation/problems/merge-two-sorted-lists)
+[weaving discipline](/dsa/patterns/linked-list-manipulation/merge-two-sorted-lists)
 as always: an unattached starting point so no branch is needed for
 the first node. And the whole structure is the
 [pointer-labeling](/dsa/patterns/linked-list-manipulation) discipline
@@ -136,8 +138,12 @@ sentence.
 
 Three passes instead of two, zero auxiliary memory. This is the
 canonical "use the structure as its own bookkeeping" problem, the
-sibling of [clone graph](/dsa/patterns/graph-traversals/problems/clone-graph)
+sibling of [clone graph](/dsa/patterns/graph-traversals/clone-graph)
 (where the cycle-free guarantee is absent and the map is genuinely
 necessary), and it is worth knowing which is which: the interleaving
 trick *requires* a linear structure with a next field to borrow, which
 is exactly what a general graph lacks.
+
+## Related C++ tools
+
+- [std::unordered_map / unordered_set](/cpp/unordered-map): average O(1) lookups, and find versus operator[].

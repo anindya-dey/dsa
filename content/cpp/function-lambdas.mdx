@@ -5,7 +5,7 @@ summary: "Closures, captures, and the comparator pattern used across this site."
 
 Lambdas are this site's most-used C++ feature after the containers
 themselves: every custom comparator, every hash, every
-[greedy sort key](/dsa/patterns/greedy-algorithms/problems/partition-labels),
+[greedy sort key](/dsa/patterns/greedy-algorithms/partition-labels),
 every strategy parameter is a lambda. This entry covers the
 mechanics (capture, the type rules) and the
 [comparator pattern](#the-comparator-pattern) that everything else
@@ -29,7 +29,7 @@ auto moveIn = [v = std::move(bigVector)](int x) { ... };     // init-capture: MO
 
 The capture rules are the trap surface:
 
-- **`[=]` / `[&]` capture everything *used*** — the convenient
+- **`[=]` / `[&]` capture everything *used***, the convenient
   default that hides what a closure depends on (and `[&]`'s
   dangling risk: see below).
 - **`[&]` closure outliving the captured variable** is the classic
@@ -47,7 +47,7 @@ The capture rules are the trap surface:
 
 A lambda's *type is unique and unnamed* (you cannot write it), so
 passing one around needs either `auto` (templates: the common
-case) or `std::function<R(Args...)>` — the **type-erased**
+case) or `std::function<R(Args...)>`, the **type-erased**
 callable: any callable with a matching signature, stored in one
 type, callable through it.
 
@@ -61,7 +61,7 @@ void each(std::function<void(int)> handler);       // the [broker](/system-desig
 
 The trade: `std::function` costs (indirection, a possible heap
 allocation for large captures, no inlining) where `auto`/template
-parameters cost nothing — so the rule is **templates for
+parameters cost nothing, so the rule is **templates for
 performance paths, `std::function` where storage or a fixed
 signature is required** (a [member](/system-design/lld/task-scheduler-lld)
 holding a handler, a container of callbacks: the places the type
@@ -69,7 +69,7 @@ holding a handler, a container of callbacks: the places the type
 
 ## The comparator pattern
 
-The single most-used form on this site — a lambda as a sort or
+The single most-used form on this site, a lambda as a sort or
 heap comparator, capturing whatever state it needs:
 
 ```cpp
@@ -95,7 +95,7 @@ Two details make this pattern correct every time:
 
 - **The comparator is a *strict weak ordering*** ("less than", not
   "less or equal"): return `true` iff `a` goes *before* `b`, and
-  equal elements return `false` *both ways* — returning `true`
+  equal elements return `false` *both ways*: returning `true`
   for equal elements (the `<=` mistake) is
   **undefined behavior** in `std::sort` (the comparator
   contradicting itself mid-sort: the classic crash inside
@@ -103,6 +103,6 @@ Two details make this pattern correct every time:
 - **`decltype(cmp)` + passing `cmp` in**: the heap *stores* the
   comparator (it must be
   [default-constructible-or-passed](https://en.cppreference.com/w/cpp/container/priority_queue/priority_queue)),
-  which is why the [Dijkstra](/dsa/patterns/graph-specializations/problems/network-delay-time)
-  and [merge-k](/dsa/patterns/heaps-and-priority-queues/problems/merge-k-sorted-lists)
+  which is why the [Dijkstra](/dsa/patterns/graph-specializations/network-delay-time)
+  and [merge-k](/dsa/patterns/heaps-and-priority-queues/merge-k-sorted-lists)
   solutions on this site construct with the lambda as an argument.

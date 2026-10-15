@@ -2,7 +2,9 @@
 title: "Product of Array Except Self"
 difficulty: "Medium"
 variant: "Prefix Products"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/product-of-array-except-self/"
 ---
 
 ## Problem
@@ -97,7 +99,7 @@ once, no extra arrays, and no division: the two running products carry
 exactly the two factors each answer needs, and every intermediate
 product is shared across all the answers that need it, which is the
 prefix-computation idea verbatim (the [pivot
-index](/dsa/patterns/prefix-sums-and-difference-arrays/problems/find-pivot-index)
+index](/dsa/patterns/prefix-sums-and-difference-arrays/find-pivot-index)
 problem's shape, with products and no center element).
 
 Zeros fall out for free, which is why this version is *robust* rather
@@ -121,3 +123,7 @@ the technique is not about adding, it is about *precomputing the
 fold of everything to one side*, and any associative operator with an
 identity (products, XOR, max) supports exactly the same two-pass
 machinery.
+
+## Related C++ tools
+
+- [std::vector](/cpp/vector): the dynamic array underneath almost every solution.

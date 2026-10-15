@@ -193,8 +193,12 @@ plus the path down), with O(1) work per node. This is the canonical
 range-update problem of
 [range-query structures](/dsa/patterns/range-query-structures), the
 step past the point-update
-[Fenwick](/dsa/patterns/range-query-structures/problems/range-sum-query-mutable)
+[Fenwick](/dsa/patterns/range-query-structures/range-sum-query-mutable)
 (the Fenwick can be extended to range updates with two BITs, a
 cleverness worth knowing exists but a trickier one), and the standard
 interview-grade demonstration of lazy propagation: the deferred-
 update idea that keeps interleaved range operations logarithmic.
+
+## Related C++ tools
+
+- [Integer Overflow & Limits](/cpp/integer-overflow): where int runs out, and how this code stays inside it.

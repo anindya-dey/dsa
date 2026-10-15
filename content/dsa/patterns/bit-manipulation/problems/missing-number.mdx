@@ -1,0 +1,96 @@
+---
+title: "Missing Number"
+difficulty: "Easy"
+variant: "XOR Cancellation"
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/missing-number/"
+---
+
+## Problem
+
+An array holds `n` distinct numbers taken from the range `0..n`. Exactly
+one number in that range is missing. Return it.
+
+**Constraints**
+
+- `1 <= n <= 10^4`
+- All values are distinct and in `[0, n]`
+
+**Example**
+
+```text
+Input:  nums = [3, 0, 1]
+Output: 2
+
+Input:  nums = [9, 6, 4, 2, 3, 5, 7, 0, 1]
+Output: 8
+```
+
+## Brute force
+
+Sort the array. The first index whose value differs from the index is the
+gap. If none differs, the missing number is `n`.
+
+```cpp
+int missingNumberBrute(std::vector<int> nums) {
+    std::sort(nums.begin(), nums.end());
+    for (int i = 0; i < static_cast<int>(nums.size()); ++i) {
+        if (nums[i] != i) {
+            return i;                     // first gap
+        }
+    }
+    return static_cast<int>(nums.size());  // 0..n-1 all present: n is missing
+}
+```
+
+That is O(n log n) for a question about a known range. A hash set would
+make it O(n) time, but at the cost of O(n) memory. You can have both O(n)
+time and O(1) space.
+
+## Optimal: let the pairs cancel
+
+XOR has two properties that matter here. `x ^ x = 0`, and the order you
+combine values in does not matter. So if you XOR together every index
+`0..n` *and* every value in the array, each present number appears twice
+and cancels out. The missing number appears once, as an index only, and
+it is all that remains.
+
+```cpp
+int missingNumber(const std::vector<int>& nums) {
+    int n = static_cast<int>(nums.size());
+    int result = n;                       // index n has no array slot
+    for (int i = 0; i < n; ++i) {
+        result ^= i ^ nums[i];            // each present value meets its twin
+    }
+    return result;
+}
+```
+
+Trace `[3, 0, 1]`. Start with 3. Then `3 ^ 0 ^ 3 = 0`, then
+`0 ^ 1 ^ 0 = 1`, then `1 ^ 2 ^ 1 = 2`. The answer is 2.
+
+The sum formula also works: `n(n + 1) / 2` minus the array's sum. It is
+easy to explain, but it can overflow when n is large. For this problem's
+limit it fits in an `int`; in general you would compute it in
+`long long`. XOR never grows past the width of its inputs, so it has no
+overflow case at all.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Sort, find the gap | O(n log n) | O(1) to O(n) |
+| Hash set | O(n) | O(n) |
+| XOR cancellation | O(n) | O(1) |
+
+The same cancellation solves
+[Single Number](/dsa/patterns/bit-manipulation/single-number): everything
+appears twice except one value. Whenever a problem says "everything
+pairs up except one", think XOR. It is the quickest win in
+[bit manipulation](/dsa/patterns/bit-manipulation).
+
+## Related C++ tools
+
+- [Bit Operations](/cpp/bit-operations): the operators and tricks behind the bit-level steps.
+- [Sorting & nth_element](/cpp/algorithms): sort, nth_element, and what each guarantees.

@@ -2,7 +2,9 @@
 title: "Min Stack"
 difficulty: "Medium"
 variant: "Stack"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/min-stack/"
 ---
 
 ## Problem
@@ -92,7 +94,7 @@ public:
 private:
     std::vector<int> elements_;
     std::vector<int> mins_;               // mins_[i] = min(elements_[0..i])
-}
+};
 ```
 
 Read `mins_` as a timestamped history: `mins_[i]` is the minimum of the
@@ -118,3 +120,7 @@ and it is the stepping stone to [monotonic
 stacks](/dsa/patterns/monotonic-structures), which answer "nearest greater
 element" questions with the same era-restore trick, plus a rule for
 discarding elements whose era has permanently ended.
+
+## Related C++ tools
+
+- [std::vector](/cpp/vector): the dynamic array underneath almost every solution.

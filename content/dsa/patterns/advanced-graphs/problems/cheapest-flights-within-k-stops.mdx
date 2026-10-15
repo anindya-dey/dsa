@@ -2,7 +2,9 @@
 title: "Cheapest Flights Within K Stops"
 difficulty: "Medium"
 variant: "Bellman-Ford with Hop Limit"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/cheapest-flights-within-k-stops/"
 ---
 
 ## Problem
@@ -116,3 +118,8 @@ limit is a constraint Dijkstra's greedy finalization cannot express, and the
 round-by-round structure of Bellman-Ford encodes it directly. It is also the
 reason [Advanced Graphs](/dsa/patterns/advanced-graphs) treats the
 shortest-path variants as their own family.
+
+## Related C++ tools
+
+- [Integer Overflow & Limits](/cpp/integer-overflow): where int runs out, and how this code stays inside it.
+- [std::pair / std::tuple](/cpp/pair-tuple): pairs, structured bindings, and lexicographic comparison.

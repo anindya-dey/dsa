@@ -2,7 +2,9 @@
 title: "Largest Rectangle in Histogram"
 difficulty: "Hard"
 variant: "Monotonic Stack"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/largest-rectangle-in-histogram/"
 ---
 
 ## Problem
@@ -108,4 +110,8 @@ This is the hardest standard monotonic-stack problem, and the reason is
 that the reformulation (best rectangle per bar, bounded by first shorter
 neighbors) is not visible in the problem statement. It has to be derived.
 Once derived, the stack mechanics are the same as
-[Daily Temperatures](/dsa/patterns/monotonic-structures/problems/daily-temperatures).
+[Daily Temperatures](/dsa/patterns/monotonic-structures/daily-temperatures).
+
+## Related C++ tools
+
+- [std::vector](/cpp/vector): the dynamic array underneath almost every solution.

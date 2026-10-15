@@ -3,8 +3,8 @@ title: "Inference Optimization"
 summary: "Quantization, pruning, and distillation: making a model cheaper without retraining from scratch."
 ---
 
-Serving a model is often *too expensive* — the GPU bill, the
-latency, the memory — and the fix is **inference optimization**: the
+Serving a model is often *too expensive*, the GPU bill, the
+latency, the memory, and the fix is **inference optimization**: the
 family of techniques that make a *trained* model cheaper to run,
 trading a little accuracy for a lot of speed, memory, or money. The
 discipline is the [capacity planning](/system-design/fundamentals/capacity-planning-and-estimation)
@@ -27,7 +27,7 @@ graph LR
 ```
 
 **Quantization** (the biggest win, the default first move): store
-and compute with **lower-precision numbers** — 32-bit floats to
+and compute with **lower-precision numbers**, 32-bit floats to
 16-bit (half precision), 8-bit integers (int8), or 4-bit. The
 payoffs: **4x less memory** (fp32→int8), **faster matmuls** (integer
 and fp16 units are wider on modern hardware), and **less bandwidth**
@@ -37,7 +37,7 @@ which is often the real bottleneck). The two forms: **post-training
 quantization** (PTQ: quantize the trained weights directly, with a
 calibration pass: cheap, sometimes lossy) and **quantization-aware
 training** (QAT: train with simulated quantization so the model
-adapts: more accurate, more work) — and the accuracy cost is
+adapts: more accurate, more work), and the accuracy cost is
 *usually* small (a fraction of a percent) but **must be
 measured per model** (some are quantization-sensitive: the honest
 step is the [eval suite](/ai-ml/systems/evaluation-metrics)
@@ -69,17 +69,17 @@ cheap (the small one), which composes with quantization.
   [LLM-specific](/ai-ml/systems/model-serving-architectures)
   family: the autoregressive generation's repeated attention is the
   cost, and the KV cache, paged attention, and flash-attention
-  kernels are the whole field's response — the
+  kernels are the whole field's response, the
   [batching page's](/ai-ml/systems/batching-and-latency)
   companion).
 - **Compilation and kernel fusion** (the
   [runtimes page's](/ai-ml/systems/model-runtimes-compilation)
-  subject: turning the graph into fused, hardware-specific kernels —
-  an *inference* optimization as much as a runtime one).
+  subject: turning the graph into fused, hardware-specific kernels,
+an *inference* optimization as much as a runtime one).
 - **Speculative decoding** (the LLM trick: a small model drafts
   tokens, the big model verifies in parallel: the big model's
   expensive forward passes amortized, ~2-3x speedup at no accuracy
-  cost — the *interesting* modern technique, and a good one to name).
+  cost, the *interesting* modern technique, and a good one to name).
 - **Caching** (identical requests, cached answers: the
   [semantic cache](/system-design/fundamentals/caching), covered on
   the [caching page](/ai-ml/systems/model-caching-warm-pools)).
@@ -90,7 +90,7 @@ The honest workflow, and the page's actual lesson:
 
 1. **Profile first** (what is the bottleneck? compute-bound
    (matmuls), memory-bound (the weights don't fit), or
-   bandwidth-bound (moving weights)? — each points at a different
+   bandwidth-bound (moving weights)? , each points at a different
    technique, and guessing wastes the effort).
 2. **Quantize first** (the biggest win for the least work, and the
    most composable).

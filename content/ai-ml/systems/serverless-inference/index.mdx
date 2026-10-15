@@ -4,7 +4,7 @@ summary: "Scale-to-zero for models, and the multi-gigabyte cold start that fight
 ---
 
 Serverless inference ("scale to zero, pay per request") is the
-dream for the *long tail* of models — the hundreds that get a
+dream for the *long tail* of models, the hundreds that get a
 handful of calls an hour, where a [dedicated
 fleet](/ai-ml/systems/gpu-accelerator-management) is 99% idle
 and therefore 99% wasted money. The mechanism (a request arrives →
@@ -13,14 +13,14 @@ the container scales down after idle) is the standard serverless
 pattern, and it collides with the ML-specific reality head-on: **a
 model is a multi-gigabyte artifact whose load takes seconds to
 minutes**, so the *cold start* is not milliseconds (the web-
-function case) but *seconds* — the user waits, the request times
+function case) but *seconds*, the user waits, the request times
 out, or the platform keeps a warm pool (which is no longer
 scale-to-zero). The whole design is the negotiation between
 scale-to-zero and the cold start.
 
 ## The cold start, decomposed
 
-The latency of a cold inference, in its stages — because the
+The latency of a cold inference, in its stages, because the
 optimization targets *each*:
 
 ```mermaid
@@ -34,10 +34,10 @@ graph LR
 ```
 
 - **Scheduling/provisioning** (seconds: the orchestrator finds
-  capacity and starts the sandbox — the generic serverless cost).
+  capacity and starts the sandbox, the generic serverless cost).
 - **Download** (the *ML-specific* cost: a 5 GB model from
   [object storage](/system-design/fundamentals/object-storage) is
-  seconds-to-minutes, and it dwarfs the generic cold start — the
+  seconds-to-minutes, and it dwarfs the generic cold start, the
   fix is the [warm pool](/ai-ml/systems/model-caching-warm-pools)
   or the model cached *on the node*).
 - **Load + warm-up** (the model into VRAM, the runtime's init, the
@@ -56,19 +56,19 @@ The design's real content, in the order to apply them:
 - **Keep a warm floor** (the platform holds N warm instances: the
   "serverless" that is not: the honest answer for *interactive*
   models, and it is a [capacity-planning](/system-design/fundamentals/capacity-planning-and-estimation)
-  decision — how many warm, at what cost, to cover the traffic
+  decision: how many warm, at what cost, to cover the traffic
   floor).
-- **Snapshot/restore** (checkpoint the *loaded* state — the model in
-  VRAM, the runtime initialized — and restore it on cold start:
+- **Snapshot/restore** (checkpoint the *loaded* state, the model in
+  VRAM, the runtime initialized, and restore it on cold start:
   the modern technique (AWS's model-snapshot, the "restore the
   process" idea) that cuts the load+warmup to *sub-second*, turning
-  serverless into a real option for interactive models — the
+  serverless into a real option for interactive models, the
   [caching](/system-design/fundamentals/caching) idea, at process
   scale).
 - **Smaller models on the edge of serverless** (the
   [quantized](/ai-ml/systems/inference-optimization) model
   loads in a fraction of the time: a 500 MB int8 model has a much
-  friendlier cold start than a 10 GB fp16 one — the
+  friendlier cold start than a 10 GB fp16 one, the
   [optimization](/ai-ml/systems/inference-optimization) page,
   again, paying off in a new dimension).
 - **Node-local model cache** (the model already *on the node* (from
@@ -79,7 +79,7 @@ The design's real content, in the order to apply them:
 - **Request coalescing / queueing** (a cold-starting instance
   *queues* the arriving requests (the [chat
   design's](/system-design/hld/chat-application) long-poll: the
-  first request triggers the start, later ones join it) — the
+  first request triggers the start, later ones join it), the
   request that pays the cold start is the *one*, not *all* of them,
   which is the same single-flight discipline as the
   [cache-stampede](/system-design/fundamentals/caching) fix).
@@ -90,7 +90,7 @@ The honest product positioning:
 
 - **The long tail of low-traffic models** (the per-tenant fine-tune
   called 10 times an hour: dedicated is wasteful, warm-forever is
-  wasteful, serverless is *right* — the [multi-model
+  wasteful, serverless is *right*, the [multi-model
   routing's](/ai-ml/systems/multi-model-serving-routing)
   cold tier).
 - **Bursty/experimental** (an internal model, a prototype, a

@@ -7,7 +7,7 @@ Supervised learning learns from *labeled examples*; reinforcement
 learning (RL) learns from **interaction**. An **agent** takes
 **actions** in an **environment**, receives **rewards**, and learns a
 **policy** (what to do in each situation) that maximizes long-run
-reward. There are no labels telling it the right action — only
+reward. There are no labels telling it the right action, only
 feedback on how good the *outcome* was, often delayed. This is how you
 learn to ride a bike or play a game, and it is the paradigm behind
 game-playing AI, robotics, and the
@@ -21,7 +21,7 @@ game-playing AI, robotics, and the
 - **State**: the situation the agent is in.
 - **Action**: what it can do.
 - **Reward**: the feedback signal (a score, a win, a penalty).
-- **Policy**: the agent's strategy — a mapping from states to actions
+- **Policy**: the agent's strategy, a mapping from states to actions
   (the thing being learned).
 
 ```mermaid
@@ -34,7 +34,7 @@ graph LR
 The core difficulty is **credit assignment over time**: a move in a
 game might be brilliant or terrible, but the win or loss comes at the
 *end*. The agent must figure out which of its many past actions
-deserve credit — the RL version of the same problem
+deserve credit, the RL version of the same problem
 [backpropagation](/ai-ml/concepts/backpropagation) solves in
 networks. RL solves it by learning a **value function** (how good is
 this state, or this action in this state, in terms of future reward),
@@ -44,19 +44,19 @@ led to them.
 ## The key ideas
 
 - **Exploration vs exploitation** (the central tension: exploit what
-  you know is good, or explore to find something better — too little
+  you know is good, or explore to find something better, too little
   exploration and you get stuck, too much and you never capitalize).
-- **Value-based methods** (learn the value function, act greedily —
-  Q-learning and its deep version, DQN, which famously learned to play
+- **Value-based methods** (learn the value function, act greedily:
+Q-learning and its deep version, DQN, which famously learned to play
   Atari from pixels).
 - **Policy-based methods** (learn the policy directly, adjusting
-  action probabilities based on the reward they lead to — better for
+  action probabilities based on the reward they lead to: better for
   continuous actions and for stochastic policies).
 - **Actor-critic** (combine both: an *actor* proposes actions, a
-  *critic* evaluates them — the dominant modern architecture, and what
+  *critic* evaluates them, the dominant modern architecture, and what
   [RLHF](/ai-ml/concepts/rlhf) uses).
-- **Reward design** (specifying the reward is the hard, human part —
-  a misspecified reward produces the wrong behavior, the central
+- **Reward design** (specifying the reward is the hard, human part,
+a misspecified reward produces the wrong behavior, the central
   alignment problem).
 
 ## Where it applies
@@ -64,7 +64,7 @@ led to them.
 RL is the right tool when you cannot *label* the right action but can
 *evaluate* outcomes: **games** (AlphaGo, Atari, poker), **robotics**
 (control policies learned by trial and error), **recommendation and
-pricing** (sequences of decisions), and — the current headline —
+pricing** (sequences of decisions), and, the current headline,
 **aligning language models** ([RLHF](/ai-ml/concepts/rlhf): treat the
 model as the agent, generated text as actions, and human preference as
 the reward). The modern convergence is that the most capable AI
@@ -73,7 +73,7 @@ RL to optimize behavior against a goal.
 
 ## The honest caveats
 
-RL is **sample-hungry** (it can take enormous interaction to learn —
+RL is **sample-hungry** (it can take enormous interaction to learn:
 why simulators and games are the sweet spot), **unstable** (small
 changes break training), and **reward-hacking-prone** (the agent
 exploits whatever you actually specified, not what you meant). These

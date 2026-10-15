@@ -1,6 +1,6 @@
 ---
 title: "Heaps / Priority Queues"
-summary: "A heap keeps one element — the extreme one — instantly available, and keeps it there for a fraction of the cost of a full sort."
+summary: "A heap keeps one element, the extreme one, instantly available, and keeps it there for a fraction of the cost of a full sort."
 ---
 
 A heap is a structure built around a single promise: **the smallest (or
@@ -81,7 +81,7 @@ the two, which is O(log n) per element instead of re-sorting.
 **K-way merge.** To merge k sorted lists, keep a min-heap of the current
 head of each list. Pop the smallest, append it, and push that list's next
 element. This is the heap version of the two-list
-[merge](/dsa/patterns/linked-list-manipulation/problems/merge-two-sorted-lists),
+[merge](/dsa/patterns/linked-list-manipulation/merge-two-sorted-lists),
 generalized to k inputs in O(n log k).
 
 ## When a heap is the wrong tool
@@ -109,7 +109,7 @@ logic the library already wrote for you.
 
 ## Related C++ tools
 
-- [std::priority_queue](/cpp/priority-queue) — the heap, its comparator trick and missing operations.
+- [std::priority_queue](/cpp/priority-queue): the heap, its comparator trick and missing operations.
 
 ## Related patterns
 

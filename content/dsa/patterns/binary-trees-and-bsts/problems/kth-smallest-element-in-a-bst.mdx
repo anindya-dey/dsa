@@ -1,0 +1,102 @@
+---
+title: "Kth Smallest Element in a BST"
+difficulty: "Medium"
+variant: "Iterative Inorder, Early Stop"
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/kth-smallest-element-in-a-bst/"
+---
+
+## Problem
+
+Given the root of a binary search tree and an integer `k`, return the
+`k`-th smallest value in the tree, counting from 1.
+
+**Constraints**
+
+- `1 <= k <= number of nodes <= 10^4`
+- `0 <= node.val <= 10^4`
+
+**Example**
+
+```text
+Input:  root = [5, 3, 6, 2, 4, null, null, 1], k = 3
+Output: 3            // sorted values: 1, 2, 3, 4, 5, 6
+```
+
+## Brute force
+
+An inorder walk of a BST visits values in sorted order. Collect all of
+them, then index into the list.
+
+```cpp
+void collect(TreeNode* node, std::vector<int>& values) {
+    if (node == nullptr) {
+        return;
+    }
+    collect(node->left, values);
+    values.push_back(node->val);          // inorder: sorted for a BST
+    collect(node->right, values);
+}
+
+int kthSmallestBrute(TreeNode* root, int k) {
+    std::vector<int> values;
+    collect(root, values);
+    return values[k - 1];
+}
+```
+
+This is O(n) time and O(n) memory, and it is a fine answer. It keeps
+walking long after it has found what it needs. For `k = 1` it still
+visits every node and stores every value.
+
+## Optimal: walk in order, stop at k
+
+Do the inorder walk yourself with an explicit stack, and count values as
+you emit them. Push the left spine, pop the smallest remaining node,
+count it, then move to its right subtree. Stop the moment the count
+reaches `k`.
+
+```cpp
+int kthSmallest(TreeNode* root, int k) {
+    std::vector<TreeNode*> stack;
+    TreeNode* node = root;
+    while (node != nullptr || !stack.empty()) {
+        while (node != nullptr) {
+            stack.push_back(node);        // the left spine: smaller values
+            node = node->left;
+        }
+        node = stack.back();
+        stack.pop_back();
+        if (--k == 0) {
+            return node->val;             // the k-th value emitted
+        }
+        node = node->right;               // next: everything just above it
+    }
+    return -1;                            // unreachable: k <= node count
+}
+```
+
+The stack never holds more than one root-to-leaf path, so memory is
+O(h). Time is O(h + k): one descent to reach the minimum, then one step
+per value emitted. This is the same machinery as the
+[BST iterator](/dsa/patterns/binary-trees-and-bsts/binary-search-tree-iterator),
+stopped early.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Collect all, index | O(n) | O(n) |
+| Iterative inorder, early stop | O(h + k) | O(h) |
+
+The usual follow-up asks what to do if the tree changes often and you
+query often. Store a subtree size in each node. Then at each node you
+compare `k` with the left subtree's size and go left, answer, or go
+right with `k` reduced. That is O(h) per query. It is an order-statistic
+tree, and it shows how far one extra field can take a
+[BST](/dsa/patterns/binary-trees-and-bsts).
+
+## Related C++ tools
+
+- [std::vector](/cpp/vector): the dynamic array underneath almost every solution.

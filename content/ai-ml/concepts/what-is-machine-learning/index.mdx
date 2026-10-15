@@ -6,14 +6,14 @@ summary: "Learning a function from examples, and how it differs from writing rul
 Traditional software is *rules written by a person*: you specify the
 steps, and the program follows them. Machine learning inverts it: you
 give the program *examples* (inputs paired with the right outputs),
-and it *derives the rules* — a **function** that maps inputs to
-outputs — by finding the pattern that fits the examples. That single
+and it *derives the rules*, a **function** that maps inputs to
+outputs, by finding the pattern that fits the examples. That single
 inversion is the whole field, and everything else (models,
 architectures, training) is machinery for doing it well.
 
 The reason it matters: some tasks have no writable rules. You cannot
 write the rule for "is this a cat" or "is this email spam" as a
-sequence of `if` statements — but you *can* show a system thousands
+sequence of `if` statements, but you *can* show a system thousands
 of examples and let it find the boundary. That is the problem machine
 learning solves.
 
@@ -25,11 +25,11 @@ Every supervised ML problem has the same three parts:
   might be the words, the sender's reputation, the link count.
 - **Outputs (labels)**: what it should predict. For spam, "spam" or
   "not spam".
-- **A dataset of examples**: many `(features, label)` pairs — the
+- **A dataset of examples**: many `(features, label)` pairs, the
   *training data*, the raw material.
 
 Training is the search: find a function `f` such that `f(features)`
-is close to the true label, for the examples, *and* — the hard part —
+is close to the true label, for the examples, *and*, the hard part,
 for examples it has *never seen*. That second requirement is
 **generalization**, and it is why machine learning is not
 memorization: a model that fits the training data but fails on new
@@ -58,7 +58,7 @@ just running the trained function.
 
 The key idea that makes it powerful: the model has a **fixed
 structure** (the architecture) with **adjustable parameters**, and
-learning is *finding the parameter values* — so the human designs the
+learning is *finding the parameter values*, so the human designs the
 *shape* (a neural network, a tree ensemble) and the data fills in the
 *content*.
 

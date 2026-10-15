@@ -28,7 +28,49 @@ function V({ children }: { children: ReactNode }) {
 
 const DIAGNOSTIC_MATRIX: MatrixEntry[] = [
   {
-    clue: "Sorted array, pairs, triplets, or subsegment comparison",
+    clue: (
+      <>
+        Input size tells you the budget: <V>n</V> &le; 20 allows
+        exponential, 10<sup>3</sup> allows O(<V>n</V>&sup2;), 10<sup>5</sup>{" "}
+        needs O(<V>n</V> log <V>n</V>) or better
+      </>
+    ),
+    patterns: [{ label: "Asymptotic Analysis", slug: "asymptotic-analysis" }],
+  },
+  {
+    clue: "Index access, rotating or shifting elements, adds and removes at both ends",
+    patterns: [{ label: "Linear Structures", slug: "linear-structures" }],
+  },
+  {
+    clue: "Frequency tracking, pair matching, “have I seen this before?”",
+    patterns: [{ label: "Hash Map / Set", slug: "hash-based-structures" }],
+  },
+  {
+    clue: "The answer for n is built from the answer for a smaller n, or a self-similar shape",
+    patterns: [{ label: "Recursion", slug: "recursion-and-math" }],
+  },
+  {
+    clue: (
+      <>
+        &ldquo;<V>k</V>-th smallest / closest&rdquo;, or an order defined by a
+        custom rule
+      </>
+    ),
+    patterns: [
+      { label: "Quickselect / Custom Sort", slug: "sorting-and-selection" },
+    ],
+  },
+  {
+    clue: (
+      <>
+        Every element appears twice except one, flags packed into an integer,
+        or all subsets of <V>n</V> &le; 20 items
+      </>
+    ),
+    patterns: [{ label: "Bit Manipulation", slug: "bit-manipulation" }],
+  },
+  {
+    clue: "Sorted array, pairs or triplets, converging from both ends, or a fast/slow pair for cycles",
     patterns: [{ label: "Two Pointers", slug: "two-pointers" }],
   },
   {
@@ -41,10 +83,14 @@ const DIAGNOSTIC_MATRIX: MatrixEntry[] = [
     patterns: [{ label: "Sliding Window", slug: "sliding-window" }],
   },
   {
+    clue: "Next greater element, span of stock prices, histogram areas, trapped water",
+    patterns: [{ label: "Monotonic Stack / Deque", slug: "monotonic-structures" }],
+  },
+  {
     clue: (
       <>
-        &ldquo;Find the minimum/maximum value <V>X</V> such that a condition
-        holds&rdquo;
+        Sorted or rotated input, or &ldquo;find the minimum/maximum value{" "}
+        <V>X</V> such that a condition holds&rdquo;
       </>
     ),
     patterns: [
@@ -52,19 +98,58 @@ const DIAGNOSTIC_MATRIX: MatrixEntry[] = [
     ],
   },
   {
-    clue: "Frequency tracking, pair matching, running counts",
+    clue: "Split in half, solve both halves, combine; counting pairs that cross the split",
+    patterns: [{ label: "Divide & Conquer", slug: "divide-and-conquer" }],
+  },
+  {
+    clue: (
+      <>
+        Sum of a subarray, &ldquo;subarray sums to <V>k</V>&rdquo;, or many
+        range additions applied at once
+      </>
+    ),
     patterns: [
-      { label: "Hash Map", slug: "hash-based-structures" },
-      { label: "Prefix Sum", slug: "prefix-sums-and-difference-arrays" },
+      { label: "Prefix Sums", slug: "prefix-sums-and-difference-arrays" },
     ],
   },
   {
-    clue: "Next greater element, span of stock prices, histogram areas",
-    patterns: [{ label: "Monotonic Stack", slug: "monotonic-structures" }],
+    clue: "Overlapping ranges, meetings and rooms, merging or inserting time spans",
+    patterns: [{ label: "Intervals / Sweep Line", slug: "intervals-and-sweep-line" }],
   },
   {
-    clue: "Shortest path in an unweighted graph, or minimum steps/transformations",
-    patterns: [{ label: "Breadth-First Search", slug: "graph-traversals" }],
+    clue: "Rotate, spiral, or transform a 2D matrix in place",
+    patterns: [{ label: "Matrix & Grid", slug: "matrix-and-grid-algorithms" }],
+  },
+  {
+    clue: "Matching brackets, nested structure to decode, most-recent-first or first-in-first-out order",
+    patterns: [{ label: "Stacks & Queues", slug: "stacks-and-queues" }],
+  },
+  {
+    clue: "Reverse, reorder, or splice a linked list in place with O(1) extra space",
+    patterns: [
+      { label: "Linked List Surgery", slug: "linked-list-manipulation" },
+    ],
+  },
+  {
+    clue: "Hierarchies; depth, path, or subtree answers; sorted order from a BST",
+    patterns: [{ label: "Binary Trees & BSTs", slug: "binary-trees-and-bsts" }],
+  },
+  {
+    clue: (
+      <>
+        &ldquo;Top <V>K</V>&rdquo;, merge <V>k</V> sorted inputs, a running
+        median or maximum over a stream
+      </>
+    ),
+    patterns: [{ label: "Min/Max Heap", slug: "heaps-and-priority-queues" }],
+  },
+  {
+    clue: "Prefix queries, autocomplete, searching many words at once",
+    patterns: [{ label: "Trie", slug: "trie-prefix-tree" }],
+  },
+  {
+    clue: "Shortest path in an unweighted graph, flood fill, or minimum steps/transformations",
+    patterns: [{ label: "BFS / DFS", slug: "graph-traversals" }],
   },
   {
     clue: "Dependencies, build order, prerequisites",
@@ -77,21 +162,47 @@ const DIAGNOSTIC_MATRIX: MatrixEntry[] = [
     patterns: [{ label: "Union-Find (DSU)", slug: "graph-specializations" }],
   },
   {
-    clue: (
-      <>
-        &ldquo;Top <V>K</V> frequent&rdquo;, a stream of continuous
-        maximums/medians
-      </>
-    ),
-    patterns: [{ label: "Min/Max Heap", slug: "heaps-and-priority-queues" }],
-  },
-  {
-    clue: "Optimal sub-choices, overlapping subproblems, min/max path costs",
-    patterns: [{ label: "Dynamic Programming", slug: "dynamic-programming" }],
+    clue: "Weighted shortest paths with extra limits, cheapest way to connect everything, critical links",
+    patterns: [{ label: "Advanced Graphs", slug: "advanced-graphs" }],
   },
   {
     clue: "All possible arrangements, board exploration with constraints",
     patterns: [{ label: "Backtracking", slug: "backtracking-and-pruning" }],
+  },
+  {
+    clue: "Optimal sub-choices, overlapping subproblems, “number of ways”, min/max costs",
+    patterns: [{ label: "Dynamic Programming", slug: "dynamic-programming" }],
+  },
+  {
+    clue: "A local choice you can prove is always safe: earliest end, farthest reach, running minimum",
+    patterns: [{ label: "Greedy", slug: "greedy-algorithms" }],
+  },
+  {
+    clue: "Find a pattern in text, palindromes, repeated or periodic substrings",
+    patterns: [{ label: "String Algorithms", slug: "string-algorithms" }],
+  },
+  {
+    clue: "Many range queries (sum, min) mixed with point or range updates",
+    patterns: [
+      { label: "Segment Tree / Fenwick", slug: "range-query-structures" },
+    ],
+  },
+  {
+    clue: (
+      <>
+        &ldquo;Return the answer modulo 10<sup>9</sup> + 7&rdquo;, primes,
+        counting arrangements
+      </>
+    ),
+    patterns: [
+      { label: "Number Theory", slug: "number-theory-and-combinatorics" },
+    ],
+  },
+  {
+    clue: "“Design a class” with O(1) or O(log n) guarantees per operation",
+    patterns: [
+      { label: "Design Data Structures", slug: "design-data-structures" },
+    ],
   },
 ];
 

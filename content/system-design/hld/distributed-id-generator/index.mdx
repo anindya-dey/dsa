@@ -67,7 +67,7 @@ number space) and ordering comes from the timestamp in the high bits.
 ```mermaid
 graph TD
     ID["64-bit ID layout"]
-    ID --> T[41 bits: timestamp (ms)]
+    ID --> T["41 bits: timestamp (ms)"]
     ID --> M[10 bits: machine id]
     ID --> S[12 bits: sequence]
     T --> Y[~69 years of range]

@@ -1,0 +1,135 @@
+---
+title: "Serialize and Deserialize Binary Tree"
+difficulty: "Hard"
+variant: "Preorder with Null Markers"
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/serialize-and-deserialize-binary-tree/"
+---
+
+## Problem
+
+Design a `Codec` with two methods. `serialize` turns a binary tree into a
+string. `deserialize` turns that string back into the same tree. The
+format is up to you. It only has to round-trip.
+
+**Constraints**
+
+- `0 <= number of nodes <= 10^4`
+- `-1000 <= node.val <= 1000`
+
+**Example**
+
+```text
+Input:  root = [1, 2, 3, null, null, 4, 5]
+Output: the same tree after deserialize(serialize(root))
+```
+
+## Brute force
+
+Store the tree like an array-backed heap. The root goes in slot 0, and
+the children of slot `i` go in slots `2i + 1` and `2i + 2`. Empty slots
+hold a marker.
+
+```cpp
+std::string serializeBrute(TreeNode* root) {
+    std::vector<std::string> slots;
+    std::function<void(TreeNode*, std::size_t)> place =
+        [&](TreeNode* node, std::size_t i) {
+            if (node == nullptr) {
+                return;
+            }
+            if (i >= slots.size()) {
+                slots.resize(i + 1, "#");
+            }
+            slots[i] = std::to_string(node->val);
+            place(node->left, 2 * i + 1);
+            place(node->right, 2 * i + 2);
+        };
+    place(root, 0);
+    std::string out;
+    for (const std::string& slot : slots) {
+        out += slot + ",";
+    }
+    return out;
+}
+```
+
+That works for a balanced tree. It breaks on a skewed one. A chain of
+10,000 right children needs slot index around 2^10000, so the array
+explodes, and the index overflows `size_t` long before that. The format
+spends space on positions that hold nothing.
+
+## Optimal: preorder, with a marker for every null
+
+Write the tree in preorder: node, then left subtree, then right subtree.
+Write `#` for every null child. The markers are the key. Preorder alone
+loses the shape, because `1,2` could mean 2 is a left child or a right
+child. With nulls recorded, `1,2,#,#,#` can only mean one tree.
+
+Reading it back mirrors the writing. Take the next token. If it is `#`,
+return null. Otherwise make a node, then rebuild its left subtree, then
+its right. The recursion consumes exactly the tokens that subtree wrote.
+
+```cpp
+class Codec {
+public:
+    std::string serialize(TreeNode* root) {
+        std::string out;
+        write(root, out);
+        return out;
+    }
+
+    TreeNode* deserialize(const std::string& data) {
+        std::istringstream in(data);
+        return read(in);
+    }
+
+private:
+    void write(TreeNode* node, std::string& out) {
+        if (node == nullptr) {
+            out += "#,";                     // the null marker keeps the shape
+            return;
+        }
+        out += std::to_string(node->val);
+        out += ',';
+        write(node->left, out);
+        write(node->right, out);
+    }
+
+    TreeNode* read(std::istringstream& in) {
+        std::string token;
+        std::getline(in, token, ',');        // next comma-separated token
+        if (token == "#") {
+            return nullptr;
+        }
+        TreeNode* node = new TreeNode(std::stoi(token));
+        node->left = read(in);               // consumes exactly the left subtree
+        node->right = read(in);
+        return node;
+    }
+};
+```
+
+An empty tree serializes to `"#,"` and reads back as null, so no special
+case is needed.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Heap-slot array | O(2^h) | O(2^h) |
+| Preorder with null markers | O(n) | O(n) output, O(h) stack |
+
+There are exactly n + 1 null markers in a tree of n nodes, so the output
+is linear. The broader lesson for
+[binary trees](/dsa/patterns/binary-trees-and-bsts) is that a traversal
+order plus explicit nulls fully determines a tree. Without the nulls you
+need two traversals, which is the problem
+[Construct Binary Tree from Preorder and Inorder](/dsa/patterns/binary-trees-and-bsts/construct-binary-tree-from-preorder-and-inorder-traversal)
+solves.
+
+## Related C++ tools
+
+- [std::function & Lambdas](/cpp/function-lambdas): closures, captures, and recursive lambdas.
+- [std::string](/cpp/string): substr, find, and the operations that copy.

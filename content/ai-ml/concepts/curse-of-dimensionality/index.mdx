@@ -7,7 +7,7 @@ Machine learning lives in *high-dimensional* space: a model with a
 thousand features operates in a thousand-dimensional space, and that
 space does not behave like the two or three dimensions human intuition
 is built for. The **curse of dimensionality** is the collection of
-ways high-dimensional space is *counterintuitive* — and it explains
+ways high-dimensional space is *counterintuitive*, and it explains
 several ML behaviors that otherwise seem mysterious (why more
 features can hurt, why nearest-neighbor methods degrade, why
 dimensionality reduction helps).
@@ -18,11 +18,11 @@ The surprises, each with a consequence:
 
 - **Volume concentrates at the edges** (in a high-dimensional cube,
   almost all the volume is near the surface, and almost none near the
-  center — a ball inscribed in the cube occupies a vanishing fraction
+  center, a ball inscribed in the cube occupies a vanishing fraction
   of it. The consequence: "the middle" is nearly empty, so data
   points are *all* on the periphery).
 - **Everything is roughly equidistant** (as dimensions grow, the
-  distances between random points *converge* — the farthest point and
+  distances between random points *converge*, the farthest point and
   the nearest point become almost the same distance away. The
   consequence: "nearest neighbor" loses meaning, which is why
   [k-NN](/ai-ml/concepts/clustering-and-knn) and raw
@@ -33,7 +33,7 @@ The surprises, each with a consequence:
   density, the required examples grow *exponentially* with the
   dimensions. The consequence: with a thousand features, no realistic
   dataset densely covers the space, so models *must* make assumptions
-  (inductive biases) to generalize — they cannot just interpolate
+  (inductive biases) to generalize: they cannot just interpolate
   between seen examples).
 
 ## What it means for models
@@ -45,18 +45,18 @@ The surprises, each with a consequence:
   *feature selection* and *dimensionality reduction* are core tools,
   not luxuries).
 - **Dimensionality reduction** (techniques like
-  [PCA](https://en.wikipedia.org/wiki/Principal_component_analysis)
+  PCA
   and autoencoders project high-dimensional data to a lower
-  dimension, keeping the structure and discarding noise — the
+  dimension, keeping the structure and discarding noise, the
   [autoencoder](/ai-ml/concepts/autoencoders) idea, and a standard
   preprocessing step).
 - **The manifold hypothesis** (the modern saving grace: real-world
-  high-dimensional data is not *uniformly* spread — it lies on a
+  high-dimensional data is not *uniformly* spread, it lies on a
   *low-dimensional structure* (a manifold) embedded in the high
   dimension. Images have millions of pixels but far fewer *degrees of
   freedom*; language has vast vocabularies but lower intrinsic
-  structure. Deep learning works *because* it learns that structure —
-  which is why [embeddings](/ai-ml/concepts/word-embeddings) can
+  structure. Deep learning works *because* it learns that structure,
+which is why [embeddings](/ai-ml/concepts/word-embeddings) can
   compress meaning into a few hundred dimensions, and why the
   curse is *tamed* rather than *suffered* in practice).
 

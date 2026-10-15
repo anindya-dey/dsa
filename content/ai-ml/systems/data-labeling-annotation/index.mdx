@@ -12,7 +12,7 @@ truth deserves the name. The reason this is a *systems* topic
 rather than a vendor decision: **a label is an opinion collected
 at scale**, and everything about the pipeline (guidelines, annotator
 training, agreement measurement, adjudication) exists to turn
-individual noisy opinions into a stable, reproducible contract —
+individual noisy opinions into a stable, reproducible contract,
 which the model will then absorb completely. Garbage in this
 pipeline is not a wrong row; it is a *wrong model*.
 
@@ -39,12 +39,12 @@ The sourcing stack, in rising cost and falling volume:
    re-runnable over new data: labels as a *derived artifact* of
    rules + data, the
    [event-sourcing](/system-design/fundamentals/event-sourcing-and-cqrs)
-   instinct applied to ground truth) — labels become reproducible
+   instinct applied to ground truth): labels become reproducible
    *because they are computed*, not because someone saved a CSV.
 3. **Human annotation** (the accurate, expensive path): humans read
    examples and assign labels, through the pipeline below.
 4. **Model-assisted labeling** (the modern hybrid): a model
-   pre-labels, humans verify — dramatically cheaper per label,
+   pre-labels, humans verify, dramatically cheaper per label,
    with the known bias (humans anchor on the pre-label: the
    disagreement cases are where the value is, so the good designs
    *surface the model's confidence* and route the uncertain to
@@ -72,7 +72,7 @@ The components that make labels *trustworthy* rather than merely
 numerous:
 
 - **Guidelines** (the contract, written): what "spam" means, edge
-  cases, worked examples — *versioned*, because guideline changes
+  cases, worked examples, *versioned*, because guideline changes
   mean old labels are from a different era (the
   [schema evolution](/system-design/fundamentals/serialization-and-schema-evolution)
   discipline, applied to truth: a guideline change is a labeling-
@@ -80,7 +80,7 @@ numerous:
   bug).
 - **Gold sets and honeypots** (the quality probe): known-answer
   examples mixed into annotators' queues, *unannounced*, measuring
-  each annotator's accuracy continuously — the
+  each annotator's accuracy continuously, the
   [health check](/system-design/hld/load-balancer-system)
   discipline, applied to labelers.
 - **Inter-annotator agreement** (the measurement): multiple
@@ -116,7 +116,7 @@ The design consequence, worth stating as the page's takeaway: **the
 label pipeline's quality bar is the model's quality bar**, and the
 investment conversation (how much to spend on annotation vs.
 architecture vs. models) is the ML system's most underexamined
-budget line — a 1% label-quality improvement routinely beats a
+budget line, a 1% label-quality improvement routinely beats a
 modeling breakthrough, because labels multiply through everything
 downstream.
 

@@ -8,14 +8,14 @@ export type { Tier } from "./types";
 // is a *depth* label, not a role label: a topic can matter at every level,
 // but its treatment here is pitched at one depth.
 const TIERS: Record<string, Tier> = {
-  // DSA — Phase 1
+  // DSA: Phase 1
   "asymptotic-analysis": "foundational",
   "linear-structures": "foundational",
   "hash-based-structures": "foundational",
   "recursion-and-math": "foundational",
   "sorting-and-selection": "intermediate",
   "bit-manipulation": "intermediate",
-  // DSA — Phase 2
+  // DSA: Phase 2
   "two-pointers": "foundational",
   "sliding-window": "intermediate",
   "monotonic-structures": "intermediate",
@@ -26,14 +26,14 @@ const TIERS: Record<string, Tier> = {
   "matrix-and-grid-algorithms": "intermediate",
   "stacks-and-queues": "foundational",
   "linked-list-manipulation": "intermediate",
-  // DSA — Phase 3
+  // DSA: Phase 3
   "binary-trees-and-bsts": "intermediate",
   "heaps-and-priority-queues": "intermediate",
   "trie-prefix-tree": "intermediate",
   "graph-traversals": "intermediate",
   "graph-specializations": "advanced",
   "advanced-graphs": "advanced",
-  // DSA — Phase 4
+  // DSA: Phase 4
   "backtracking-and-pruning": "advanced",
   "dynamic-programming": "advanced",
   "greedy-algorithms": "advanced",
@@ -42,22 +42,25 @@ const TIERS: Record<string, Tier> = {
   "number-theory-and-combinatorics": "advanced",
   "design-data-structures": "advanced",
 
-  // Fundamentals — Scalability & Performance
+  // Fundamentals: Scalability & Performance
   scalability: "foundational",
   "capacity-planning-and-estimation": "intermediate",
   "latency-vs-throughput": "intermediate",
   "load-balancing": "foundational",
   caching: "foundational",
   cdn: "intermediate",
-  // Fundamentals — Data & Storage
+  // Fundamentals: Data & Storage
   "database-fundamentals": "foundational",
   "olap-vs-oltp": "intermediate",
   "object-storage": "intermediate",
   "search-and-inverted-index": "intermediate",
   "geospatial-indexing": "intermediate",
+  replication: "intermediate",
+  "partitioning-and-sharding": "intermediate",
+  "probabilistic-data-structures": "advanced",
   "consistent-hashing": "intermediate",
   "stream-vs-batch-processing": "intermediate",
-  // Fundamentals — Communication & APIs
+  // Fundamentals: Communication & APIs
   "networking-basics": "foundational",
   proxies: "intermediate",
   "api-design": "foundational",
@@ -65,7 +68,7 @@ const TIERS: Record<string, Tier> = {
   "api-gateway-and-service-mesh": "intermediate",
   "message-queues-and-pubsub": "intermediate",
   "idempotency-and-exactly-once": "intermediate",
-  // Fundamentals — Distributed Systems
+  // Fundamentals: Distributed Systems
   "cap-theorem-and-consistency-models": "advanced",
   "consensus-and-leader-election": "advanced",
   "clock-synchronization-and-logical-time": "advanced",
@@ -74,17 +77,17 @@ const TIERS: Record<string, Tier> = {
   "event-sourcing-and-cqrs": "advanced",
   "backpressure-and-flow-control": "intermediate",
   "microservices-vs-monolith": "intermediate",
-  // Fundamentals — Reliability & Operations
+  // Fundamentals: Reliability & Operations
   "availability-and-reliability": "intermediate",
   "reliability-engineering": "advanced",
   observability: "intermediate",
   "rate-limiting": "intermediate",
   "concurrency-and-parallelism": "advanced",
-  // Fundamentals — Security
+  // Fundamentals: Security
   "auth-basics": "intermediate",
   "security-fundamentals": "advanced",
   "multi-tenancy-and-data-residency": "advanced",
-  // Fundamentals — new
+  // Fundamentals: new
   "container-orchestration": "intermediate",
   "zero-trust-supply-chain": "advanced",
   "cloud-cost-finops": "intermediate",
@@ -148,22 +151,21 @@ const TIERS: Record<string, Tier> = {
   "webhook-delivery": "advanced",
   "large-scale-migration": "advanced",
 
-  // AI/ML Systems — The Learning Problem
+  // AI/ML Systems: The Learning Problem
   "ml-system-design-basics": "foundational",
   "supervised-unsupervised-rl": "foundational",
-  "offline-vs-online-inference": "foundational",
   "batch-vs-real-time-prediction": "foundational",
-  // AI/ML Systems — Data
+  // AI/ML Systems: Data
   "training-data-pipelines": "foundational",
   "data-labeling-annotation": "foundational",
   "data-versioning-lineage": "foundational",
   "feature-engineering-basics": "foundational",
-  // AI/ML Systems — Serving State
+  // AI/ML Systems: Serving State
   "embeddings-vector-representations": "foundational",
   "feature-stores": "intermediate",
   "similarity-search-ann": "intermediate",
   "vector-databases": "intermediate",
-  // AI/ML Systems — Evaluation & Operations
+  // AI/ML Systems: Evaluation & Operations
   "evaluation-metrics": "intermediate",
   "offline-vs-online-evaluation": "intermediate",
   "ab-testing-experimentation": "intermediate",
@@ -172,7 +174,7 @@ const TIERS: Record<string, Tier> = {
   "bias-fairness-explainability": "advanced",
   "privacy-preserving-ml": "advanced",
   "responsible-ai-safety": "advanced",
-  // AI/ML Systems — Serving & Inference
+  // AI/ML Systems: Serving & Inference
   "model-serving-architectures": "intermediate",
   "inference-optimization": "intermediate",
   "batching-and-latency": "intermediate",
@@ -183,7 +185,7 @@ const TIERS: Record<string, Tier> = {
   "serverless-inference": "intermediate",
   "model-caching-warm-pools": "intermediate",
   "autoscaling-inference": "intermediate",
-  // AI/ML Systems — GenAI / LLM Systems
+  // AI/ML Systems: GenAI / LLM Systems
   "llm-serving": "intermediate",
   "prompt-engineering-systems": "intermediate",
   rag: "intermediate",
@@ -196,7 +198,7 @@ const TIERS: Record<string, Tier> = {
   "cost-token-budgets": "intermediate",
   "llm-caching": "intermediate",
   "llm-gateways": "intermediate",
-  // AI/ML Systems — MLOps & Platform
+  // AI/ML Systems: MLOps & Platform
   "mlops-cicd": "intermediate",
   "model-registry": "intermediate",
   "experiment-tracking": "intermediate",
@@ -208,7 +210,7 @@ const TIERS: Record<string, Tier> = {
   "cost-optimization-ml": "intermediate",
   "multi-tenant-ml-platforms": "intermediate",
   "feature-model-backfills": "intermediate",
-  // AI/ML Systems — Case Studies
+  // AI/ML Systems: Case Studies
   "rag-chat-system": "advanced",
   "semantic-vector-search": "advanced",
   "model-serving-platform": "advanced",
@@ -218,7 +220,7 @@ const TIERS: Record<string, Tier> = {
   "llm-gateway-system": "advanced",
   "anomaly-detection-system": "advanced",
   "ml-training-platform": "advanced",
-  // AI/ML Systems — Low-Level Design
+  // AI/ML Systems: Low-Level Design
   "feature-store-lld": "advanced",
   "model-registry-lld": "advanced",
   "tokenizer-lld": "advanced",
@@ -226,28 +228,28 @@ const TIERS: Record<string, Tier> = {
   "vector-index-lld": "advanced",
   "feature-transform-pipeline": "advanced",
 
-  // AI/ML Concepts — Foundations of Learning
+  // AI/ML Concepts: Foundations of Learning
   "what-is-machine-learning": "foundational",
   "loss-functions-and-risk": "foundational",
   "gradient-descent": "foundational",
   "overfitting-and-bias-variance": "foundational",
   "train-validation-test": "foundational",
   "linear-and-logistic-regression": "foundational",
-  // AI/ML Concepts — more foundations
+  // AI/ML Concepts: more foundations
   regularization: "intermediate",
   "curse-of-dimensionality": "intermediate",
-  // AI/ML Concepts — Classical Models
+  // AI/ML Concepts: Classical Models
   "decision-trees-and-ensembles": "intermediate",
   "gradient-boosting": "intermediate",
   "support-vector-machines": "intermediate",
   "clustering-and-knn": "intermediate",
-  // AI/ML Concepts — Neural Networks
+  // AI/ML Concepts: Neural Networks
   "perceptrons-and-mlps": "foundational",
   "activation-functions": "foundational",
   "backpropagation": "intermediate",
   optimizers: "intermediate",
   "normalization-and-initialization": "intermediate",
-  // AI/ML Concepts — Architectures
+  // AI/ML Concepts: Architectures
   "convolutional-neural-networks": "intermediate",
   "recurrent-neural-networks": "intermediate",
   "lstm-and-gru": "intermediate",
@@ -259,17 +261,17 @@ const TIERS: Record<string, Tier> = {
   "diffusion-models": "advanced",
   "graph-neural-networks": "advanced",
   "mixture-of-experts": "advanced",
-  // AI/ML Concepts — NLP
+  // AI/ML Concepts: NLP
   "word-embeddings": "intermediate",
   "language-models-and-scaling": "intermediate",
   "transfer-learning": "intermediate",
-  // AI/ML Concepts — Computer Vision
+  // AI/ML Concepts: Computer Vision
   "image-classification": "intermediate",
   "object-detection-and-segmentation": "advanced",
-  // AI/ML Concepts — Speech & Multimodal
+  // AI/ML Concepts: Speech & Multimodal
   "speech-recognition-and-synthesis": "intermediate",
   "vision-language-models": "advanced",
-  // AI/ML Concepts — Reinforcement Learning & Safety
+  // AI/ML Concepts: Reinforcement Learning & Safety
   "reinforcement-learning-basics": "intermediate",
   rlhf: "advanced",
   interpretability: "intermediate",
@@ -290,6 +292,10 @@ const TIERS: Record<string, Tier> = {
   "function-lambdas": "intermediate",
   algorithms: "intermediate",
   invalidation: "intermediate",
+  comparators: "intermediate",
+  "integer-overflow": "foundational",
+  "bit-operations": "intermediate",
+  "smart-pointers": "intermediate",
 };
 
 export function tierOf(slug: string, fallback: Tier = "intermediate"): Tier {

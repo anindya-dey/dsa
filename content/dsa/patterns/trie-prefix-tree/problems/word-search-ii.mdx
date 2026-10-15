@@ -2,7 +2,9 @@
 title: "Word Search II"
 difficulty: "Hard"
 variant: "Trie + Backtracking"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/word-search-ii/"
 ---
 
 ## Problem
@@ -32,7 +34,7 @@ Output: ["eat","oath"]
 ## Brute force
 
 For each word, run a full
-[flood-fill search](/dsa/patterns/matrix-and-grid-algorithms/problems/number-of-islands)
+[flood-fill search](/dsa/patterns/graph-traversals/number-of-islands)
 over the board trying to trace it, starting from every cell.
 
 ```cpp
@@ -167,7 +169,7 @@ its terminal node**, so recognizing a found word is a null-check rather
 than re-walking. And `node->word.clear()` after collecting prevents the
 same word from being reported from multiple starting cells. The in-place
 `'#'` marking is the flood-fill discipline from
-[Number of Islands](/dsa/patterns/matrix-and-grid-algorithms/problems/number-of-islands),
+[Number of Islands](/dsa/patterns/graph-traversals/number-of-islands),
 marking before recursing so a path never reuses a cell.
 
 ## Complexity
@@ -183,3 +185,8 @@ words, which is the difference between passing and timing out at the
 constraint limits. This problem is the canonical meeting of two patterns:
 the trie supplies prefix pruning, and backtracking supplies the board
 search.
+
+## Related C++ tools
+
+- [std::pair / std::tuple](/cpp/pair-tuple): pairs, structured bindings, and lexicographic comparison.
+- [std::string](/cpp/string): substr, find, and the operations that copy.

@@ -2,7 +2,9 @@
 title: "Binary Search Tree Iterator"
 difficulty: "Medium"
 variant: "Controlled Inorder"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/binary-search-tree-iterator/"
 ---
 
 ## Problem
@@ -59,7 +61,7 @@ private:
             return;
         }
         collect(node->left);
-        values_.push_back(node->value);
+        values_.push_back(node->val);
         collect(node->right);
     }
     std::vector<int> values_;
@@ -91,7 +93,7 @@ public:
     int next() {
         TreeNode* node = stack_.top();  // the next-smallest node
         stack_.pop();
-        int value = node->value;
+        int value = node->val;
         if (node->right != nullptr) {   // inorder: after node, its right subtree
             pushLeft(node->right);      // push that subtree's leftmost spine
         }
@@ -152,3 +154,7 @@ across 10^5 calls) honest. This is the standard senior-tier tree
 problem: no new concepts, just the discipline of an invariant, an
 amortized argument, and one design decision (laziness) doing all the
 work.
+
+## Related C++ tools
+
+- [std::stack / std::queue](/cpp/stack-queue): the LIFO and FIFO adapters.

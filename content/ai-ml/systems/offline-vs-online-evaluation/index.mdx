@@ -19,15 +19,15 @@ them.
 [metric suite](/ai-ml/systems/evaluation-metrics), and a
 comparison of candidate models. It runs in minutes, costs nothing,
 touches no users, and is the only loop you can run a thousand times
-a day — which is why it *must* exist, and why trusting it *alone*
+a day, which is why it *must* exist, and why trusting it *alone*
 is the classic mistake.
 
 **Online** (the slow, expensive, real loop): the model in front of
 real users, measured on business metrics, usually through
 [A/B testing](/ai-ml/systems/ab-testing-experimentation). It
 is the *ground truth* ("did the product get better?"), it costs
-traffic and weeks, and it can only answer a few questions at a time
-— which is why it is the *final* filter, not the exploration loop.
+traffic and weeks, and it can only answer a few questions at a time,
+which is why it is the *final* filter, not the exploration loop.
 
 ## Why they diverge (the honest list)
 
@@ -74,15 +74,15 @@ The machinery that keeps the two loops honest and *connected*:
   ranking changes).
 - **Shadow deployment** (the new model runs *silently* beside the
   old: same traffic, both score, only the old one serves, the
-  differences logged — the [fraud detector's](/system-design/hld/fraud-detection)
+  differences logged, the [fraud detector's](/system-design/hld/fraud-detection)
   standard pre-launch, and the way to catch serving-path failures
   (feature lookup bugs, latency regressions) with *zero* user risk
   before the A/B).
 - **The offline-online metric mapping** (the discipline of
   *tracking both* and studying the gap: the dashboard that plots
   "offline NDCG delta" against "online engagement delta" across
-  launches is the *only* way to learn how much to trust offline —
-  and it is a per-system, per-metric calibration that every mature
+  launches is the *only* way to learn how much to trust offline,
+and it is a per-system, per-metric calibration that every mature
   ML org has and no textbook provides).
 
 ## The evaluation funnel, designed

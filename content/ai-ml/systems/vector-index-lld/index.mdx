@@ -5,11 +5,11 @@ summary: "A minimal ANN index from scratch: build, search, and the recall/speed 
 
 The [similarity-search concept](/ai-ml/systems/similarity-search-ann)
 covers HNSW, IVF, and PQ; this is the *code-level* design of a
-*minimal* ANN index — the smallest structure that answers "the
+*minimal* ANN index, the smallest structure that answers "the
 nearest k of N vectors" without comparing all N. The honest teaching
 choice: implement the **IVF (inverted-file) index**, because it is
 the *simplest* real ANN (clustering + a cluster scan) and its
-recall/speed dial (`nprobe`) is the whole lesson — the LLD is about
+recall/speed dial (`nprobe`) is the whole lesson, the LLD is about
 the *structure* and the *approximation*, not the HNSW graph's
 constant factors.
 
@@ -34,17 +34,17 @@ graph LR
     SCAN --> TOP[Exact top-k among the scanned]
 ```
 
-- **The centroids** (k-means over the vectors: C cluster centers —
-  the [clustering](/ai-ml/systems/similarity-search-ann), and
+- **The centroids** (k-means over the vectors: C cluster centers,
+the [clustering](/ai-ml/systems/similarity-search-ann), and
   the *build* cost).
 - **The posting lists** (per cluster, the ids of its assigned
   vectors: the [inverted-index](/system-design/fundamentals/search-and-inverted-index)
-  *shape*, over *meaning* instead of terms — the reason it is called
+  *shape*, over *meaning* instead of terms, the reason it is called
   an "inverted file").
 - **The search** (find the `nprobe` nearest centroids to the query,
   then *exactly* scan the vectors in those clusters: the
-  [filter-then-refine](/system-design/fundamentals/geospatial-indexing)
-  — approximate cluster selection, exact within).
+  [filter-then-refine](/system-design/fundamentals/geospatial-indexing),
+approximate cluster selection, exact within).
 
 ## The C++ sketch
 
@@ -128,20 +128,20 @@ private:
 The design decisions:
 
 - **The `nprobe` parameter is the dial** (scan 1 cluster: fast, low
-  recall; scan all clusters: exact, slow — the *same* structure,
+  recall; scan all clusters: exact, slow, the *same* structure,
   *tuned* per query: the [recall/speed/memory
   dial](/ai-ml/systems/similarity-search-ann), and the reason
   a real vector database exposes `nprobe` as per-query config).
 - **Approximate selection, exact refinement** (the cluster choice is
   *approximate* (the nearest vector might be in a cluster the
-  centroids did not flag), the scan within is *exact* — the
+  centroids did not flag), the scan within is *exact*, the
   [filter-then-refine](/system-design/fundamentals/geospatial-indexing)
   pattern, and the reason the *recall* is `P(true neighbor's cluster
   is in the nprobe)`).
 - **The k-nearest via a bounded heap** (the
   [top-k](/dsa/patterns/heaps-and-priority-queues) machinery: keep
-  a size-k max-heap, replace the worst — the
-  [kth-largest](/dsa/patterns/heaps-and-priority-queues/problems/kth-largest-element-in-an-array)
+  a size-k max-heap, replace the worst, the
+  [kth-largest](/dsa/patterns/heaps-and-priority-queues/kth-largest-element-in-an-array)
   pattern, over distances).
 - **The clustering is the build cost** (k-means over N vectors: the
   [batch](/ai-ml/systems/batch-vs-real-time-prediction) job,
@@ -156,8 +156,8 @@ vectors in the postings: the [PQ](/ai-ml/systems/similarity-search-ann)
 memory reduction, and the approximate distance), a **rerank** with
 full vectors (the two-stage), and the **tuning** (the cluster count,
 the nprobe, the PQ codebook: the [dial](/ai-ml/systems/similarity-search-ann),
-properly). The minimal version above is the *teaching* structure —
-the cluster-and-scan idea, clear and complete — and the LLD's point
+properly). The minimal version above is the *teaching* structure,
+the cluster-and-scan idea, clear and complete, and the LLD's point
 is that **the ANN's complexity is in the tuning and the compression,
 not the concept**, which is one inverted index over meaning.
 

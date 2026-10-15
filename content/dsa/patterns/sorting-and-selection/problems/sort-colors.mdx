@@ -2,7 +2,9 @@
 title: "Sort Colors"
 difficulty: "Medium"
 variant: "Dutch National Flag"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/sort-colors/"
 ---
 
 ## Problem
@@ -51,7 +53,7 @@ because the counting version needs two passes and a moment of thought
 about whether the overwrite destroys information you still need (it does
 not here, because the counts were taken first: the "record, then act"
 discipline from [set matrix
-zeroes](/dsa/patterns/matrix-and-grid-algorithms/problems/set-matrix-zeroes)).
+zeroes](/dsa/patterns/matrix-and-grid-algorithms/set-matrix-zeroes)).
 
 ## The pattern: the Dutch national flag partition
 
@@ -122,3 +124,7 @@ quick sort with duplicates, and the
 invariant-plus-two-boundaries shape is the same discipline as the
 [write-index compaction](/dsa/patterns/linear-structures) trick, with one
 more boundary to keep honest.
+
+## Related C++ tools
+
+- [std::vector](/cpp/vector): the dynamic array underneath almost every solution.

@@ -27,13 +27,13 @@ discipline applied to features, and its HLD subject is the
 **Non-functional**
 
 - **Consistency** (the store's *whole reason*: the online value and
-  the offline training value come from *one definition* — the
+  the offline training value come from *one definition*, the
   [training/serving skew](/ai-ml/systems/feature-engineering-basics)
   eliminated *structurally*).
 - **Latency** (online reads in single-digit ms: the
   [feature-store's](/ai-ml/systems/feature-stores) requirement).
 - **Freshness** (per-feature contracts: minutes for streaming,
-  hours for batch — the [SLO](/system-design/fundamentals/reliability-engineering)
+  hours for batch, the [SLO](/system-design/fundamentals/reliability-engineering)
   discipline, per feature).
 - **Scale** (millions of entities, thousands of features: the
   [capacity-planning](/system-design/fundamentals/capacity-planning-and-estimation)
@@ -56,12 +56,12 @@ graph TD
 - **Feature definitions as code** (each feature is a *versioned
   definition* (the [data-versioning](/ai-ml/systems/data-versioning-lineage)
   discipline): the *one source of truth* that both the streaming and
-  batch compute execute — the *consistency* mechanism, structural).
+  batch compute execute, the *consistency* mechanism, structural).
 - **The two compute paths** (streaming (the
   [windowed aggregates](/system-design/fundamentals/stream-vs-batch-processing),
   feeding the *online* store: the freshness) and batch (the
   historical [backfill](/ai-ml/systems/feature-model-backfills),
-  feeding the *offline* store: the training history) — the *same
+  feeding the *offline* store: the training history), the *same
   definition*, two executions, which is the
   [feature-store's](/ai-ml/systems/feature-stores) core).
 - **The online store** (a [low-latency KV
@@ -72,7 +72,7 @@ graph TD
   [as-of](/ai-ml/systems/feature-stores) reads), written by
   the batch).
 - **The catalog** (the metadata: what features exist, their
-  definitions, owners, freshness, lineage — the *discovery* and
+  definitions, owners, freshness, lineage, the *discovery* and
   *governance* surface, and the platform's *leverage*: the same
   feature reused across models, computed once).
 
@@ -84,12 +84,12 @@ graph TD
   which means shared *code* (the definitions), shared *semantics*
   (the [window definitions](/system-design/fundamentals/stream-vs-batch-processing),
   the point-in-time contract), and the *testing* that catches drift
-  between them — the *feature-consistency test* every platform
+  between them, the *feature-consistency test* every platform
   needs).
 - **The point-in-time offline store** (the training reads "features
   as of T": the offline store is [event-sourced](/system-design/fundamentals/event-sourcing-and-cqrs)
   (the feature's *history*, not its current value), so "as of T" is
-  an indexed query — the [feature-store's](/ai-ml/systems/feature-stores)
+  an indexed query, the [feature-store's](/ai-ml/systems/feature-stores)
   machinery, and the reason the offline store is a *log*, not a
   snapshot).
 - **Backfills** (a new feature needs its history: the
@@ -102,7 +102,7 @@ graph TD
   [feature-freshness](/ai-ml/systems/feature-stores) metric)
   and *alerts* (a stale feature silently degrades every model using
   it: the [monitoring](/ai-ml/systems/model-monitoring-drift)
-  discipline, at the feature layer — the *upstream* cause of many
+  discipline, at the feature layer, the *upstream* cause of many
   model incidents).
 - **Governance and access control** (features carry
   [permissions](/system-design/fundamentals/multi-tenancy-and-data-residency)

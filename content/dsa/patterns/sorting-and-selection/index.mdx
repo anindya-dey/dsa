@@ -68,7 +68,7 @@ void quickSort(std::vector<int>& nums, int lo, int hi) {
 
 **Merge sort**: halve, sort each half (recursively), merge the two
 sorted halves in one linear pass (the two-list
-[weave](/dsa/patterns/linked-list-manipulation/problems/merge-two-sorted-lists)).
+[weave](/dsa/patterns/linked-list-manipulation/merge-two-sorted-lists)).
 Guaranteed O(n log n), no bad inputs, *stable* (equal elements keep their
 order, which matters when sort keys are ties for a secondary criterion),
 but needs O(n) scratch space for the merge. Merge sort's guaranteed bound
@@ -121,18 +121,18 @@ what you actually need.
 ## When sorting is not the answer
 
 If you only need the k extremes, a bounded
-[heap](/dsa/patterns/heaps-and-priority-queues/problems/kth-largest-element-in-an-array)
+[heap](/dsa/patterns/heaps-and-priority-queues/kth-largest-element-in-an-array)
 beats sorting a stream you cannot store. If you need *repeated* extremes
 under updates, a heap or an
 [ordered structure](/dsa/patterns/range-query-structures) is the tool.
 And if the data is already sorted (rotated, two halves), you do not sort
-it: [binary search](/dsa/patterns/binary-search-variants/problems/search-in-rotated-sorted-array)
+it: [binary search](/dsa/patterns/binary-search-variants/search-in-rotated-sorted-array)
 adapts instead.
 
 ## Related C++ tools
 
-- [Sorting & nth_element](/cpp/algorithms) — what each sort guarantees.
-- [lower_bound & upper_bound](/cpp/binary-search-algos) — the boundary functions.
+- [Sorting & nth_element](/cpp/algorithms): what each sort guarantees.
+- [lower_bound & upper_bound](/cpp/binary-search-algos): the boundary functions.
 
 ## Related patterns
 

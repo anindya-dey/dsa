@@ -3,7 +3,7 @@ title: "Feature Engineering Basics"
 summary: "Turning raw events into model inputs: the transforms, the leakage traps, and the training/serving consistency that makes features real."
 ---
 
-A model cannot learn from an event log; it learns from **features** —
+A model cannot learn from an event log; it learns from **features**,
 the numeric summaries, the categorical encodings, the derived
 signals that a human (or a pipeline) decided were *informative*.
 Feature engineering is that transformation, and it is the part of ML
@@ -25,21 +25,21 @@ data shape:
 - **Aggregations over time** (the workhorse:
   [windowed](/system-design/fundamentals/stream-vs-batch-processing)
   counts and sums per entity: "7-day spend", "logins per hour",
-  "distinct merchants in 24h" — the
+  "distinct merchants in 24h", the
   [fraud features](/system-design/hld/fraud-detection) verbatim).
   The design decisions: window size (too short: noisy; too long:
   stale), and **point-in-time** (the window computed *as of the
   event*, not as of now: the training/serving contract).
 - **Counts and ratios** (frequency signals: "how often does this
   user do X", normalized by their own baseline: ratios beat raw
-  counts, because users have different volumes — the same
+  counts, because users have different volumes, the same
   [per-tenant](/system-design/fundamentals/multi-tenancy-and-data-residency)
   normalization that rate limiting uses).
 - **Categorical encodings** (turning "merchant = Uber" into
   numbers): one-hot (fine for few values),
   [target/statistics encodings](https://en.wikipedia.org/wiki/Target_encoding)
   (the category's historical outcome rate: powerful, and a leakage
-  trap if computed including the current example — the encoding
+  trap if computed including the current example, the encoding
   must be fit on *past* data only), and
   [embeddings](/ai-ml/systems/embeddings-vector-representations)
   (learned dense vectors: the modern answer for high-cardinality
@@ -50,7 +50,7 @@ data shape:
   **geospatial** ([cells](/system-design/fundamentals/geospatial-indexing)
   and distances as features).
 - **Cross features** (combinations: "this user's *category*
-  engagement rate" — the personalization signal, and the
+  engagement rate", the personalization signal, and the
   [interaction features](/system-design/hld/recommendation-system)
   the ranker consumes).
 
@@ -69,13 +69,13 @@ in production). The complete family, because each is a classic:
   the event").
 - **Encoding leakage** ([target encodings](#the-transform-families)
   fit on the full dataset: the current example's label inside its
-  own category's average — the fix is *out-of-fold* computation,
+  own category's average, the fix is *out-of-fold* computation,
   the same discipline as the held-out split).
 - **Serving leakage** (a feature that *cannot exist* online: a
   "full-dataset" statistic, a join that requires the outcome, a
   computation over more data than the
   [latency budget](/system-design/fundamentals/latency-vs-throughput)
-  allows — the model trains on it, the serving path cannot compute
+  allows, the model trains on it, the serving path cannot compute
   it, and the feature silently degrades to garbage at deploy).
 
 The detector, worth drilling: **suspiciously good offline metrics**
@@ -87,7 +87,7 @@ date" and confirm the metrics match what the training set claimed.
 ## Trap two: training/serving skew
 
 The second deadly trap, and the quiet one: **the same feature, two
-implementations** — the batch pipeline computes "7-day spend" one
+implementations**, the batch pipeline computes "7-day spend" one
 way (calendar days, warehouse joins, midnight-clocked), the serving
 path computes it another (trailing hours,
 [feature-store](/ai-ml/systems/feature-stores) lookups,
@@ -97,9 +97,9 @@ request-time-clocked), and the model's inputs at serving are
 because the world changed, but because *the code did*.
 
 The discipline: **one definition, two executions** (the feature
-defined once — a versioned definition, the same
+defined once, a versioned definition, the same
 [lineage](/ai-ml/systems/data-versioning-lineage) treatment
-as data — and executed by the batch trainer and the online server
+as data, and executed by the batch trainer and the online server
 from the same source), which is exactly what a
 [feature store](/ai-ml/systems/feature-stores) exists to
 enforce (one computation, materialized offline for training and
@@ -119,7 +119,7 @@ engineering-usable form:
   quality is the ceiling).
 - **The model is free to ignore features** (adding candidates is
   cheap; the pipeline's job is computing them consistently, the
-  model's job is weighting them — so generate generously, and let
+  model's job is weighting them, so generate generously, and let
   [evaluation](/ai-ml/systems/ml-system-design-basics)
   prune).
 - **Stability over cleverness** (a feature that behaves the same

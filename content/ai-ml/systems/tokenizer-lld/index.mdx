@@ -8,7 +8,7 @@ A tokenizer turns text into the integer tokens a model consumes, and
 modern LLMs). It is the *code-level* design of the
 [tokenizer](/ai-ml/systems/llm-serving) that the
 [LLM-serving page](/ai-ml/systems/llm-serving) mentions as the
-unit of cost — here, the *algorithm* and the *data structures*: build
+unit of cost: here, the *algorithm* and the *data structures*: build
 a vocabulary by repeatedly merging the most frequent adjacent pair,
 and encode text by applying the merges. It is a [greedy
 algorithm](/dsa/patterns/greedy-algorithms) with a
@@ -20,7 +20,7 @@ a clean LLD because both halves are small and complete.
 - **Training (build the vocabulary)**: start from characters (or
   bytes: *byte-level* BPE, the modern default (handles any Unicode)),
   count adjacent pairs in the corpus, merge the *most frequent* pair
-  into a new token, repeat for N merges — the vocabulary is the
+  into a new token, repeat for N merges, the vocabulary is the
   *list of merges*, and its size (e.g., 50k tokens) is the
   hyperparameter (the [tokenizer](/ai-ml/systems/llm-serving)'s
   *cost* dial: more tokens = shorter sequences = less context per
@@ -28,7 +28,7 @@ a clean LLD because both halves are small and complete.
   trade).
 - **Encoding (apply the vocabulary)**: given text, apply the learned
   merges *in order* (the greedy: repeatedly merge the
-  highest-priority pair present) until no merge applies — the output
+  highest-priority pair present) until no merge applies, the output
   is the token sequence.
 
 ## The data structures
@@ -45,10 +45,10 @@ graph LR
 
 - **The pair-frequency map** (the counting core: a
   [hash map](/dsa/patterns/hash-based-structures) from *adjacent
-  pair* to *count* — the [group-anagrams](/dsa/patterns/hash-based-structures/problems/group-anagrams)
+  pair* to *count*, the [group-anagrams](/dsa/patterns/hash-based-structures/group-anagrams)
   counting idea, over pairs).
 - **The merge list** (the vocabulary *is* the ordered merges: merge
-  #1 was applied before merge #2, and *order matters* — the
+  #1 was applied before merge #2, and *order matters*, the
   encoding applies them in *priority order*, so the vocabulary is a
   *sequence*, not a set: the [ordered](/cpp/map) structure).
 
@@ -165,21 +165,21 @@ private:
 The design decisions:
 
 - **Byte-level base** (start from bytes, not characters: handles
-  *any* input (no unknown-token problem) — the modern default, and
+  *any* input (no unknown-token problem), the modern default, and
   the reason the vocabulary is a *byte* vocabulary plus merges).
 - **The merge *order* is the vocabulary** (the encoder applies
   merges by *rank*, not by "any applicable": the order is what
-  makes the tokenization *deterministic* and *canonical* — the same
+  makes the tokenization *deterministic* and *canonical*, the same
   text always tokenizes the same way, which the
   [reproducibility](/ai-ml/systems/reproducibility-metadata)
   discipline requires).
 - **The greedy pair choice** (the most frequent pair: the
   [greedy](/dsa/patterns/greedy-algorithms) algorithm, and the
-  reason BPE is *suboptimal* but *fast* and *good enough* — the
+  reason BPE is *suboptimal* but *fast* and *good enough*, the
   honest [greedy-vs-optimal](/dsa/patterns/greedy-algorithms) trade,
   at the tokenizer layer).
 - **The encoding is a *priority scan*** (find the highest-priority
-  applicable pair, merge, repeat: the naive O(n²)-ish loop — real
+  applicable pair, merge, repeat: the naive O(n²)-ish loop, real
   tokenizers use a heap/linked-list optimization, but the *naive*
   form is the *clear* one, and the LLD's point is the algorithm, not
   the constant factor).

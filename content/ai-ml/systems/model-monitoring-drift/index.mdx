@@ -10,9 +10,9 @@ distribution, production is serving *this* quarter's, and nothing
 about the model *code* changed while its quality silently decayed.
 The distinctive thing about ML monitoring (vs. classic
 [observability](/system-design/fundamentals/observability)) is
-that **the failure is not an error** — the service returns 200s,
+that **the failure is not an error**, the service returns 200s,
 the latency is fine, the error rate is zero, and the *predictions
-are just wrong* — which is why the monitoring must watch the
+are just wrong*, which is why the monitoring must watch the
 *predictions and inputs*, not the service.
 
 ## The three layers of monitoring
@@ -42,7 +42,7 @@ graph LR
 - **Concept drift / quality drift**: the *relationship* changed
   (the same input now means a different outcome: the
   [concept-drift page's](/ai-ml/systems/concept-drift-retraining)
-  subject) — the *only* layer that measures whether the model is
+  subject), the *only* layer that measures whether the model is
   *right*, and the one that needs **labels**, which arrive late and
   biased (the [weeks-late chargeback](/system-design/hld/fraud-detection)
   problem). This is the honest ground truth, and it is why the
@@ -65,8 +65,8 @@ graph LR
   [recommendation](/system-design/hld/recommendation-system)'s
   immediate click-through, a [fraud](/system-design/hld/fraud-detection)
   model's challenge rate: a *related* signal available now, whose
-  relationship to the true label was learned in the training set —
-  a proxy, stated as one, not the truth).
+  relationship to the true label was learned in the training set,
+a proxy, stated as one, not the truth).
 - **The performance dashboard** (the [offline
   metrics](/ai-ml/systems/evaluation-metrics) recomputed on
   live data *once labels arrive*: the delayed, authoritative number,
@@ -95,7 +95,7 @@ discipline:
 - **The correlation is the calibration** (which drift *predicted*
   which quality drops, learned per system: the same
   [offline/online](/ai-ml/systems/offline-vs-online-evaluation)
-  gap-calibration discipline, applied to monitoring — and the
+  gap-calibration discipline, applied to monitoring, and the
   reason a mature system's drift alerts are *specific features*,
   not a generic score).
 

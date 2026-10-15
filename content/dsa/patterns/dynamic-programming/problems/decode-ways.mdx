@@ -1,0 +1,111 @@
+---
+title: "Decode Ways"
+difficulty: "Medium"
+variant: "Counting DP"
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/decode-ways/"
+---
+
+## Problem
+
+A message of letters is encoded as digits with `A = 1`, `B = 2`, ...,
+`Z = 26`. Given a digit string `s`, return how many ways it can be
+decoded. Codes like `"06"` are invalid: a code never has a leading zero.
+
+**Constraints**
+
+- `1 <= s.length <= 100`
+- `s` contains only digits
+- The answer fits in a 32-bit integer
+
+**Example**
+
+```text
+Input:  s = "226"
+Output: 3            // "2 2 6", "22 6", "2 26"
+
+Input:  s = "06"
+Output: 0
+```
+
+## Brute force
+
+At each position, try reading one digit, then try reading two. Count the
+ways that reach the end.
+
+```cpp
+int countFrom(const std::string& s, int i) {
+    if (i == static_cast<int>(s.size())) {
+        return 1;                         // consumed everything: one decoding
+    }
+    if (s[i] == '0') {
+        return 0;                         // no code starts with 0
+    }
+    int ways = countFrom(s, i + 1);       // read one digit
+    if (i + 1 < static_cast<int>(s.size()) &&
+        (s[i] == '1' || (s[i] == '2' && s[i + 1] <= '6'))) {
+        ways += countFrom(s, i + 2);      // read two digits: 10..26
+    }
+    return ways;
+}
+
+int numDecodingsBrute(const std::string& s) {
+    return countFrom(s, 0);
+}
+```
+
+The logic is right. The cost is not. A string like `"1111..."` branches
+twice at almost every position, so the call tree grows like the Fibonacci
+numbers, exponentially. And `countFrom(s, 5)` is computed again and again
+from different paths.
+
+## Optimal: count from the right, keep two numbers
+
+`countFrom(i)` depends only on `countFrom(i + 1)` and `countFrom(i + 2)`.
+So compute it from the end of the string backwards, and keep just the
+last two answers. This is the
+[climbing stairs](/dsa/patterns/dynamic-programming/climbing-stairs)
+recurrence with rules about which steps are allowed.
+
+```cpp
+int numDecodings(const std::string& s) {
+    int n = static_cast<int>(s.size());
+    int next = 1;                         // ways(i + 1); ways(n) = 1
+    int nextNext = 0;                     // ways(i + 2)
+    for (int i = n - 1; i >= 0; --i) {
+        int current = 0;
+        if (s[i] != '0') {
+            current = next;               // one-digit code
+            if (i + 1 < n &&
+                (s[i] == '1' || (s[i] == '2' && s[i + 1] <= '6'))) {
+                current += nextNext;      // two-digit code 10..26
+            }
+        }
+        nextNext = next;
+        next = current;
+    }
+    return next;                          // ways(0)
+}
+```
+
+Zeros are where people slip. A `'0'` cannot start a code, so its count is
+0. It can only be the second digit of `"10"` or `"20"`. The two checks in
+the loop handle both facts. `"30"` correctly gives 0, because "3" then "0"
+is illegal and "30" is not a letter.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Plain recursion | O(2^n) | O(n) stack |
+| Bottom-up, two variables | O(n) | O(1) |
+
+This is the general shape of counting
+[dynamic programming](/dsa/patterns/dynamic-programming): define "number
+of ways from here", write the choices, notice the overlap, and evaluate
+in the order that makes every dependency ready before you need it.
+
+## Related C++ tools
+
+- [std::string](/cpp/string): substr, find, and the operations that copy.

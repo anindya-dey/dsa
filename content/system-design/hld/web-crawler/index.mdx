@@ -103,6 +103,14 @@ crawler is a canonicalization gap, and the
 (normalized URL -> content fingerprint) is the machinery that
 catches what canonicalization misses.
 
+The "have I seen this URL?" check runs on every discovered link, billions
+of times, so an exact set of every URL ever seen gets expensive fast. A
+[Bloom filter](/system-design/fundamentals/probabilistic-data-structures)
+answers it in about 10 bits per URL: roughly 12 GB for 10 billion URLs at
+a 1% false-positive rate, small enough to keep in memory on each frontier
+node. The error only goes one way. A false positive means a new page is
+skipped, which costs a little coverage. It can never cause a refetch.
+
 ## Politeness and the robots contract
 
 **`robots.txt`** per host (the site's crawl rules: disallowed
@@ -177,6 +185,8 @@ deployment.
 
 ## Related concepts
 
+- [Probabilistic Data Structures](/system-design/fundamentals/probabilistic-data-structures)
+  explains the Bloom filter behind the seen-URL check.
 - [Rate Limiting](/system-design/fundamentals/rate-limiting) is the
   politeness discipline the dispatcher implements (as a guest, on
   behalf of the host).

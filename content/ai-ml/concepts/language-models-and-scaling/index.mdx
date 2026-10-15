@@ -1,9 +1,9 @@
 ---
-title: "Language Models & Scaling"
+title: "Language Models & Scaling Laws"
 summary: "Predict the next token, scale it up, and capabilities emerge."
 ---
 
-A language model is a model that assigns probabilities to text — most
+A language model is a model that assigns probabilities to text, most
 usefully, **the probability of the next token given the previous
 ones**. Train a large [transformer](/ai-ml/concepts/transformers) on
 that single objective (predict the next word) over a huge amount of
@@ -16,21 +16,21 @@ plus enormous scale producing surprisingly general capabilities.
 
 The task sounds trivial: given a sequence of tokens, predict the next
 one. Trained over the whole internet's worth of text, it forces the
-model to learn grammar, facts, reasoning patterns, and style — because
+model to learn grammar, facts, reasoning patterns, and style, because
 predicting the next token *well* requires modeling all of that. This
 is **self-supervised** learning: no labels are needed, because the
 text provides its own targets (the next token is always known). That
 is what makes training on trillions of tokens possible.
 
 Generation is **autoregressive**: predict a token, append it, predict
-the next, repeat — the same loop as
+the next, repeat, the same loop as
 [sequence-to-sequence](/ai-ml/concepts/sequence-to-sequence), scaled
 up. A "chatbot" is this loop with the conversation as context.
 
 ## Scaling laws
 
 The empirical discovery that drove everything: **model quality
-improves predictably as you increase model size, data, and compute** —
+improves predictably as you increase model size, data, and compute**,
 a smooth power-law relationship, not a lucky accident. This let labs
 *plan* training runs (choose a compute budget, predict the resulting
 loss) and justified spending enormous resources on ever-larger models.
@@ -42,7 +42,7 @@ a compute-optimal balance between them.
 
 A striking and debated phenomenon: as models scale, capabilities
 appear that were *not* present (or not explicitly trained) at smaller
-sizes — arithmetic, translation, multi-step reasoning, in-context
+sizes: arithmetic, translation, multi-step reasoning, in-context
 learning (learning a task from examples *in the prompt*, with no
 weight updates). These **emergent abilities** are the reason scaling
 generated so much excitement, and the reason a general-purpose model
@@ -52,7 +52,7 @@ predictable emergence really is remains an active research debate.)
 ## From base model to assistant
 
 A raw next-token model (a "base model") is a text *completer*, not an
-assistant — ask it a question and it might continue with more
+assistant: ask it a question and it might continue with more
 questions, because that is what the training data looks like. Turning
 it into a helpful assistant takes post-training:
 [instruction tuning](/ai-ml/concepts/transfer-learning) (fine-tune on
@@ -66,7 +66,7 @@ assistants.
 
 Scaling a language model is a systems problem as much as an
 algorithmic one: **distributed training** across thousands of
-accelerators (data, tensor, and pipeline parallelism —
+accelerators (data, tensor, and pipeline parallelism:
 [distributed training](/ai-ml/systems/distributed-training)), efficient
 **serving** of a model too large for one GPU with
 [batching and KV-cache management](/ai-ml/systems/model-serving-architectures), and

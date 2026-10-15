@@ -1,0 +1,96 @@
+---
+title: "Best Time to Buy and Sell Stock"
+difficulty: "Easy"
+variant: "Running Minimum"
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/best-time-to-buy-and-sell-stock/"
+---
+
+## Problem
+
+`prices[i]` is a stock's price on day `i`. Choose one day to buy and a
+later day to sell. Return the largest profit you can make, or 0 if no
+trade makes money.
+
+**Constraints**
+
+- `1 <= prices.length <= 10^5`
+- `0 <= prices[i] <= 10^4`
+
+**Example**
+
+```text
+Input:  prices = [7, 1, 5, 3, 6, 4]
+Output: 5            // buy at 1, sell at 6
+
+Input:  prices = [7, 6, 4, 3, 1]
+Output: 0            // prices only fall
+```
+
+## Brute force
+
+Try every buy day and every later sell day.
+
+```cpp
+int maxProfitBrute(const std::vector<int>& prices) {
+    int n = static_cast<int>(prices.size());
+    int best = 0;
+    for (int buy = 0; buy < n; ++buy) {
+        for (int sell = buy + 1; sell < n; ++sell) {
+            best = std::max(best, prices[sell] - prices[buy]);
+        }
+    }
+    return best;
+}
+```
+
+That is about n²/2 pairs: 5 * 10^9 at the limit. Look at what the inner
+loop asks for a fixed sell day. It wants the cheapest earlier buy. The
+brute force recomputes that minimum from scratch for every sell day.
+
+## Optimal: carry the cheapest price so far
+
+Walk the days once. Keep the lowest price seen so far. On each day, treat
+today as the sell day: the best trade ending today buys at that running
+minimum. Then update the minimum with today's price.
+
+```cpp
+int maxProfit(const std::vector<int>& prices) {
+    int cheapest = prices[0];             // best buy price among earlier days
+    int best = 0;                         // doing nothing earns 0
+    for (int i = 1; i < static_cast<int>(prices.size()); ++i) {
+        best = std::max(best, prices[i] - cheapest);  // sell today
+        cheapest = std::min(cheapest, prices[i]);     // or buy today, later
+    }
+    return best;
+}
+```
+
+The order of the two lines matters. You compute today's profit *before*
+letting today become the cheapest price. That enforces "buy strictly
+before sell" without any index bookkeeping.
+
+Why is it safe to forget everything except the minimum? For any sell day,
+the best buy is the lowest earlier price, and nothing else about the past
+can change that answer. One number captures all the history that matters.
+That is the greedy argument.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Every buy/sell pair | O(n²) | O(1) |
+| Running minimum | O(n) | O(1) |
+
+You can also see this as
+[Kadane's algorithm](/dsa/patterns/dynamic-programming/maximum-subarray)
+on the day-to-day price changes: the best trade is the best contiguous
+run of daily gains. Both views give the same one-pass loop. The running
+minimum is the more direct one, and it is the
+[greedy](/dsa/patterns/greedy-algorithms) idea at its simplest: keep the
+one summary of the past that future decisions depend on.
+
+## Related C++ tools
+
+- [std::vector](/cpp/vector): the dynamic array underneath almost every solution.

@@ -11,7 +11,7 @@ because the LLM landscape's defining feature is *change and
 multiplicity*: models improve monthly, prices shift, providers have
 outages, and different requests want different models (a cheap one
 for classification, an expensive one for reasoning). The gateway
-absorbs all of that variation behind a stable interface — the
+absorbs all of that variation behind a stable interface, the
 [gateway pattern's](/system-design/fundamentals/api-gateway-and-service-mesh)
 reasons (decoupling, cross-cutting concerns), LLM-shaped.
 
@@ -32,7 +32,7 @@ graph LR
 
 - **Routing** (the *which model* decision, per request: by
   *difficulty* (the [cost-budget](/ai-ml/systems/cost-token-budgets)
-  lever: cheap model for easy, large for hard — a classifier or a
+  lever: cheap model for easy, large for hard, a classifier or a
   heuristic picks), by *task* (a routing table: "summarize" →
   model A, "reason" → model B), by *tenant* (the customer's
   configured model), or by *experiment* (the
@@ -41,8 +41,8 @@ graph LR
   lives).
 - **Fallback and retry** (provider A is down or rate-limited →
   route to provider B: the [failover](/system-design/fundamentals/availability-and-reliability)
-  discipline, and the *reason* a multi-provider gateway exists —
-  LLM provider outages are real, and a single-provider application
+  discipline, and the *reason* a multi-provider gateway exists:
+LLM provider outages are real, and a single-provider application
   goes down with it. The subtlety: the *prompts differ per model*
   (the [prompt-model coupling](/ai-ml/systems/prompt-engineering-systems)),
   so the fallback needs a *model-appropriate* prompt variant, which
@@ -64,7 +64,7 @@ graph LR
 - **The stable interface** (the applications code against *the
   gateway's* API, not a provider's: switching models, adding a
   provider, changing prices is a *gateway config change*, invisible
-  to the apps — the [decoupling](/system-design/fundamentals/api-gateway-and-service-mesh)
+  to the apps, the [decoupling](/system-design/fundamentals/api-gateway-and-service-mesh)
   value, and the reason "model-agnostic" is achievable at all).
 
 ## Why it is its own tier
@@ -76,12 +76,12 @@ did, and one LLM-specific one:
 
 - **Centralized cost control** (the *token spend* is the new cloud
   bill, and it must be *seen and capped* in one place: per-app,
-  per-tenant, per-feature — a gateway is the only vantage point that
+  per-tenant, per-feature, a gateway is the only vantage point that
   sees all of it).
 - **Provider abstraction** (the model landscape churns; the
   gateway is the [anti-corruption
   layer](https://en.wikipedia.org/wiki/Domain-driven_design#Strategic_patterns)
-  between your code and the churn — a provider's API change or
+  between your code and the churn, a provider's API change or
   deprecation is a gateway update, not a fleet-wide refactor).
 - **The cross-cutting features** (caching, guardrails, quotas,
   routing: each is *built once* in the gateway rather than *per
@@ -99,7 +99,7 @@ a **shared dependency** (the gateway down = all LLM features down:
 the [SPOF](/system-design/fundamentals/availability-and-reliability)
 mitigation, redundant gateway instances, applies), and the
 **feature-lag risk** (a provider ships a *new capability* (a new
-API, a new mode) and the gateway does not expose it yet — the
+API, a new mode) and the gateway does not expose it yet, the
 gateway must *pass through* new features or it becomes the
 bottleneck, the same tension every abstraction layer faces). The
 design's answer: the gateway abstracts the *common* surface and

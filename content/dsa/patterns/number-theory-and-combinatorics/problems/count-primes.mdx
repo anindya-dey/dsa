@@ -2,7 +2,9 @@
 title: "Count Primes"
 difficulty: "Medium"
 variant: "Sieve of Eratosthenes"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/count-primes/"
 ---
 
 ## Problem
@@ -67,7 +69,7 @@ each unmarked number reached is prime, because nothing smaller divides it
 ```cpp
 int countPrimes(int n) {
     if (n < 3) {
-        return n > 2 ? 0 : 0;    // no primes below 2; below 3 only 2
+        return 0;                // n <= 2: no primes strictly below n
     }
     std::vector<char> isComposite(n, 0);    // char: 5MB, not 5MB * 8
     int count = 0;
@@ -122,3 +124,7 @@ is the tool whenever primality or factorization is needed for *many*
 numbers at once, and the smallest-prime-factor variant (storing the
 crossing-off prime rather than a flag) upgrades it into a per-number
 factorization machine.
+
+## Related C++ tools
+
+- [Integer Overflow & Limits](/cpp/integer-overflow): where int runs out, and how this code stays inside it.

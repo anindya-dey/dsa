@@ -2,7 +2,9 @@
 title: "0/1 Knapsack"
 difficulty: "Medium"
 variant: "Knapsack"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode (Partition Equal Subset Sum)"
+    href: "https://leetcode.com/problems/partition-equal-subset-sum/"
 ---
 
 ## Problem
@@ -85,7 +87,7 @@ the current item's. Iterating c descending writes `best[c]` *before*
 reference is safely stale (previous item). Iterating ascending would
 read the *just-written* current-item value, letting item i be used
 twice, which silently turns the algorithm into the unbounded
-([coin change](/dsa/patterns/dynamic-programming/problems/coin-change))
+([coin change](/dsa/patterns/dynamic-programming/coin-change))
 variant where each item may be reused any number of times. One loop
 direction, two different problems: this is the single most-cited loop
 order in interview DP, and being able to *explain* it (rather than
@@ -117,5 +119,9 @@ This is the pattern's flagship
 design ("items considered + capacity") is the template for the whole
 family: subset sum (values all 1), partition equal subset sum (target
 W/2), the unbounded coin change
-([sibling](/dsa/patterns/dynamic-programming/problems/coin-change)),
+([sibling](/dsa/patterns/dynamic-programming/coin-change)),
 and every "pick items under a budget" problem that follows.
+
+## Related C++ tools
+
+- [std::vector](/cpp/vector): the dynamic array underneath almost every solution.

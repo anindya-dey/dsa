@@ -4,8 +4,8 @@ summary: "Walking downhill on the loss surface: the core optimization loop, conc
 ---
 
 Training a model means *minimizing a loss*, and **gradient descent**
-is how: picture the loss as a landscape over the model's parameters —
-hills where the loss is high, valleys where it is low — and the
+is how: picture the loss as a landscape over the model's parameters,
+hills where the loss is high, valleys where it is low, and the
 parameters as a point standing somewhere on it. Gradient descent
 takes a small step *downhill* (the direction that decreases the loss
 most), repeatedly, until it settles in a valley. That is the entire
@@ -13,15 +13,15 @@ algorithm, and it is how virtually every neural network is trained.
 
 ## The idea, without the calculus
 
-The **gradient** is the direction of steepest *ascent* — the way
+The **gradient** is the direction of steepest *ascent*, the way
 uphill. So the training step is: compute the gradient (which way is
 uphill), and move the parameters the *opposite* way (downhill) by a
 small amount. Repeat. The size of the step is the **learning rate**,
 and it is the single most consequential hyperparameter:
 
-- **Too small** (tiny steps): training is correct but *slow* — it
+- **Too small** (tiny steps): training is correct but *slow*, it
   takes forever to reach the valley.
-- **Too large** (huge steps): training *overshoots* — it bounces
+- **Too large** (huge steps): training *overshoots*, it bounces
   across the valley, or diverges entirely.
 - **Just right**: steady progress, but the right value depends on the
   problem, which is why schedules and adaptive methods exist.
@@ -40,10 +40,10 @@ graph LR
   dataset before each step. Accurate, and slow (one step per full
   pass).
 - **Stochastic gradient descent (SGD)**: compute it over *one*
-  example. Noisy, and fast — the noise is a feature, helping escape
+  example. Noisy, and fast, the noise is a feature, helping escape
   shallow traps. The dominant modern practice is the middle:
-  **mini-batch** (a small batch, e.g. 32-1024 examples, per step) —
-  the sweet spot between accuracy and speed, and what "batch size"
+  **mini-batch** (a small batch, e.g. 32-1024 examples, per step),
+the sweet spot between accuracy and speed, and what "batch size"
   means.
 - **Momentum and adaptive methods** ([Adam](/ai-ml/concepts/optimizers)):
   refinements that smooth the path and adjust the step per parameter,
@@ -58,22 +58,22 @@ concepts:
   lowest: the optimizer can stall. In high dimensions, saddles
   dominate, and momentum/noise help escape them).
 - **Plateaus** (flat regions where the gradient is near zero: the
-  step is tiny and progress stalls — the reason adaptive optimizers
+  step is tiny and progress stalls, the reason adaptive optimizers
   scale the step per parameter).
 - **Ill-conditioning** (the valley is a narrow ravine: the gradient
-  points across it, not along it, so plain descent zigzags — the
+  points across it, not along it, so plain descent zigzags, the
   reason momentum exists).
 - **Vanishing/exploding gradients** (in deep networks, the gradient
-  shrinks or grows exponentially through the layers — the
+  shrinks or grows exponentially through the layers, the
   [deep-network training problem](/ai-ml/concepts/normalization-and-initialization),
   addressed by normalization, careful initialization, and
-  architectures like [residual connections](https://en.wikipedia.org/wiki/Residual_neural_network)).
+  architectures like residual connections).
 
 ## The systems view
 
 Two properties matter beyond the math: **it is iterative** (training
 runs many steps, which is why it is a
-[long-running compute job](/ai-ml/systems/distributed-training) —
+[long-running compute job](/ai-ml/systems/distributed-training):
 hours to weeks), and **it is parallelizable** (the gradient over a
 mini-batch decomposes, which is exactly what
 [data-parallel training](/ai-ml/systems/distributed-training) exploits:

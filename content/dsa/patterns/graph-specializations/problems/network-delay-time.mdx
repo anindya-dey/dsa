@@ -2,7 +2,9 @@
 title: "Network Delay Time"
 difficulty: "Medium"
 variant: "Dijkstra"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/network-delay-time/"
 ---
 
 ## Problem
@@ -140,3 +142,9 @@ a negative edge appears, "finalize the closest node" can be wrong, and you
 must fall back to Bellman-Ford. That trade-off is the reason
 [the two algorithms coexist](/dsa/patterns/graph-specializations) rather
 than one replacing the other.
+
+## Related C++ tools
+
+- [std::priority_queue](/cpp/priority-queue): the heap, and why its comparator reads backwards.
+- [Custom Comparators](/cpp/comparators): the ordering contract every comparator must keep.
+- [Integer Overflow & Limits](/cpp/integer-overflow): where int runs out, and how this code stays inside it.

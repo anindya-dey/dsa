@@ -3,7 +3,7 @@ title: "Loss Functions & Empirical Risk"
 summary: "Scoring how wrong a prediction is, and why the choice of loss shapes everything."
 ---
 
-To *learn*, a model needs a *measure of wrongness* — a single number
+To *learn*, a model needs a *measure of wrongness*, a single number
 that says how badly it is doing on an example, which training then
 tries to minimize. That number is the **loss function**, and it is
 not a detail: the choice of loss *defines what "good" means* to the
@@ -14,21 +14,21 @@ the most common and least visible ML bugs.
 
 For one example, the loss compares the model's prediction to the true
 label and returns a number: zero if perfect, larger the worse.
-Training averages the loss over the dataset — the **empirical risk**
-— and searches for parameters that minimize it. So the loss is the
+Training averages the loss over the dataset, the **empirical risk**,
+and searches for parameters that minimize it. So the loss is the
 *objective*: whatever it rewards, the model will chase.
 
 The classic losses:
 
 - **Squared error** (`(prediction − actual)²`, for regression):
   penalizes large errors heavily (the square), which is why it is
-  sensitive to outliers — a single wildly wrong point dominates.
+  sensitive to outliers, a single wildly wrong point dominates.
 - **Absolute error** (`|prediction − actual|`): penalizes all errors
   linearly, so it is robust to outliers but treats a big miss the
   same as several small ones.
 - **Cross-entropy** (for classification): measures how surprised the
-  model is by the true label given its predicted probabilities —
-  confidently wrong is punished *hard*, which is exactly what you
+  model is by the true label given its predicted probabilities:
+confidently wrong is punished *hard*, which is exactly what you
   want for classification (the reason it pairs with
   [softmax-style](/ai-ml/concepts/activation-functions) outputs).
 
@@ -43,17 +43,17 @@ optimizes the wrong thing:
   reason cross-entropy or a weighted loss is used instead).
 - **Regression loss for a ranking task** (the model minimizes
   distance to a target value when the *product* only cares about
-  *order* — the loss and the goal diverge, the
+  *order*, the loss and the goal diverge, the
   [Goodhart](/ai-ml/systems/evaluation-metrics) problem, at the
   training layer).
 - **Loss on the wrong thing** (predicting a proxy that is easy to
-  optimize rather than the outcome you care about — the classic
+  optimize rather than the outcome you care about, the classic
   "engagement" vs. "retention" mismatch, the
   [feedback-loop](/ai-ml/systems/supervised-unsupervised-rl) hazard).
 
-The lesson: **the loss is the specification.** Choosing it carefully
-— and checking that minimizing it actually produces the behavior you
-want — is a design decision, not a default.
+The lesson: **the loss is the specification.** Choosing it carefully,
+and checking that minimizing it actually produces the behavior you
+want, is a design decision, not a default.
 
 ## Regularization: the loss plus a penalty
 
@@ -62,7 +62,7 @@ Real training usually adds a second term to the loss: a
 weights), so the optimizer balances "fit the data" against "stay
 simple". This is the [regularization](/ai-ml/concepts/regularization)
 idea, and it exists because minimizing the raw loss too well causes
-[overfitting](/ai-ml/concepts/overfitting-and-bias-variance) — the
+[overfitting](/ai-ml/concepts/overfitting-and-bias-variance), the
 model fits the training noise. The total objective is "empirical risk
 + complexity penalty", and the balance between them is the core
 trade of learning.

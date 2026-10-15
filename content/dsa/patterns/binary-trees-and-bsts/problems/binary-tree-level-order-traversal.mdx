@@ -2,7 +2,9 @@
 title: "Binary Tree Level Order Traversal"
 difficulty: "Medium"
 variant: "BFS by Level"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/binary-tree-level-order-traversal/"
 ---
 
 ## Problem
@@ -32,12 +34,6 @@ Recurse with a depth parameter, appending each value to the list for its
 depth, growing the list-of-lists as deeper levels appear.
 
 ```cpp
-std::vector<std::vector<int>> levelOrderRecursive(TreeNode* root) {
-    std::vector<std::vector<int>> result;
-    helper(root, 0, result);
-    return result;
-}
-
 void helper(TreeNode* node, int depth,
             std::vector<std::vector<int>>& result) {
     if (node == nullptr) {
@@ -49,6 +45,12 @@ void helper(TreeNode* node, int depth,
     result[depth].push_back(node->val);
     helper(node->left, depth + 1, result);
     helper(node->right, depth + 1, result);
+}
+
+std::vector<std::vector<int>> levelOrderRecursive(TreeNode* root) {
+    std::vector<std::vector<int>> result;
+    helper(root, 0, result);
+    return result;
 }
 ```
 
@@ -120,3 +122,7 @@ Both are linear. The queue version's space is the width of the widest
 level (the frontier), which is smaller than n for balanced trees and
 larger only for a single enormous level. It also generalizes directly to
 graphs, where the recursive version does not.
+
+## Related C++ tools
+
+- [std::stack / std::queue](/cpp/stack-queue): the LIFO and FIFO adapters.

@@ -10,10 +10,10 @@ applied LLM work:
 
 - **Prompting**: change the *input* (instructions, examples,
   retrieved context).
-- **RAG**: change the *context* (retrieve and inject facts — the
+- **RAG**: change the *context* (retrieve and inject facts, the
   [RAG page](/ai-ml/systems/rag)'s subject).
 - **Fine-tuning**: change the *weights* (train the model further on
-  your data — the [LoRA page](/ai-ml/systems/lora-peft)'s
+  your data, the [LoRA page](/ai-ml/systems/lora-peft)'s
   subject).
 
 They solve *different* problems, and the single most common mistake
@@ -34,25 +34,25 @@ The clean mental split: **prompting and RAG change what the model
 and skill are a "what it is" problem (fine-tuning: bake in the
 pattern). And the recurring trap: **fine-tuning to add knowledge**
 (the facts get memorized unreliably, go stale when they change, and
-you cannot cite them — RAG's job), and **prompting to fix a
+you cannot cite them, RAG's job), and **prompting to fix a
 capability the model lacks** (no wording teaches a model a skill it
-does not have — fine-tuning's job).
+does not have, fine-tuning's job).
 
 ## The decision ladder
 
 The order to *try* the options, cheapest and fastest first:
 
 1. **Prompting** (can a better instruction or a few-shot example do
-   it?): free, instant, and it *frequently* works — the first step,
+   it?): free, instant, and it *frequently* works, the first step,
    always. (The [prompt-as-artifact](/ai-ml/systems/prompt-engineering-systems)
    discipline applies: test the prompt change.)
-2. **RAG** (is it a *knowledge* problem — private data, fresh data,
+2. **RAG** (is it a *knowledge* problem: private data, fresh data,
    verifiable citations?): the [RAG](/ai-ml/systems/rag)
    pipeline, and the answer for "the model does not know my stuff."
 3. **Fine-tuning** (is it a *behavior/skill/format* problem
    prompting cannot crack, or do you need a *smaller/cheaper* model
    that performs like a bigger one?): the [LoRA/PEft](/ai-ml/systems/lora-peft)
-   path — and note the *last* reason: **distillation** (fine-tune a
+   path, and note the *last* reason: **distillation** (fine-tune a
    small model on a big model's outputs, so you *serve* the small
    one: the [inference-optimization](/ai-ml/systems/inference-optimization)
    motivation, and a very common real reason to fine-tune).
@@ -68,7 +68,7 @@ The three are not exclusive, and the mature systems *combine* them:
 
 - **Fine-tuned model + RAG** (the common production stack: fine-tune
   for the *behavior* (answer format, domain tone, instruction-
-  following), RAG for the *knowledge* — each doing what it is good
+  following), RAG for the *knowledge*, each doing what it is good
   at, the model shaped to *use* retrieved context well).
 - **Prompt + RAG** (the most common: a well-engineered prompt that
   constrains generation *plus* retrieval for facts: the
@@ -88,7 +88,7 @@ a **serving cost** (you now serve *your* model: the
 [serving tier](/ai-ml/systems/model-serving-architectures),
 the [LoRA routing](/ai-ml/systems/lora-peft)), a
 **maintenance burden** (the base model improves, and your fine-tune
-is now behind — the re-fine-tuning cadence: the
+is now behind, the re-fine-tuning cadence: the
 [drift](/ai-ml/systems/concept-drift-retraining) problem, at
 the model-release scale), and a **loss of generality** (a
 narrowly-fine-tuned model can get *worse* at everything else: the

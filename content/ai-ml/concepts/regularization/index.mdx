@@ -6,8 +6,8 @@ summary: "Penalizing complexity to generalize better: L1, L2, dropout, and early
 A model that fits the training data *too* well
 [overfits](/ai-ml/concepts/overfitting-and-bias-variance): it learns
 the noise, not the pattern. **Regularization** is the family of
-techniques that deliberately make fitting *harder* — constraining the
-model so it prefers simpler explanations — which, counterintuitively,
+techniques that deliberately make fitting *harder*, constraining the
+model so it prefers simpler explanations, which, counterintuitively,
 makes it *better* on new data. It is the main lever against
 overfitting, and it appears everywhere: as a penalty term, as a
 training procedure, and as an architectural choice.
@@ -19,12 +19,12 @@ that grows with the size of the model's weights, so the optimizer
 must balance "fit the data" against "keep weights small":
 
 - **L2 (ridge)**: penalize the *sum of squared weights*. It shrinks
-  all weights toward zero, gently — no weight gets very large, so the
+  all weights toward zero, gently, no weight gets very large, so the
   model is less sensitive to any single input. The default, and the
   reason "weight decay" appears in every optimizer's settings.
 - **L1 (lasso)**: penalize the *sum of absolute weights*. It drives
   some weights *exactly to zero*, which removes those features
-  entirely — so L1 doubles as **feature selection** (the model
+  entirely, so L1 doubles as **feature selection** (the model
   decides which inputs matter by zeroing the rest).
 
 The distinction worth remembering: **L2 shrinks, L1 deletes.** Use L2
@@ -38,7 +38,7 @@ many features are noise and you want sparsity.
   on any single neuron and must learn redundant, robust
   representations. At inference, all neurons are used (with scaled
   weights). It is a training-time trick that acts like training many
-  sub-networks and averaging them — a form of ensembling, and the
+  sub-networks and averaging them, a form of ensembling, and the
   most common neural regularization.
 - **Early stopping**: stop training when *validation* error starts
   rising, before the model has fit the training noise. The
@@ -62,13 +62,13 @@ many features are noise and you want sparsity.
 
 ## The trade, stated honestly
 
-Regularization is not free: **too much causes underfitting** — the
+Regularization is not free: **too much causes underfitting**, the
 model is so constrained it cannot learn the pattern. The dial (the
 penalty strength, the dropout rate) is tuned on
 [validation data](/ai-ml/concepts/train-validation-test), and it is a
 classic [bias-variance](/ai-ml/concepts/overfitting-and-bias-variance)
 knob: more regularization, less variance and more bias. The skill is
-finding the point where the total error is lowest — which is a
+finding the point where the total error is lowest, which is a
 *measurement*, not a guess.
 
 ## Related concepts

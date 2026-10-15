@@ -5,7 +5,7 @@ summary: "Spotting the unusual in a firehose, with low latency and a bounded fal
 
 A real-time anomaly detection system watches a stream of events
 (metrics, transactions, logins, sensor readings, API calls) and
-*flags the unusual* — fast enough to act (block, page, throttle) and
+*flags the unusual*: fast enough to act (block, page, throttle) and
 accurately enough to be usable (a system that cries wolf is ignored,
 which is worse than none). It is the [fraud-detection](/system-design/hld/fraud-detection)
 shape with the *labels absent* (anomalies are rare and often
@@ -33,8 +33,8 @@ machinery plus the *unsupervised* detection layer.
 **Non-functional**
 
 - **Latency: seconds to minutes** (fast enough to *act*: the
-  [online-inference](/ai-ml/systems/offline-vs-online-inference)
-  requirement, though often looser than fraud — a metric anomaly can
+  [online-inference](/ai-ml/systems/batch-vs-real-time-prediction)
+  requirement, though often looser than fraud, a metric anomaly can
   tolerate seconds).
 - **Scale: the firehose** (millions of events/sec: the
   [streaming](/system-design/fundamentals/stream-vs-batch-processing)
@@ -66,11 +66,11 @@ graph TD
 - **Streaming aggregates** (the per-entity [windowed
   statistics](/system-design/fundamentals/stream-vs-batch-processing)
   (counts, rates, latency percentiles) the detection needs, computed
-  *as the events flow* — the [feature pipeline](/ai-ml/systems/feature-platform)
+  *as the events flow*, the [feature pipeline](/ai-ml/systems/feature-platform)
   shape).
 - **The baseline model** (the *expected* behavior: a seasonal model
-  (daily/weekly patterns), a forecast, or a learned distribution —
-  the *unsupervised* core, and the reason the system adapts: the
+  (daily/weekly patterns), a forecast, or a learned distribution,
+the *unsupervised* core, and the reason the system adapts: the
   baseline *moves* and the anomaly is *deviation from it*).
 - **The anomaly score** (the deviation (how many σ from expected,
   the forecast error, an isolation-forest score): the detection,
@@ -93,15 +93,15 @@ graph TD
   proxy-management, at its most honest).
 - **The false-positive *budget* is the design** (the system is
   *tuned* to an alert rate (the team can act on ~N alerts/day):
-  the threshold is *derived* from the budget, not chosen freely —
-  the [SLO](/system-design/fundamentals/reliability-engineering)
+  the threshold is *derived* from the budget, not chosen freely,
+the [SLO](/system-design/fundamentals/reliability-engineering)
   discipline, and the reason "just lower the threshold" is not an
   answer (it spends the budget)).
 - **Baselines that adapt *slowly enough*** (the baseline must track
   *normal* drift (seasonality, growth) but *not* absorb the anomaly
   (a slow-adapting baseline would call a persistent anomaly
   "normal": the [drift-vs-anomaly](/ai-ml/systems/concept-drift-retraining)
-  tension, and the *adaptation rate* is the dial — the same
+  tension, and the *adaptation rate* is the dial, the same
   [flapping-threshold](/system-design/hld/load-balancer-system)
   reasoning, for baselines).
 - **The context and the actionability** (an alert without context is
@@ -111,7 +111,7 @@ graph TD
 - **Seasonality and the cold start** (a *new* entity has no
   baseline (the [cold-start](/ai-ml/systems/model-serving-architectures)
   problem): the system uses *population* baselines (this entity's
-  cohort) until the entity's own history accrues — the
+  cohort) until the entity's own history accrues, the
   [recommendation cold-start](/system-design/hld/recommendation-system)
   problem, for baselines).
 
@@ -125,7 +125,7 @@ tier's throughput), the baseline + scoring *per entity per window*
 cost, sized by entity count × window rate), the baselines stored in
 a [time-series store](/system-design/hld/metrics-monitoring-system)
 (the history), and the alerts at a *tuned* rate (the budget: e.g.,
-hundreds/day, not thousands) — the whole system optimized for
+hundreds/day, not thousands), the whole system optimized for
 *precision* (actionable alerts), because the alert volume is the
 product's usability limit.
 

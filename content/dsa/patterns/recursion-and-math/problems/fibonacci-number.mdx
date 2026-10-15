@@ -2,7 +2,9 @@
 title: "Fibonacci Number"
 difficulty: "Easy"
 variant: "Memoization vs Matrix"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/fibonacci-number/"
 ---
 
 ## Problem
@@ -78,7 +80,7 @@ follow-up: **matrix exponentiation**. The recurrence is a linear map:
     [F(n-1)]   [1 0] [F(n-2)]
 
 so applying it n times is raising the matrix to the n-th power, which
-[exponentiation by squaring](/dsa/patterns/number-theory-and-combinatorics/problems/pow-x-n)
+[exponentiation by squaring](/dsa/patterns/number-theory-and-combinatorics/super-pow)
 does in O(log n) multiplications. The same trick generalizes to *any*
 linear recurrence (Tribonacci, counting paths on grids with linear
 dependencies), which is the real reason to know it: it turns

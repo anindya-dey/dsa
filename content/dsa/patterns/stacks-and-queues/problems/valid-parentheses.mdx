@@ -2,7 +2,9 @@
 title: "Valid Parentheses"
 difficulty: "Easy"
 variant: "Stack Matching"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/valid-parentheses/"
 ---
 
 ## Problem
@@ -50,7 +52,7 @@ bool isValidBrute(std::string s) {
 ```
 
 Correct, and a genuinely interesting algorithm (it is the
-[repeated-substring](/dsa/patterns/string-algorithms/problems/repeated-substring-pattern)
+[repeated-substring](/dsa/patterns/string-algorithms/repeated-substring-pattern)
 style of "reduce by local rewriting"), but each pass rescans the whole
 string: O(n²) worst case, and it misses the structural insight
 entirely, which is that *matching is what a stack does*.
@@ -99,7 +101,7 @@ it and an invalid one is caught at its first violation.
 This is the archetype problem of the
 [stacks and queues](/dsa/patterns/stacks-and-queues) pattern: nesting
 *is* last-in-first-out, and every nesting problem (HTML tags,
-directory paths, [decode string](/dsa/patterns/stacks-and-queues/problems/decode-string)'s
+directory paths, [decode string](/dsa/patterns/stacks-and-queues/decode-string)'s
 brackets, expression evaluation) is this solution with a different
 payload. The recognizer, worth drilling until it is reflexive:
 **"must match the most recent unresolved" means stack**, and the
@@ -116,6 +118,12 @@ One pass, one comparison per character, and O(n) stack space in the
 worst case (`"((((("` holds every opener). This is the smallest
 complete example of the matching family and the standard first
 problem in the [stack pattern](/dsa/patterns/stacks-and-queues), with
-[decode string](/dsa/patterns/stacks-and-queues/problems/decode-string)
+[decode string](/dsa/patterns/stacks-and-queues/decode-string)
 as its harder sibling: the same stack, holding *suspended contexts*
 instead of single characters.
+
+## Related C++ tools
+
+- [std::stack / std::queue](/cpp/stack-queue): the LIFO and FIFO adapters.
+- [std::string](/cpp/string): substr, find, and the operations that copy.
+- [Iterator Invalidation](/cpp/invalidation): which operations break iterators you are holding.

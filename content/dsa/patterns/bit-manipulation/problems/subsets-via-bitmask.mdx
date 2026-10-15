@@ -2,14 +2,16 @@
 title: "Subsets via Bitmask"
 difficulty: "Easy"
 variant: "Bitmask Enumeration"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/subsets/"
 ---
 
 ## Problem
 
 Given an integer array of unique elements, return all possible subsets
 (the power set). (This is the bitmask framing of
-[subsets](/dsa/patterns/backtracking-and-pruning/problems/subsets);
+[subsets](/dsa/patterns/backtracking-and-pruning/subsets);
 read that page for the backtracking walk and the include-or-skip
 decision tree.)
 
@@ -88,7 +90,7 @@ The honest limits: this enumerates all 2^n subsets *unconditionally*,
 with no pruning, no early exit, and no way to express constraints ("only
 subsets summing to at most k") except by generating and filtering. The moment
 constraints exist, the
-[backtracking walk](/dsa/patterns/backtracking-and-pruning/problems/subsets)
+[backtracking walk](/dsa/patterns/backtracking-and-pruning/subsets)
 is the right tool: it makes the same decision per element but can refuse
 to extend a partial subset the mask version would generate anyway. The
 mask version is for when n is small and you want *all* of them, or when
@@ -106,3 +108,7 @@ number a subset, each subset a number), and the backtracking version
 adds exactly one capability on top: refusing to walk branches that
 cannot lead anywhere legal. Choosing between them is choosing between
 "generate everything" and "search with pruning".
+
+## Related C++ tools
+
+- [Bit Operations](/cpp/bit-operations): the operators and tricks behind the bit-level steps.

@@ -2,7 +2,9 @@
 title: "Merge k Sorted Lists"
 difficulty: "Hard"
 variant: "K-way Merge"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/merge-k-sorted-lists/"
 ---
 
 ## Problem
@@ -57,7 +59,7 @@ in the worst case: each merge re-walks an ever-growing accumulator.
 ## Optimal: a heap of the current fronts
 
 The k-way merge generalizes the two-list
-[merge](/dsa/patterns/linked-list-manipulation/problems/merge-two-sorted-lists).
+[merge](/dsa/patterns/linked-list-manipulation/merge-two-sorted-lists).
 In the two-list version you compare the two heads and take the smaller.
 With k lists, you compare k heads, and the heap is exactly the structure
 that answers "which of these k is smallest" in O(log k) instead of O(k).
@@ -116,3 +118,9 @@ merges the lists in reverse.
 The heap wins when k is large and n is not much larger, and it is the
 general template for merging any k sorted sources: sorted lists, log
 streams, or [sorted files on disk](/system-design/hld/log-aggregation-system).
+
+## Related C++ tools
+
+- [std::priority_queue](/cpp/priority-queue): the heap, and why its comparator reads backwards.
+- [std::function & Lambdas](/cpp/function-lambdas): closures, captures, and recursive lambdas.
+- [Sorting & nth_element](/cpp/algorithms): sort, nth_element, and what each guarantees.

@@ -8,8 +8,8 @@ is the [RAG](/ai-ml/systems/rag) pattern as a *system*: an
 ingestion pipeline that turns documents into a searchable index, a
 query path that retrieves and generates, and the evaluation and
 safety machinery that keep it honest. It is the AI/ML track's
-canonical HLD — every LLM-system design conversation is a variation
-on it — and the design's quality lives in the joins (retrieval
+canonical HLD, every LLM-system design conversation is a variation
+on it, and the design's quality lives in the joins (retrieval
 precision, grounding, permissions), not in the model choice.
 
 ## Requirements
@@ -25,11 +25,11 @@ precision, grounding, permissions), not in the model choice.
 
 **Non-functional**
 
-- **Answer quality** (the product: correct, grounded, cited — the
+- **Answer quality** (the product: correct, grounded, cited, the
   [evaluation](/ai-ml/systems/evaluating-llm-systems) axes:
   retrieval, groundedness, relevance).
 - **Latency** (the first token in ~1-2s: the retrieval is fast, the
-  generation dominates — the [TTFT](/ai-ml/systems/llm-serving)
+  generation dominates, the [TTFT](/ai-ml/systems/llm-serving)
   budget).
 - **Freshness** (a document added is searchable within minutes: the
   ingestion pipeline is *standing*, not a nightly job).
@@ -62,7 +62,7 @@ graph TD
 ## The components, and the decisions
 
 **Ingestion (offline, standing)**: parse (the *unglamorous hard
-part*: PDFs are hostile — tables, columns, images: the parse quality
+part*: PDFs are hostile, tables, columns, images: the parse quality
 caps the whole system), [chunk](/ai-ml/systems/chunking-indexing-strategies)
 (structural + heading-enriched, tuned against retrieval metrics),
 [embed](/ai-ml/systems/embeddings-vector-representations), and
@@ -75,7 +75,7 @@ document's ACL: the [multi-tenancy](/system-design/fundamentals/multi-tenancy-an
 metadata, mandatory for the filter below).
 
 **Retrieval (online)**: the [filtered
-search](/ai-ml/systems/similarity-search-ann) — the query
+search](/ai-ml/systems/similarity-search-ann), the query
 embeds, the vector search runs *with the user's ACL as a filter*
 (only their documents: the *security-critical* step, and the reason
 the ACL is *in the index*, not a post-filter), the keyword search
@@ -103,20 +103,20 @@ and the audit).
   naive "search then filter" both *starves* (the top-k are all
   inaccessible) and *leaks* (the ranking saw inaccessible content):
   the answer is *filter-aware* retrieval (per-tenant/per-ACL
-  partitions or in-index filtering) — the
+  partitions or in-index filtering), the
   [filtered-vector-search](/ai-ml/systems/similarity-search-ann)
   problem, with security stakes).
 - **Parse quality** (the PDF-with-tables problem: the whole pipeline
-  is capped by what the parser extracted — a real, underestimated
+  is capped by what the parser extracted, a real, underestimated
   engineering sink).
 - **Grounding** (the model *will* sometimes ignore the context or
   hallucinate: the prompt constrains, the [guardrail
   verifies](/ai-ml/systems/llm-guardrails-validation), and the
-  [eval](/ai-ml/systems/evaluating-llm-systems) measures — no
+  [eval](/ai-ml/systems/evaluating-llm-systems) measures, no
   single mechanism suffices).
 - **Staleness** (a document is deleted, the chunk lingers: the
   [re-index/invalidation](/ai-ml/systems/chunking-indexing-strategies)
-  discipline, and the permission change *too* — a user loses
+  discipline, and the permission change *too*, a user loses
   access, the chunks must stop appearing).
 - **Conversation context** (follow-ups need history, but the
   [context window](/ai-ml/systems/llm-serving) is finite: the
@@ -127,10 +127,10 @@ and the audit).
 The arithmetic: N documents * ~chunks-per-doc * ~1 KB-per-chunk-vector
 is the index (a million docs at ~20 chunks each, ~768-dim
 embeddings, [quantized](/ai-ml/systems/inference-optimization):
-~tens of GB — a [vector-database](/ai-ml/systems/vector-databases)
+~tens of GB, a [vector-database](/ai-ml/systems/vector-databases)
 shard or two); the query path is ~100k Q&A/day (retrieval: ms,
 generation: the [LLM tier's](/ai-ml/systems/llm-serving)
-cost — the dominant bill, and the
+cost, the dominant bill, and the
 [caching](/ai-ml/systems/llm-caching) target); the ingestion
 is bursty (a bulk upload: the [queue](/system-design/fundamentals/message-queues-and-pubsub)
 absorbs it).

@@ -32,4 +32,9 @@ jobs:
 
       - run: pnpm check:content
 
+      # Compiles every DSA problem's C++ so a broken solution cannot ship.
+      - run: pnpm check:cpp
+        env:
+          CXX: clang++
+
       - run: pnpm build

@@ -43,8 +43,8 @@ classDiagram
     EmbeddingCache --> LruStore
 ```
 
-The key insight: **the cache key is `(content_hash, model_version)`**
-— the content hash makes the same text hit, and the model version
+The key insight: **the cache key is `(content_hash, model_version)`**,
+the content hash makes the same text hit, and the model version
 makes a *new model* a *cache miss* (correctly: the old vectors are
 *invalid* for the new model, so they must not be served).
 
@@ -105,7 +105,7 @@ The design decisions:
 
 - **The key is `(model_version, content_hash)`** (the *whole*
   correctness: the content hash makes repeats hit, and the model
-  version makes a *model change* a *cold cache* — the
+  version makes a *model change* a *cold cache*, the
   [invalidation](/system-design/fundamentals/caching) that the
   embedding era *requires*, because a new model's vectors are a
   *different space* and serving old vectors would be *wrong*
@@ -113,18 +113,18 @@ The design decisions:
   incomparable across models).
 - **Compute outside the lock** (the embedder is slow (a model
   call): holding the cache lock during it serializes *every*
-  embedding — the [lock-the-bookkeeping-never-the-work](/system-design/fundamentals/concurrency-and-parallelism)
+  embedding, the [lock-the-bookkeeping-never-the-work](/system-design/fundamentals/concurrency-and-parallelism)
   rule, the [rate-limiter](/system-design/lld/rate-limiter-lld)
   discipline).
 - **The stampede hazard** (two threads miss the *same* key and both
   compute: the [cache-stampede](/system-design/fundamentals/caching),
-  here a *duplicated model call* — the fix is *single-flight* (the
+  here a *duplicated model call*, the fix is *single-flight* (the
   first computes, the rest wait): the [LLM-cache](/ai-ml/systems/llm-caching)
   discipline, and worth a mention).
 - **The LRU is the bound** (the cache is finite: the
   [LRU](/system-design/lld/lru-lfu-cache) machinery, and the
   [leaderboard](/system-design/hld/leaderboard) `touch`/`evictLru`
-  shape — the hot embeddings (common queries, frequent documents)
+  shape, the hot embeddings (common queries, frequent documents)
   stay, the long tail evicts).
 
 ## The model-era twist
@@ -140,7 +140,7 @@ era-migration](/ai-ml/systems/vector-databases) problem at
 cache scale: the "invalidate everything on model change" is
 *correct* (the old vectors are useless), and the design's job is to
 make it *cheap* (a version prefix in the key: the old entries age
-out, the new ones fill — the [dual-era](/ai-ml/systems/vector-databases)
+out, the new ones fill, the [dual-era](/ai-ml/systems/vector-databases)
 transition, in a cache).
 
 ## Related concepts

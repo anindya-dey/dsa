@@ -2,7 +2,9 @@
 title: "Burst Balloons"
 difficulty: "Hard"
 variant: "Interval DP"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/burst-balloons/"
 ---
 
 ## Problem
@@ -118,7 +120,7 @@ sub-problems overlap messily. Bursting last fixes the boundaries *now*
 (l and r are permanent, alive, and known), so the split is clean.
 That reversal, "choose the operation that makes the pieces
 independent", is the same move as
-[different ways to add parentheses](/dsa/patterns/divide-and-conquer/problems/different-ways-to-add-parentheses)
+[different ways to add parentheses](/dsa/patterns/divide-and-conquer/different-ways-to-add-parentheses)
 picking the outermost operator, and it is the general trick behind
 most hard interval DPs.
 
@@ -135,3 +137,7 @@ DP: palindrome partitioning, matrix chain multiplication, and
 same "pick the last operation, split, combine" skeleton with different
 combine rules, and this problem is the best-drilled example of the
 reversal that unlocks all of them.
+
+## Related C++ tools
+
+- [Integer Overflow & Limits](/cpp/integer-overflow): where int runs out, and how this code stays inside it.

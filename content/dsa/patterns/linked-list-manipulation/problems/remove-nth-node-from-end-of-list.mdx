@@ -1,0 +1,107 @@
+---
+title: "Remove Nth Node From End of List"
+difficulty: "Medium"
+variant: "Gap Pointers with Dummy Head"
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/remove-nth-node-from-end-of-list/"
+---
+
+## Problem
+
+Given the head of a linked list, remove the `n`-th node from the end and
+return the head.
+
+**Constraints**
+
+- `1 <= list length <= 30`
+- `1 <= n <= list length`
+
+**Example**
+
+```text
+Input:  head = [1, 2, 3, 4, 5], n = 2
+Output: [1, 2, 3, 5]
+
+Input:  head = [1], n = 1
+Output: []           // removing the head itself
+```
+
+## Brute force
+
+Walk the list once to count its length `L`. The node to remove is number
+`L - n` from the front, counting from 0. Walk again to the node just
+before it and unlink.
+
+```cpp
+ListNode* removeNthFromEndBrute(ListNode* head, int n) {
+    int length = 0;
+    for (ListNode* p = head; p != nullptr; p = p->next) {
+        ++length;
+    }
+    if (length == n) {
+        ListNode* rest = head->next;     // removing the head: special case
+        delete head;
+        return rest;
+    }
+    ListNode* before = head;
+    for (int i = 0; i < length - n - 1; ++i) {
+        before = before->next;
+    }
+    ListNode* target = before->next;
+    before->next = target->next;
+    delete target;
+    return head;
+}
+```
+
+This is O(L) and correct. It walks the list twice, and it needs a special
+branch for removing the head. Both are worth removing.
+
+## Optimal: a fixed gap, one pass
+
+Put two pointers on the list with exactly `n` nodes between them. Move
+both forward together. When the front pointer runs off the end, the back
+pointer sits just before the node to remove.
+
+Start both pointers on a *dummy* node placed before the head. The dummy
+means "the node before the target" always exists, even when the target is
+the head. The special case disappears.
+
+```cpp
+ListNode* removeNthFromEnd(ListNode* head, int n) {
+    ListNode dummy(0, head);              // a real node before the head
+    ListNode* front = &dummy;
+    ListNode* back = &dummy;
+    for (int i = 0; i <= n; ++i) {
+        front = front->next;              // open a gap of n + 1 links
+    }
+    while (front != nullptr) {
+        front = front->next;
+        back = back->next;                // keep the gap while walking
+    }
+    ListNode* target = back->next;        // back is just before the target
+    back->next = target->next;
+    delete target;
+    return dummy.next;                    // may differ from head
+}
+```
+
+The loop runs `n + 1` times, not `n`. That puts `back` one node *before*
+the target instead of on it, which is the node you need in order to
+unlink. Return `dummy.next`, never `head`, because the head may be the
+node you just deleted.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Count, then walk again | O(L), two passes | O(1) |
+| Fixed-gap pointers, dummy head | O(L), one pass | O(1) |
+
+The dummy head is the most useful habit in
+[linked list manipulation](/dsa/patterns/linked-list-manipulation). Any
+operation that might change the head becomes uniform once there is always
+a node in front of it. The fixed gap is the same two-pointer idea as
+[cycle detection](/dsa/patterns/two-pointers/linked-list-cycle-detection),
+with a constant gap instead of different speeds.

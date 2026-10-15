@@ -189,7 +189,7 @@ Two design decisions carry the correctness, and both live in
   create-if-missing versus create-or-fail is a per-operation policy
   (mkdir -p semantics vs "no such parent"), which is the same
   "who is responsible for intermediate structure" question as the
-  [tree iterator's](/dsa/patterns/binary-trees-and-bsts/problems/binary-search-tree-iterator)
+  [tree iterator's](/dsa/patterns/binary-trees-and-bsts/binary-search-tree-iterator)
   pausing discipline, applied to paths.
 
 The composite's cost is visible in every `static_cast`: the uniform
@@ -204,7 +204,7 @@ time. Worth naming the trade rather than picking silently.
 - **mv as a pointer reassignment**: moving is removing from one
   parent's map and inserting into another's (no copy, the node's
   identity survives), while `cp` must deep-copy (the tree's
-  [clone](/dsa/patterns/graph-traversals/problems/clone-graph)
+  [clone](/dsa/patterns/graph-traversals/clone-graph)
   question). The pair is a nice probe of whether the candidate is
   thinking in references or in values.
 - **Inode-style storage**: separate the *name tree* from the *content
@@ -216,11 +216,17 @@ time. Worth naming the trade rather than picking silently.
   [LRU](/system-design/lld/lru-lfu-cache) over nodes, which is the
   other classic version of this problem.
 
+## Related C++ tools
+
+- [std::map / std::set](/cpp/map): ordered keys with O(log n) lookups and lower_bound.
+- [Smart Pointers](/cpp/smart-pointers): owning objects with unique_ptr and shared_ptr.
+- [std::pair / std::tuple](/cpp/pair-tuple): pairs, structured bindings, and lexicographic comparison.
+
 ## Related concepts
 
 - [Design a Text Editor (Undo/Redo)](/system-design/lld/text-editor-undo-redo)
   is the other composite-tree LLD (the buffer as a tree).
-- [Design a Linked List](/dsa/patterns/linear-structures/problems/design-linked-list)
+- [Design a Linked List](/dsa/patterns/linear-structures/design-linked-list)
   is the pointer-discipline foundation the tree reuses.
 - [Trees](/dsa/patterns/binary-trees-and-bsts) is the structure, and
   [Design a Bank / Ledger](/system-design/lld/bank-ledger-system) is

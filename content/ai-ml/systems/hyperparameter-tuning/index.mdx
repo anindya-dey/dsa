@@ -3,9 +3,9 @@ title: "Hyperparameter Tuning at Scale"
 summary: "Searching the training configuration space without wasting the compute budget."
 ---
 
-Every model has **hyperparameters** — the settings chosen *before*
+Every model has **hyperparameters**, the settings chosen *before*
 training (learning rate, batch size, layers, regularization, the
-feature set) — and their values matter *enormously* (a wrong
+feature set), and their values matter *enormously* (a wrong
 learning rate means a model that never converges). **Hyperparameter
 tuning** is the search for good values, and its systems problem is
 stark: each evaluation is a *full training run* (hours, GPUs,
@@ -21,24 +21,24 @@ loop, driven automatically, under a budget.
   in the number of hyperparameters, and most of the grid is
   low-value: the first thing to *not* do, at scale).
 - **Random search** (sample configurations randomly): the classic
-  finding — *random beats grid* for the same budget, because only a
+  finding, *random beats grid* for the same budget, because only a
   few hyperparameters matter and random search covers their range
   better (the [capacity-planning](/system-design/fundamentals/capacity-planning-and-estimation)
   intuition: cover the *important* dimensions densely, not the
   full grid).
 - **Bayesian optimization** (build a *surrogate model* of
   "hyperparameters → performance" and choose the next configuration
-  to *maximize expected improvement*: the smart search — fewer runs,
-  better results — at the cost of a *sequential* loop (each choice
+  to *maximize expected improvement*: the smart search, fewer runs,
+  better results, at the cost of a *sequential* loop (each choice
   depends on the previous results: less parallelizable than random,
   which is the trade)).
 - **Successive halving / Hyperband** (the *budget* strategy: run
   many configs *briefly*, keep the promising half, give them more
-  budget, repeat — the [tournament](https://en.wikipedia.org/wiki/Hyperband)
+  budget, repeat, the [tournament](https://en.wikipedia.org/wiki/Hyperband)
   that *prunes* bad configs early, so the fleet's compute goes to
   the configs that might win. The multi-fidelity idea: train on a
   *subset* first (fewer epochs, less data), and only the survivors
-  get the full run — the biggest practical saving, and the standard
+  get the full run, the biggest practical saving, and the standard
   at scale).
 - **Population-based training** (evolve the hyperparameters *during*
   training (mutate the best runs, replace the worst): the
@@ -58,17 +58,17 @@ problem, and the design decisions are the scheduler's:
 - **The trial lifecycle** (spawn → train → evaluate → report: each
   trial is a [job](/system-design/hld/distributed-job-scheduler)
   (checkpointable, retryable), and the *controller* (the search
-  algorithm) decides the *next* trials from the reported results —
-  the [experiment-tracking](/ai-ml/systems/experiment-tracking)
+  algorithm) decides the *next* trials from the reported results,
+the [experiment-tracking](/ai-ml/systems/experiment-tracking)
   loop, closed).
 - **Early stopping and pruning** (a trial that is clearly losing is
   *killed* (the successive-halving idea): the
   [backpressure](/system-design/fundamentals/backpressure-and-flow-control)
-  discipline, freeing the GPU for a promising config — the single
+  discipline, freeing the GPU for a promising config, the single
   biggest *cost* lever, because most trials are losers and killing
   them early is most of the saving).
 - **Resource matching** (the *trial* is a training run: small
-  configs need a GPU, big ones need a node — the tuning controller
+  configs need a GPU, big ones need a node, the tuning controller
   must *size* each trial, and the [GPU
   scheduler](/ai-ml/systems/gpu-accelerator-management)
   places it, the [capacity-planning](/system-design/fundamentals/capacity-planning-and-estimation)
@@ -80,7 +80,7 @@ The page's real lesson: **the tuning budget is the design
 variable.** More trials = better configs = more compute; the
 question is *where on the curve* to stop, and the answer is the
 [cost-optimization](/ai-ml/systems/cost-optimization-ml)
-arithmetic (the marginal gain of another trial vs. its cost) —
+arithmetic (the marginal gain of another trial vs. its cost),
 which is why the mature answer is *not* "tune exhaustively" but
 "tune *enough*, on the *important* hyperparameters, with *early
 pruning*, and stop." The failure modes on both sides: too little

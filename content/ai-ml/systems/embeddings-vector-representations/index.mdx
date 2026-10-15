@@ -4,12 +4,12 @@ summary: "Meaning as geometry: representing items as dense vectors so similarity
 ---
 
 An embedding is a **vector that represents the meaning of a thing**:
-a word, a product, a user, a sentence, an image — mapped to a point
+a word, a product, a user, a sentence, an image, mapped to a point
 in a high-dimensional space (say, 384 to 3000 dimensions) such that
 **the geometry encodes semantics**: things that are *similar* land
 *near* each other, and "near" is measured with a distance metric
 (cosine similarity or dot product, almost always). This single
-trick — meaning as position — is the foundation of the modern era:
+trick, meaning as position, is the foundation of the modern era:
 [semantic search](/system-design/fundamentals/search-and-inverted-index),
 [RAG](/system-design/hld/recommendation-system), the
 [recommendation](/system-design/hld/recommendation-system)'s
@@ -34,7 +34,7 @@ on labels ("these images were tagged alike"). What comes out is a
 decides what "similarity" *means* (an embedding trained on
 encyclopedic text makes "bank" similar to "finance"; trained on
 fishing forums, similar to "river": **there is no neutral
-embedding** — the space encodes its training corpus's semantics,
+embedding**, the space encodes its training corpus's semantics,
 which is a design decision, not a library import).
 
 The engineering surface: the **embedding model is deployed
@@ -45,8 +45,8 @@ documents embedded at ingest, queries embedded at search), the
 computed once at ingest, stored: the
 [feature store](/ai-ml/systems/feature-stores)'s offline
 tier, the same pattern), and the **query-side embedding is the
-latency budget** (encode the query — 10-50ms with a small
-[model](/ai-ml/systems/ml-system-design-basics) — then
+latency budget** (encode the query, 10-50ms with a small
+[model](/ai-ml/systems/ml-system-design-basics), then
 compare against precomputed vectors: the
 [autocomplete](/system-design/hld/search-autocomplete) design's
 shape, with meaning instead of prefixes).
@@ -89,7 +89,7 @@ comparison (every query vs every item) is a billion dot products
 per query (a 300-billion-FLOP scan: seconds, unusable), and the
 entire [ANN](/ai-ml/systems/similarity-search-ann) family
 (the next page) exists to answer "the nearest k of a billion" in
-milliseconds, trading exactness for speed — the same
+milliseconds, trading exactness for speed, the same
 [trade](/dsa/patterns/greedy-algorithms) every index makes
 ([the inverted index](/system-design/fundamentals/search-and-inverted-index)
 for terms, the [geo index](/system-design/fundamentals/geospatial-indexing)

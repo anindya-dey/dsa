@@ -2,7 +2,9 @@
 title: "Insert Delete GetRandom O(1)"
 difficulty: "Medium"
 variant: "Array + Hash Map"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/insert-delete-getrandom-o1/"
 ---
 
 ## Problem
@@ -122,3 +124,8 @@ canonical [design data structures](/dsa/patterns/design-data-structures)
 problem: two structures, each answering one question, kept in sync by one
 swap trick, with the complexity bound doing the work of ruling out every
 single-structure answer.
+
+## Related C++ tools
+
+- [std::unordered_map / unordered_set](/cpp/unordered-map): average O(1) lookups, and find versus operator[].
+- [Iterator Invalidation](/cpp/invalidation): which operations break iterators you are holding.

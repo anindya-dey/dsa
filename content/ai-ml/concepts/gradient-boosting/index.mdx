@@ -8,7 +8,7 @@ competitions and powers a huge fraction of real-world prediction
 (ranking, fraud, risk, recommendations). It is a
 [decision-tree](/ai-ml/concepts/decision-trees-and-ensembles) ensemble
 like the random forest, but built *sequentially* instead of in
-parallel — and that single change (each tree *corrects* the previous
+parallel, and that single change (each tree *corrects* the previous
 ones) is why it is usually more accurate.
 
 ## The idea: learn from mistakes, repeatedly
@@ -25,12 +25,12 @@ the **residual errors** of the ensemble so far:
    combined prediction is a little less wrong.
 5. Repeat hundreds or thousands of times.
 
-Each tree is *weak* (shallow — a few splits), and the ensemble is
+Each tree is *weak* (shallow, a few splits), and the ensemble is
 *strong*: the sequence of corrections drives the loss down, and the
 [learning rate](/ai-ml/concepts/gradient-descent) controls how much
 each tree contributes (small rate = slower but more accurate, the
 standard trade). It is, literally, **gradient descent in the space of
-functions** — each tree is a step, and "boosting" is the name for
+functions**, each tree is a step, and "boosting" is the name for
 building a strong model from weak ones.
 
 ## Why it beats a random forest (usually)
@@ -39,16 +39,16 @@ building a strong model from weak ones.
   ensemble is still getting wrong, whereas bagging treats every tree
   equally and hopes averaging suffices.
 - **A flexible loss** (gradient boosting is defined by the loss's
-  gradient, so it works with *any* differentiable loss —
-  classification, ranking, custom business losses — the reason it
+  gradient, so it works with *any* differentiable loss,
+classification, ranking, custom business losses, the reason it
   dominates ranking and risk models).
 - **Strong regularization built in** (shallow trees, a small learning
-  rate, row/feature subsampling, and early stopping — the modern
+  rate, row/feature subsampling, and early stopping, the modern
   implementations (XGBoost, LightGBM, CatBoost) are *regularization
   engineering* as much as boosting).
 
 The cost: it is **harder to train** than a random forest (more
-hyperparameters, more sensitive — a too-high learning rate or too
+hyperparameters, more sensitive, a too-high learning rate or too
 many trees [overfits](/ai-ml/concepts/overfitting-and-bias-variance)),
 and it is *sequential* (less parallelizable than bagging, though
 modern implementations parallelize within and across trees).
@@ -73,7 +73,7 @@ almost always competitive, often the winner, and hard to beat with a
 neural network on tables. It is also the model behind a lot of
 [CTR/ranking](/ai-ml/systems/ctr-ad-ranking) and
 [fraud detection](/system-design/hld/fraud-detection) systems. If you learn one
-classical model deeply, learn this family — it is the one that
+classical model deeply, learn this family: it is the one that
 actually ships.
 
 ## Related concepts

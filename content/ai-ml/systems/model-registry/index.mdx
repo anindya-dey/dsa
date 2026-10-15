@@ -3,7 +3,7 @@ title: "Model Registry & Versioning"
 summary: "The catalog of models: versions, stages, metadata, and provenance."
 ---
 
-A model registry is the **system of record for models** — the
+A model registry is the **system of record for models**, the
 [artifact store](/system-design/fundamentals/object-storage) plus
 the metadata that makes the artifacts *usable*: which version is
 which, where it is in its [lifecycle](#stages), what data and code
@@ -19,7 +19,7 @@ artifacts), model-shaped.
 
 - **The artifact** (the weights file: hundreds of MB to GB, in
   [object storage](/system-design/fundamentals/object-storage), the
-  registry storing the *reference*, not the bytes — the
+  registry storing the *reference*, not the bytes, the
   [content-addressed](/system-design/hld/distributed-file-storage)
   discipline, so the artifact's hash is its identity).
 - **The metadata** (the *rows*: model name, version, stage,
@@ -28,7 +28,7 @@ artifacts), model-shaped.
   framework and format, the size: the queryable facts).
 - **The stage** (the lifecycle label: `staging` / `production` /
   `archived` (or `candidate` / `shadow` / `production` / `retired`):
-  the registry's answer to "what is deployed" — a *pointer* that
+  the registry's answer to "what is deployed", a *pointer* that
   the [serving tier](/ai-ml/systems/model-serving-architectures)
   resolves, so "deploy v8" is a *stage transition*, not a redeploy).
 
@@ -37,7 +37,7 @@ artifacts), model-shaped.
 - **Immutable versions** (a registered version never changes: a fix
   is a *new* version, the
   [append-only](/system-design/fundamentals/event-sourcing-and-cqrs)
-  discipline — so "model v7" means the same thing forever, and a
+  discipline, so "model v7" means the same thing forever, and a
   rollback is a pointer move, not a rebuild).
 - **Semantic-ish versioning** (versions carry *meaning*:
   a patch (retrained on fresh data), a minor (new features), a
@@ -48,7 +48,7 @@ artifacts), model-shaped.
 - **The stage as a pointer** (production points at *one* version
   (or a set, during a [canary](/system-design/fundamentals/reliability-engineering));
   promotion is `v8 → production`, and the *previous* production
-  version is retained for rollback — the
+  version is retained for rollback, the
   [blue-green](/system-design/fundamentals/reliability-engineering)
   idea, as a registry operation).
 
@@ -59,7 +59,7 @@ production necessity:
 
 - **"What is in production right now?"** (the stage pointer: the
   [observability](/system-design/fundamentals/observability)
-  question, answerable in one lookup — and the
+  question, answerable in one lookup, and the
   [decision log](/system-design/hld/fraud-detection)'s "which model
   scored this" resolves against it).
 - **"Can we rebuild production?"** (the lineage: the dataset hash +
@@ -71,17 +71,17 @@ production necessity:
   [A/B](/ai-ml/systems/ab-testing-experimentation) evidence).
 - **"Which models depend on this dataset / this feature / this base
   model?"** (the *reverse* lineage: the blast radius of a data fix
-  or a base-model deprecation — the
+  or a base-model deprecation, the
   [migration](/ai-ml/systems/feature-model-backfills)
   planning query, and a real one when a base LLM is retired).
 
 ## The systems shape
 
 The registry is a **metadata service** (a small, transactional
-database: the versions, stages, lineage edges — the *strong* plane)
+database: the versions, stages, lineage edges, the *strong* plane)
 in front of an **artifact store** (the [object
 storage](/system-design/fundamentals/object-storage): the immutable
-blobs — the *dumb* plane), with the [serving
+blobs, the *dumb* plane), with the [serving
 tier](/ai-ml/systems/model-serving-architectures) and the
 [pipeline](/ai-ml/systems/mlops-cicd) as its clients. The
 [multi-model routing](/ai-ml/systems/multi-model-serving-routing)

@@ -2,7 +2,9 @@
 title: "House Robber"
 difficulty: "Medium"
 variant: "1D Sequence DP"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/house-robber/"
 ---
 
 ## Problem
@@ -98,3 +100,7 @@ just a prefix, a recurrence that looks back a constant distance, and a
 greedy-looking choice that is *not* provable locally (which is why it needs
 the table, and why a pure greedy fails on inputs like `[2, 7, 9]` where
 taking the largest early number is wrong).
+
+## Related C++ tools
+
+- [std::vector](/cpp/vector): the dynamic array underneath almost every solution.

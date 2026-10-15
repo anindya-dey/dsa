@@ -4,12 +4,12 @@ summary: "Networks with memory over sequences, and why they are hard to train."
 ---
 
 A [feedforward network](/ai-ml/concepts/perceptrons-and-mlps) sees
-its input all at once, with no notion of order — but language, audio,
+its input all at once, with no notion of order, but language, audio,
 and time series are *sequences*, where order carries the meaning
 ("dog bites man" ≠ "man bites dog"). A **recurrent neural network
 (RNN)** handles sequences with a simple, powerful idea: process the
-input *one element at a time*, and carry a **hidden state** — a
-running summary of everything seen so far — from step to step. The
+input *one element at a time*, and carry a **hidden state**, a
+running summary of everything seen so far, from step to step. The
 same network is applied at every step, and the hidden state is its
 memory.
 
@@ -22,14 +22,16 @@ output):
 ```mermaid
 graph LR
     X1[x1] --> H1[hidden 1]
-    H1 --> X2[x2] & H2[hidden 2]
-    H2 --> X3[x3] & H3[hidden 3]
+    X2[x2] --> H2[hidden 2]
+    X3[x3] --> H3[hidden 3]
+    H1 -->|state| H2
+    H2 -->|state| H3
     H3 --> O[output]
 ```
 
 The hidden state is the *memory*: by the end of the sequence, it has
 (in principle) accumulated the meaning of everything seen. The same
-weights are reused at every step (parameter sharing again — the
+weights are reused at every step (parameter sharing again, the
 sequence-length independence), which is what lets an RNN handle
 inputs of any length.
 
@@ -38,11 +40,11 @@ inputs of any length.
 RNNs are theoretically appealing and **practically hard to train**,
 for one reason: training propagates gradients *backward through the
 sequence* (backpropagation through time), and over many steps the
-gradient shrinks (or explodes) exponentially — the same
+gradient shrinks (or explodes) exponentially, the same
 [vanishing-gradient](/ai-ml/concepts/normalization-and-initialization)
 problem as deep networks, but *worse*, because the "depth" is the
 sequence length. The consequence: **plain RNNs cannot learn
-long-range dependencies** — the state forgets the beginning of a long
+long-range dependencies**, the state forgets the beginning of a long
 sentence by the time it reaches the end, so the network only
 "remembers" the recent past. This is why LSTMs and GRUs exist.
 
@@ -53,7 +55,7 @@ sentence by the time it reaches the end, so the network only
   lets them learn dependencies over hundreds of steps. They were the
   sequence standard for years.
 - **Bidirectional RNNs** (run the sequence forward *and* backward, so
-  each step sees both past and future — for tasks where the whole
+  each step sees both past and future, for tasks where the whole
   sequence is available, like classification).
 - **The transformer takeover**: [attention](/ai-ml/concepts/attention-mechanism)-based
   models process the whole sequence *in parallel* and connect any two
@@ -66,8 +68,8 @@ sentence by the time it reaches the end, so the network only
 
 ## Why the concept still matters
 
-The RNN teaches the core idea of **sequence modeling as state** —
-carry a summary, update it per step — and it is the conceptual
+The RNN teaches the core idea of **sequence modeling as state**,
+carry a summary, update it per step, and it is the conceptual
 ancestor of the architectures that replaced it. The *problem it
 fails at* (long-range dependencies and parallel training) is exactly
 what [attention](/ai-ml/concepts/attention-mechanism) solves, so

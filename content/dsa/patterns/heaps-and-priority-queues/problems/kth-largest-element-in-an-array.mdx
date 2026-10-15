@@ -2,7 +2,9 @@
 title: "Kth Largest Element in an Array"
 difficulty: "Medium"
 variant: "Bounded Heap"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/kth-largest-element-in-an-array/"
 ---
 
 ## Problem
@@ -89,3 +91,9 @@ median-of-medians pivot, at a high constant cost).
 The choice is situational: sorting when k is close to n or the array is
 small, the bounded heap when k is small or the input streams, quickselect
 when average-case speed on a mutable array is what matters.
+
+## Related C++ tools
+
+- [std::priority_queue](/cpp/priority-queue): the heap, and why its comparator reads backwards.
+- [Custom Comparators](/cpp/comparators): the ordering contract every comparator must keep.
+- [Sorting & nth_element](/cpp/algorithms): sort, nth_element, and what each guarantees.

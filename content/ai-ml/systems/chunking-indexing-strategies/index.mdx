@@ -4,37 +4,37 @@ summary: "How documents become retrievable chunks, and why chunking decides RAG'
 ---
 
 The unglamorous stage that decides [RAG's](/ai-ml/systems/rag)
-quality more than any model choice: **chunking** — splitting
+quality more than any model choice: **chunking**, splitting
 documents into the pieces that get embedded and retrieved. The
 design tension is exact and inescapable: **chunks must be small
 enough to be specific** (a huge chunk embeds a blur of many topics,
 so its vector matches nothing precisely) **and large enough to be
 self-contained** (a tiny chunk loses the context that makes it
-meaningful — "as shown above" with no above). Every chunking
+meaningful: "as shown above" with no above). Every chunking
 strategy is a position on that dial, and every RAG retrieval failure
 traces back to it.
 
 ## The chunking strategies
 
 - **Fixed-size** (split every N tokens, with overlap): the naive
-  baseline — simple, fast, and *semantically blind* (it splits
+  baseline, simple, fast, and *semantically blind* (it splits
   mid-sentence, mid-table, mid-thought). The overlap (say 10-20%)
   mitigates the worst splits, and it is a *starting point*, not an
   answer.
 - **Recursive/structural** (split on the document's *own*
-  structure: paragraphs, then sentences, then tokens — Markdown
+  structure: paragraphs, then sentences, then tokens, Markdown
   headings, HTML sections, code blocks): the standard improvement,
-  because the document's structure *is* a semantic boundary — a
+  because the document's structure *is* a semantic boundary, a
   section is a coherent unit, and splitting on it keeps the
   coherence.
 - **Semantic chunking** (split where the *meaning* shifts: embed
-  sentences, break where consecutive sentences diverge — the
+  sentences, break where consecutive sentences diverge, the
   embedding-space discontinuity as the boundary): more accurate,
   more expensive (an embedding pass over the whole corpus), and
   the modern option.
 - **Document-aware** (tables kept whole, code kept whole, headings
   *prepended* to their chunks: "this chunk is from the *Billing*
-  section of the *Refunds* doc" — the **contextual enrichment**
+  section of the *Refunds* doc", the **contextual enrichment**
   that makes a chunk self-contained without making it huge, and a
   big practical win: a chunk that knows its own heading retrieves
   far better).
@@ -48,27 +48,27 @@ once and forgotten.
 
 - **The embedding model** (which [vector
   space](/ai-ml/systems/embeddings-vector-representations) the
-  chunks land in: a *corpus-specific* choice — a legal corpus wants
+  chunks land in: a *corpus-specific* choice, a legal corpus wants
   a legal-domain embedding, and the
   [era-migration](/ai-ml/systems/vector-databases) cost of
   changing it is the reason the choice is deliberate).
 - **Metadata per chunk** (source document, section, page,
   timestamp, permissions: what enables *filtering* (only this
   tenant's docs), *citations* (the user sees where it came from),
-  and *freshness* (the newest version) — the
+  and *freshness* (the newest version), the
   [vector-database's](/ai-ml/systems/vector-databases)
   payload, and the reason chunking and metadata are one design).
 - **Hybrid indexing** (the chunk is embedded *and* its text is
   keyword-indexed: the [hybrid
   search](/system-design/fundamentals/search-and-inverted-index)
-  the [RAG page](/ai-ml/systems/rag) recommends — a chunk
+  the [RAG page](/ai-ml/systems/rag) recommends, a chunk
   retrievable by meaning *and* by exact term, merged).
 - **The re-indexing pipeline** (documents change: a standing
   [pipeline](/system-design/fundamentals/stream-vs-batch-processing)
   that re-chunks and re-embeds the *changed* documents (not the
   whole corpus: incremental, the [CDC](/system-design/fundamentals/olap-vs-oltp)
-  shape), invalidates the old chunks, and keeps the index fresh —
-  the reason a RAG system is a *standing* system, and the
+  shape), invalidates the old chunks, and keeps the index fresh,
+the reason a RAG system is a *standing* system, and the
   [freshness](/system-design/fundamentals/caching) contract that
   makes "the answer is stale" a pipeline bug, not a model one).
 
@@ -78,7 +78,7 @@ The reason this stage is worth its own page: **retrieval can only
 return what the chunking produced.** If the answer spans two chunks,
 neither is retrieved as the answer. If a chunk is too big, its vector
 is a blur and matches nothing precisely. If a chunk lacks its
-heading, it is ambiguous ("the limit is $500" — *which* limit?).
+heading, it is ambiguous ("the limit is $500", *which* limit?).
 The [RAG failure taxonomy](/ai-ml/systems/rag) is, stage by
 stage, a *chunking* critique, and the practical wisdom every RAG
 team learns: **improve the chunking before you improve the model**,

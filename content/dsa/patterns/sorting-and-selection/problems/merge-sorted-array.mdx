@@ -2,7 +2,9 @@
 title: "Merge Sorted Array"
 difficulty: "Easy"
 variant: "Merge from the Back"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/merge-sorted-array/"
 ---
 
 ## Problem
@@ -86,7 +88,7 @@ because if `nums2` is exhausted, the remaining `nums1` prefix is already
 sorted and already *in place*: nothing left to do. (Run it while `i >= 0`
 as well and the last loop iteration just copies `nums1[i]` onto itself;
 correct, but redundant.) The same two-list comparison as the
-[linked list weave](/dsa/patterns/linked-list-manipulation/problems/merge-two-sorted-lists),
+[linked list weave](/dsa/patterns/linked-list-manipulation/merge-two-sorted-lists),
 walked from the back because that is where the free space is.
 
 That "merge into the empty end" insight is the same class of move as
@@ -109,3 +111,7 @@ This is the standard in-place merge step, the one that
 spare the scratch buffer, and the general "merge into shared memory"
 template: know it forward (with scratch), know it backward (in place),
 and know *why* the direction is chosen.
+
+## Related C++ tools
+
+- [std::vector](/cpp/vector): the dynamic array underneath almost every solution.

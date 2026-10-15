@@ -21,13 +21,13 @@ demands.
 
 - **CPU utilization**: a GPU-backed model can be *CPU-idle* (the CPU
   waits for the GPU) while saturated, or CPU-busy on preprocessing
-  while the GPU is idle — CPU does not track the bottleneck, so
+  while the GPU is idle: CPU does not track the bottleneck, so
   scaling on it under- or over-provisions unpredictably.
 - **Memory**: a model's memory is *fixed* (the weights), so memory
   utilization is a *binary* (loaded or not), not a load signal.
 - **Request rate alone**: without knowing the *service time*
   (which varies with batch size and input size), rate does not imply
-  load — the same RPS is trivial or fatal depending on the model
+  load, the same RPS is trivial or fatal depending on the model
   and the inputs.
 - **The lagging signal**: by the time CPU is high, the queue is
   already deep and the p99 is already breached (the
@@ -56,7 +56,7 @@ tier's own backlog: the most direct ML-specific signal).
 ## The lead time: scaling ahead of the warm-up
 
 The twist that dominates the design: **a new replica is not ready
-when it starts** — it must schedule, provision, load the model, and
+when it starts**, it must schedule, provision, load the model, and
 warm up (seconds to minutes). So autoscaling must **lead the load**,
 not follow it, which means:
 
@@ -64,18 +64,18 @@ not follow it, which means:
   (daily patterns, scheduled events): the
   [capacity-planning](/system-design/fundamentals/capacity-planning-and-estimation)
   discipline, because reacting to a spike with a 2-minute warm-up
-  means 2 minutes of degraded service — the honest admission that
+  means 2 minutes of degraded service, the honest admission that
   *reactive* autoscaling cannot cover a *fast* spike for a *slow*
   workload, and the pre-warm is the answer).
 - **Over-provisioned headroom** (keep a margin above the predicted
   load, sized by the warm-up time: the faster the spike and the
-  slower the warm-up, the bigger the floor — a
+  slower the warm-up, the bigger the floor, a
   [capacity-planning](/system-design/fundamentals/capacity-planning-and-estimation)
   number, and the reason a serving fleet runs "hot").
 - **Scale-in is *slow and careful*** (do not drop a replica that is
   mid-request, and do not drop the last warm copy of a model: the
   [drain](/system-design/fundamentals/load-balancing) discipline,
-  with the model-warmth constraint added — scaling in *below* the
+  with the model-warmth constraint added: scaling in *below* the
   [warm pool's](/ai-ml/systems/model-caching-warm-pools)
   needs is the self-inflicted cold start).
 
@@ -86,14 +86,14 @@ The [serverless](/ai-ml/systems/serverless-inference) ideal
 it by **workload class**:
 
 - **Interactive, high-traffic**: scale on queue depth, keep a warm
-  floor, scale out ahead of the forecast — *never* to zero (the
+  floor, scale out ahead of the forecast, *never* to zero (the
   floor is the price of the latency SLO).
 - **Long-tail, low-traffic**: scale to zero (or to the
   [warm-pool floor](/ai-ml/systems/model-caching-warm-pools)),
   accept the cold start for the rare request, and cover it with the
   [single-flight/queueing](/ai-ml/systems/serverless-inference)
   trick.
-- **Bursty**: the hybrid — a warm floor sized to the *baseline*, fast
+- **Bursty**: the hybrid, a warm floor sized to the *baseline*, fast
   scale-out for the burst, and the [autoscaling](/ai-ml/systems/autoscaling-inference)
   policy tuned to the *ramp*, not the peak.
 
@@ -106,7 +106,7 @@ model's latency, batch-dependent), **concurrency per replica**
 **warm-up time** (the lead time). From those: *replicas needed =
 peak RPS × service time / concurrency* (Little's Law, the
 [latency page's](/system-design/fundamentals/latency-vs-throughput)
-tool), and *the headroom = the load during the warm-up window* — the
+tool), and *the headroom = the load during the warm-up window*, the
 two numbers that make "how many replicas, and how far ahead" a
 computed answer rather than a guess.
 

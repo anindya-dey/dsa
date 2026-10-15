@@ -4,7 +4,7 @@ summary: "accumulate, iota, gcd, minmax, numeric_limits: the small utilities eve
 ---
 
 The small numeric utilities from `<numeric>`, `<algorithm>`, and
-`<limits>` — none deep enough for their own entry, all of them
+`<limits>`: none deep enough for their own entry, all of them
 short enough that writing them by hand is a recurring waste:
 
 ## The family
@@ -45,7 +45,7 @@ std::sort(idx.begin(), idx.end(), [&](int a, int b) { return v[a] < v[b]; });
 // idx[0] is the index of v's smallest element
 ```
 
-**`accumulate` with the right init type** — the silent-narrowing
+**`accumulate` with the right init type**, the silent-narrowing
 trap: `accumulate(v, 0)` with `int` v and `int` 0 **returns int**
 (overflowing on a sum of ints that exceeds int), while
 `accumulate(v, 0LL)` returns `long long`: the init argument is the
@@ -54,21 +54,21 @@ whole-site convention ([every prefix-sum entry](/dsa/patterns/prefix-sums-and-di
 
 **`numeric_limits` as the "infinity" idiom**: Dijkstra's distance
 initialization (`std::vector<int> dist(n,
-std::numeric_limits<int>::max())`) — with the [relaxation check](/dsa/patterns/graph-specializations/problems/network-delay-time)
+std::numeric_limits<int>::max())`), with the [relaxation check](/dsa/patterns/graph-specializations/network-delay-time)
 that treats max as unvisited (`dist[u] != INF` guards), the
 convention that every graph solution on this site follows.
 
 **`minmax_element` and the pair idiom**: one pass for both min and
 max (two passes of `min_element` + `max_element` is the waste),
-returning the `[min_it, max_it]` pair — the
+returning the `[min_it, max_it]` pair, the
 [per-tenant](/system-design/fundamentals/multi-tenancy-and-data-residency)
 "one pass, two answers" discipline at type scale.
 
 ## The traps
 
 - **`min`/`max` with mixed types** (`std::min(int, unsigned)`) is
-  a compile error (template deduction), and the cast is the fix —
-  the reason `std::min<size_t>(a, b)` appears in careful code.
+  a compile error (template deduction), and the cast is the fix,
+the reason `std::min<size_t>(a, b)` appears in careful code.
 - **`minmax` evaluates each argument once**: safe with
   side-effecting arguments (unlike the old
   [pre-C++11 macros](https://en.cppreference.com/w/cpp/algorithm/min)
@@ -76,10 +76,10 @@ returning the `[min_it, max_it]` pair — the
 - **`abs` of the most-negative int** is
   [undefined behavior](/dsa/patterns/recursion-and-math) (the
   magnitude does not fit: the INT_MIN trap that the
-  [pow entry](/dsa/patterns/number-theory-and-combinatorics/problems/pow-x-n)
+  [pow entry](/dsa/patterns/recursion-and-math/pow-x-n-recursive)
   covers in its negative-exponent handling).
 - **`midpoint` for the middle** (not `(a + b) / 2`): the
-  overflow-safe form for binary-search middles — `(a+b)` can
+  overflow-safe form for binary-search middles, `(a+b)` can
   overflow when both are large, `midpoint` cannot, and it is the
   C++20 answer to the [classic binary-search
   bug](https://lemire.me/blog/2022/05/10/binary-search-overflow/)

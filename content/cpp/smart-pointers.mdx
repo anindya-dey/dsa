@@ -1,0 +1,96 @@
+---
+title: "Smart Pointers"
+summary: "unique_ptr, shared_ptr, and weak_ptr: ownership you can read from the type."
+---
+
+A raw pointer does not say who owns what it points to. Smart pointers
+put that answer in the type. When the owner goes away, the object is
+freed automatically, so you cannot forget a `delete` or run one twice.
+The low-level designs on this site use them wherever an object owns
+other objects.
+
+## unique_ptr: one owner
+
+`std::unique_ptr<T>` owns its object alone. It cannot be copied, only
+moved, so ownership has exactly one home at a time. When the
+`unique_ptr` is destroyed, it deletes the object. It costs nothing over a
+raw pointer.
+
+```cpp
+#include <memory>
+
+auto engine = std::make_unique<Engine>(config);   // allocate and own
+engine->start();
+
+std::unique_ptr<Engine> other = std::move(engine); // ownership moves
+// engine is now empty; other owns the Engine
+```
+
+This is the default choice. A parking lot owns its levels, a tree node
+owns its children, a game owns its board:
+
+```cpp
+class ParkingLot {
+    std::vector<std::unique_ptr<Level>> levels_;   // the lot owns each level
+};
+```
+
+Store `unique_ptr` in containers when the elements are polymorphic, for
+example a `std::vector<std::unique_ptr<Shape>>` holding circles and
+squares. A plain `std::vector<Shape>` would slice them down to the base
+class.
+
+## shared_ptr: shared ownership
+
+`std::shared_ptr<T>` keeps a reference count. Every copy adds one, every
+destruction subtracts one, and the object is freed when the count reaches
+zero. Use it only when ownership is genuinely shared, such as a cached
+object that several sessions hold onto.
+
+```cpp
+auto config = std::make_shared<Config>();
+auto copy = config;                  // count is now 2
+```
+
+It has real costs. The count is updated atomically, which is slower, and
+it hides the question of who is responsible for the object. Reaching for
+`shared_ptr` by default usually means the design has not decided who owns
+what.
+
+## weak_ptr: observe without owning
+
+Two objects holding `shared_ptr`s to each other never reach a count of
+zero, so neither is freed. That is a leak. Break the cycle by making one
+side a `std::weak_ptr`, which observes without owning.
+
+```cpp
+struct Child;
+struct Parent {
+    std::vector<std::shared_ptr<Child>> children;
+};
+struct Child {
+    std::weak_ptr<Parent> parent;     // back-reference: does not own
+};
+
+if (auto p = child->parent.lock()) {  // shared_ptr, or empty if gone
+    p->children.size();
+}
+```
+
+## Raw pointers still have a job
+
+A raw pointer or reference is fine for *non-owning* access: a function
+that uses an object without keeping it, or a pointer into a structure
+that someone else owns. LeetCode's `TreeNode*` and `ListNode*` are raw
+because the problems hand you nodes without ownership rules. In a real
+design, write the owner with `unique_ptr` and let everyone else borrow
+with `T*` or `T&`.
+
+## Quick guide
+
+| You need | Use |
+| --- | --- |
+| One clear owner | `std::unique_ptr` (via `std::make_unique`) |
+| Several co-owners | `std::shared_ptr` (via `std::make_shared`) |
+| A back-reference that must not keep the object alive | `std::weak_ptr` |
+| Temporary access to someone else's object | `T*` or `T&` |

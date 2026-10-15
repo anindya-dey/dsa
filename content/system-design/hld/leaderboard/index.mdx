@@ -47,9 +47,9 @@ operations are the leaderboard's operations, one-to-one:
 ```mermaid
 graph LR
     W[Game event: +50] --> Z[Sorted set: score-ordered members]
-    Z -->|ZREVRANGE 0 99| TOP[Top 100: O(log N + 100)]
-    Z -->|ZREVRANK player| RANK[My rank: O(log N)]
-    Z -->|ZREVRANGE k, k+2| NB[My neighbors: O(log N)]
+    Z -->|ZREVRANGE 0 99| TOP["Top 100: O(log N + 100)"]
+    Z -->|ZREVRANK player| RANK["My rank: O(log N)"]
+    Z -->|ZREVRANGE k, k+2| NB["My neighbors: O(log N)"]
 ```
 
 ```cpp

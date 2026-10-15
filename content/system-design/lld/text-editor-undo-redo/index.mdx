@@ -172,7 +172,7 @@ The two naive alternatives, and where they break:
 The command stack is the middle: linear memory *per edit* (the
 payload), O(1) undo/redo, and the bounded-memory extension
 (**the undo limit**: a ring of the last N commands, the
-[circular deque](/dsa/patterns/linear-structures/problems/design-circular-deque)
+[circular deque](/dsa/patterns/linear-structures/design-circular-deque)
 from this site's DSA section in its natural habitat, with oldest-edits
 silently becoming permanent), which is the honest answer to "days-long
 editing sessions".
@@ -192,6 +192,11 @@ editing sessions".
   whose whole point is that undo is *already* the data structure's
   native operation (drop the last edit piece), which is where this
   design converges when it grows up.
+
+## Related C++ tools
+
+- [Smart Pointers](/cpp/smart-pointers): owning objects with unique_ptr and shared_ptr.
+- [std::string](/cpp/string): substr, find, and the operations that copy.
 
 ## Related concepts
 

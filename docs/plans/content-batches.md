@@ -83,6 +83,70 @@ requirements and templates) and `2026-10-14-roadmap-review-decisions.md`
 - Before closing any batch: `pnpm check:content`, `pnpm lint`,
   `pnpm typecheck`, and `pnpm build` must all pass.
 
+## Full-site review and fixes (2026-10-15)
+
+A full review compiled every C++ block, ran optimal solutions under
+AddressSanitizer and UBSan, parsed every Mermaid diagram with Mermaid's
+own parser, resolved every internal link, and fetched live routes. Fixes:
+
+- **Links.** 100 links used `/dsa/patterns/<p>/problems/<x>`, a path that
+  never matched a route; all rewritten, plus a permanent redirect for the
+  old shape. One System Design link pointed at a moved AI/ML page.
+- **C++.** Fixed solutions that did not compile (Course Schedule
+  structured bindings on `vector<int>`, Min Stack missing `;`, helpers
+  called before declaration in Validate BST, Pow(x, n), Level Order, and
+  a misnamed helper in Majority Element). Tree code now uses LeetCode's
+  `val`; cycle detection uses `ListNode`. Removed signed-overflow UB at the
+  `INT_MIN`/`INT_MAX` boundary in Longest Consecutive Sequence, and gave
+  Number of Islands a real brute-force implementation.
+- **Mermaid.** Four diagrams failed to parse (unquoted parentheses in
+  labels); the RNN diagram drew hidden state flowing into inputs.
+- **DSA structure.** Number of Islands moved to Graph Traversals (it was
+  taught before graphs), Kth Largest in a Stream to Heaps, Longest
+  Repeating Character Replacement to Sliding Window. The duplicate
+  number-theory Pow(x, n) became Super Pow (modular exponentiation); its
+  iterative version moved to the recursive page.
+- **DSA coverage.** 18 problems added, closing the main Blind 75 gaps and
+  giving Sorting & Selection real selection and comparator problems:
+  Maximum Subarray, House Robber II, Decode Ways, Best Time to Buy and
+  Sell Stock, Top K Frequent Elements, Binary Tree Maximum Path Sum,
+  Serialize and Deserialize Binary Tree, Kth Smallest in a BST, Construct
+  Binary Tree from Preorder and Inorder, Word Search, Insert Interval,
+  Missing Number, Find Minimum in Rotated Sorted Array, Remove Nth Node
+  From End, Trapping Rain Water, K Closest Points to Origin, Largest
+  Number, Super Pow. Every new solution was tested, brute force included.
+- **Cheat sheet.** Grew from 11 clue rows to 30, covering all 29 patterns.
+- **Practice links.** 123 of 125 problems link to LeetCode (slugs verified
+  against LeetCode's API); close variants are labelled as such. Range Add
+  to Segment and Range Minimum Query have no faithful LeetCode equivalent.
+- **C++ integration.** New toolkit entries: Custom Comparators, Integer
+  Overflow & Limits, Bit Operations, Smart Pointers. Every DSA problem and
+  LLD article with code now ends with "Related C++ tools", chosen from the
+  library features its code uses.
+- **System Design.** New fundamentals: Replication, Partitioning &
+  Sharding, Probabilistic Data Structures. Web Crawler gained its Bloom
+  filter; News Feed's post rate was corrected (20/s was implausible for
+  200M daily users).
+- **AI/ML.** Offline vs Online Inference merged into Batch vs Real-Time
+  Prediction (same topic, adjacent in the same group). Catalog and
+  frontmatter titles aligned. Inline Wikipedia links removed from concept
+  articles; an overclaim about MoE adoption softened.
+- **House style.** 1,116 em-dashes removed from 141 files (concentrated in
+  AI/ML and the C++ Toolkit) and from catalog copy.
+- **Guardrails.** `check:content` now fails on broken internal links,
+  unquoted Mermaid labels with parentheses, em-dashes in prose,
+  catalog/frontmatter title drift, and missing tiers. New `check:cpp`
+  compiles every problem page's C++ and runs in CI.
+- **UX.** `ink-faint` darkened for contrast (about 4.7:1 to 5.7:1 on
+  paper). Diagrams announce their node labels to screen readers. The
+  search index no longer includes "Related" link lists and caps body text
+  at 4,000 characters.
+
+Not changed, deliberately: word counts outside the original bands (the
+Batch 3 audit accepted 450-1050 for concept articles and 190-500 for
+problems), and second-person voice in older articles, which would need a
+per-article editorial rewrite rather than a mechanical pass.
+
 ## Batch 7d completion notes (2026-10-15)
 
 Batch 7d is written and shipped: the final AI/ML batch (26 topics)

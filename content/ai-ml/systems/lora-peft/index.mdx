@@ -20,7 +20,7 @@ The observation: fine-tuning's *update* to a weight matrix has low
 *intrinsic rank* (the useful change is far simpler than the full
 matrix), so instead of learning the full update `ΔW`, learn two small
 matrices `A` and `B` such that `ΔW ≈ BA` (with `A` and `B` having a
-small inner dimension `r` — the *rank*, e.g. 8 or 16). The base
+small inner dimension `r`, the *rank*, e.g. 8 or 16). The base
 weights `W` stay *frozen*; only `A` and `B` train.
 
 ```mermaid
@@ -34,19 +34,19 @@ graph LR
 ```
 
 The arithmetic: for a 4096×4096 weight matrix (16M parameters), a
-rank-16 LoRA adds `2 × 4096 × 16 = 131k` parameters — **~0.8% of the
-original** — and *only those* train. The consequences:
+rank-16 LoRA adds `2 × 4096 × 16 = 131k` parameters, **~0.8% of the
+original**, and *only those* train. The consequences:
 
 - **Training is cheap** (a fraction of the compute: no gradients
-  through the frozen base, far less optimizer state — the reason a
+  through the frozen base, far less optimizer state, the reason a
   single GPU can fine-tune a model that would otherwise need a
   cluster).
 - **The artifact is tiny** (the adapter is megabytes: you can store
-  *hundreds* of them, one per task/tenant/customer — the
+  *hundreds* of them, one per task/tenant/customer, the
   [model-registry](/ai-ml/systems/data-versioning-lineage)
   economics, transformed).
 - **No catastrophic forgetting** (the base is untouched: the adapter
-  *adds* behavior, and disabling it returns the pristine base — the
+  *adds* behavior, and disabling it returns the pristine base, the
   [fine-tuning-risk](/ai-ml/systems/fine-tuning-vs-prompting-vs-rag)
   mitigated by construction).
 
@@ -57,7 +57,7 @@ economics entirely:
 
 - **The base model is loaded once** (shared across all adapters: the
   [multi-model serving](/ai-ml/systems/multi-model-serving-routing)
-  problem *dissolves* — instead of N full models in
+  problem *dissolves*, instead of N full models in
   [VRAM](/ai-ml/systems/gpu-accelerator-management), one base
   plus N tiny adapters, and the
   [warm-pool](/ai-ml/systems/model-caching-warm-pools) holds
@@ -66,7 +66,7 @@ economics entirely:
   the request's adapter at inference time (a small matmul added to
   the forward pass): the router picks the adapter (per tenant, per
   task), the base stays resident, and the switching cost is
-  negligible — the reason "one fine-tune per customer" became
+  negligible, the reason "one fine-tune per customer" became
   *economically possible*, and a real product pattern).
 - **The adapter is the deploy unit** (a new fine-tune is a new small
   artifact, [versioned](/ai-ml/systems/data-versioning-lineage)
@@ -77,20 +77,20 @@ economics entirely:
 ## The broader PEFT family (worth naming)
 
 - **Adapters** (the original: small bottleneck layers *inserted*
-  between the model's blocks — slightly more invasive than LoRA,
+  between the model's blocks, slightly more invasive than LoRA,
   similar economics).
 - **Prefix/prompt tuning** (train a small set of *virtual tokens*
-  prepended to the input: the "soft prompt" — even cheaper, less
+  prepended to the input: the "soft prompt", even cheaper, less
   expressive, and it composes with the
   [prompt-as-artifact](/ai-ml/systems/prompt-engineering-systems)
   discipline).
 - **QLoRA** (LoRA *on a quantized base*: the base in 4-bit, the
-  adapter in higher precision — the reason a *single* consumer GPU
+  adapter in higher precision, the reason a *single* consumer GPU
   can fine-tune a large model, and the technique that democratized
   fine-tuning: the [quantization](/ai-ml/systems/inference-optimization)
   and [LoRA](/ai-ml/systems/lora-peft) pages meeting).
 - **The full-fine-tune case** (when the task needs *deep* behavior
-  change — a new language, a large domain shift — LoRA may be too
+  change, a new language, a large domain shift, LoRA may be too
   light: the honest answer is that PEFT is a *default*, not a law,
   and the choice is measured on the [eval
   set](/ai-ml/systems/evaluating-llm-systems)).

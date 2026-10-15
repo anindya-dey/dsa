@@ -1,0 +1,108 @@
+---
+title: "Construct Binary Tree from Preorder and Inorder Traversal"
+difficulty: "Medium"
+variant: "Divide by Root, Hashed Index"
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/construct-binary-tree-from-preorder-and-inorder-traversal/"
+---
+
+## Problem
+
+You are given the preorder and inorder traversals of a binary tree with
+unique values. Rebuild the tree and return its root.
+
+**Constraints**
+
+- `1 <= preorder.length <= 3000`
+- `inorder.length == preorder.length`
+- All values are unique
+
+**Example**
+
+```text
+Input:  preorder = [3, 9, 20, 15, 7], inorder = [9, 3, 15, 20, 7]
+Output: [3, 9, 20, null, null, 15, 7]
+```
+
+## Brute force
+
+Two facts split the problem. Preorder lists the root first. Inorder lists
+everything in the left subtree before the root, and everything in the
+right subtree after it. So: take the next preorder value as the root,
+find it in inorder by scanning, and recurse on each side.
+
+```cpp
+TreeNode* buildBrute(const std::vector<int>& preorder, int& next,
+                     const std::vector<int>& inorder, int lo, int hi) {
+    if (lo > hi) {
+        return nullptr;
+    }
+    TreeNode* root = new TreeNode(preorder[next++]);
+    int mid = lo;
+    while (inorder[mid] != root->val) {
+        ++mid;                            // linear scan for the root
+    }
+    root->left = buildBrute(preorder, next, inorder, lo, mid - 1);
+    root->right = buildBrute(preorder, next, inorder, mid + 1, hi);
+    return root;
+}
+```
+
+The recursion is right. The scan is the cost. On a skewed tree each call
+scans almost the whole remaining range, so the total is O(n²).
+
+## Optimal: look the root up in a hash map
+
+The only thing the scan computes is "where is this value in inorder?"
+Values are unique, so build that answer once. Map each value to its
+inorder index, and every lookup becomes O(1).
+
+```cpp
+TreeNode* build(const std::vector<int>& preorder, int& next,
+                const std::unordered_map<int, int>& indexOf,
+                int lo, int hi) {              // inorder range [lo, hi]
+    if (lo > hi) {
+        return nullptr;
+    }
+    int rootValue = preorder[next++];          // preorder: root comes first
+    TreeNode* root = new TreeNode(rootValue);
+    int mid = indexOf.at(rootValue);           // O(1): left of mid is left subtree
+    root->left = build(preorder, next, indexOf, lo, mid - 1);
+    root->right = build(preorder, next, indexOf, mid + 1, hi);
+    return root;
+}
+
+TreeNode* buildTree(const std::vector<int>& preorder,
+                    const std::vector<int>& inorder) {
+    std::unordered_map<int, int> indexOf;
+    for (int i = 0; i < static_cast<int>(inorder.size()); ++i) {
+        indexOf[inorder[i]] = i;
+    }
+    int next = 0;                              // shared cursor into preorder
+    return build(preorder, next, indexOf, 0,
+                 static_cast<int>(inorder.size()) - 1);
+}
+```
+
+The order of the two recursive calls is not a style choice. Preorder is
+root, *left*, right, so the left subtree's values come next in the
+array. Building left first is what keeps the shared `next` cursor in
+step.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Linear scan for each root | O(n²) worst | O(h) |
+| Hashed inorder index | O(n) | O(n) |
+
+This is [divide and conquer](/dsa/patterns/divide-and-conquer) on a tree.
+Find the split point, recurse on both halves, and make finding the split
+cheap. It is also why unique values matter. With duplicates, the root's
+position in inorder is ambiguous, and two traversals no longer pin down
+one tree.
+
+## Related C++ tools
+
+- [std::unordered_map / unordered_set](/cpp/unordered-map): average O(1) lookups, and find versus operator[].

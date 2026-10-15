@@ -2,7 +2,9 @@
 title: "Minimum Window Substring"
 difficulty: "Hard"
 variant: "Dynamic Window"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/minimum-window-substring/"
 ---
 
 ## Problem
@@ -135,3 +137,8 @@ two loops together take O(n) time. This problem is the classic demonstration
 that "two nested loops" doesn't always mean "quadratic": the work is bounded
 by how far the pointers travel, not by the product of their ranges. It is the
 hardest entry in [Sliding Window](/dsa/patterns/sliding-window).
+
+## Related C++ tools
+
+- [std::unordered_map / unordered_set](/cpp/unordered-map): average O(1) lookups, and find versus operator[].
+- [std::string](/cpp/string): substr, find, and the operations that copy.

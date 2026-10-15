@@ -127,7 +127,7 @@ to bucket `f+1`; eviction takes the tail of the `minFreq` bucket.
 
 ```mermaid
 graph TD
-    M[minFreq = 2] --> B2[freq 2: a, b  (LRU ordered)]
+    M[minFreq = 2] --> B2["freq 2: a, b  (LRU ordered)"]
     B2 --> B3[freq 3: c]
     B3 --> B5[freq 5: d]
     E[Evict] -->|tail of| B2
@@ -164,6 +164,11 @@ wrong bucket.
 - **Wire this to a real cache**: this class *is* the eviction policy of a
   real [cache](/system-design/fundamentals/caching); the memory policy,
   TTL, and admission (what deserves caching at all) are separate decisions.
+
+## Related C++ tools
+
+- [std::unordered_map / unordered_set](/cpp/unordered-map): average O(1) lookups, and find versus operator[].
+- [Iterator Invalidation](/cpp/invalidation): which operations break iterators you are holding.
 
 ## Related concepts
 

@@ -10,7 +10,7 @@ model*, manufactured at scale and deployed confidently. The
 training data pipeline is the
 [warehouse](/system-design/fundamentals/olap-vs-oltp) tier's ETL
 with one extra discipline that classic data engineering never
-needed: **point-in-time correctness** — every training example must
+needed: **point-in-time correctness**, every training example must
 look exactly like a *real request looked at that moment*, or the
 model learns from information it will not have when it matters
 (the **leakage** problem, this page's central hazard).
@@ -49,12 +49,12 @@ and serving features must be the same computation** (the
 problem: a training feature computed "over the last 7 calendar
 days" and a serving feature computed "over the trailing 7*24*
 hours" are *different features*, and the model trained on one is
-silently mismatched with the other — the quiet killer, and the
+silently mismatched with the other, the quiet killer, and the
 argument for a [feature store](/ai-ml/systems/feature-stores)
 that computes both from one definition).
 
 **The split** (train / validation / test): the held-out discipline
-with ML's own traps — *leakage across the split* (the same user in
+with ML's own traps, *leakage across the split* (the same user in
 train and validation: the model memorizes the user, not the
 pattern), *temporal leakage* (validation data from *before* training
 data: the split must be **by time**, because in production the
@@ -69,7 +69,7 @@ The pipeline's one genuinely ML-specific hazard, worth a full
 listing because every item is a classic production bug:
 
 - **Label leakage** (a feature computed *using* the outcome: "days
-  since last chargeback" as a fraud feature — the chargeback *is*
+  since last chargeback" as a fraud feature, the chargeback *is*
   the label. The model learns the answer, evaluates perfectly,
   ships, and fails at everything).
 - **Temporal leakage** (features computed "as of now" over data
@@ -77,7 +77,7 @@ listing because every item is a classic production bug:
   computed from *today* for an example timestamped 20 days ago
   includes 10 days of future. The fix: every feature computation
   takes an *as-of* timestamp, and the pipeline joins against
-  history at that moment — the "point-in-time" contract).
+  history at that moment, the "point-in-time" contract).
 - **Entity leakage across splits** (the same user, session, or
   device appearing in both train and validation: the split must
   respect entity boundaries or the evaluation measures memorization).
@@ -102,7 +102,7 @@ job on a schedule (nightly, weekly, on label arrival), and the
 home: SQL-shaped joins, windowed features, and the *reproducibility*
 that [experiment tracking](/ai-ml/systems/ml-system-design-basics)
 requires (the same query over the same snapshot: the same training
-set — which is the [data versioning](/ai-ml/systems/data-versioning-lineage)
+set, which is the [data versioning](/ai-ml/systems/data-versioning-lineage)
 page's subject). The incremental variants
 ([streaming](/system-design/fundamentals/stream-vs-batch-processing)
 joins, continuously-updated training sets) are the same

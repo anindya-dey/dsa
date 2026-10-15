@@ -5,8 +5,8 @@ summary: "Precision, recall, ROC-AUC, NDCG, calibration: what each metric measur
 
 A metric is a **choice about what "good" means**, made explicit, and
 every serious ML incident traces back to a metric that measured the
-wrong thing confidently. This page is the metric vocabulary and —
-more importantly — the *failure mode of each*, because the systems
+wrong thing confidently. This page is the metric vocabulary and,
+more importantly, the *failure mode of each*, because the systems
 designer's job is to pick the metric whose failure mode the product
 can survive.
 
@@ -15,7 +15,7 @@ can survive.
 Binary classification's four outcomes: true positive, true negative,
 false positive, false negative. Every threshold-based metric is a
 function of these four numbers, and the first design decision is
-*which error is worse* — the question no metric answers for you.
+*which error is worse*, the question no metric answers for you.
 
 - **Precision** = TP / (TP + FP): of the things we flagged, how many
   were right. The metric of *false-alarm cost* (a spam filter
@@ -40,7 +40,7 @@ at one.
 
 - **ROC-AUC** (the area under the true-positive-vs-false-positive
   curve): the probability a random positive ranks above a random
-  negative, **threshold-independent** — good for model *comparison*,
+  negative, **threshold-independent**: good for model *comparison*,
   and the classic trap on **imbalanced data** (a fraud rate of
   0.1%: a huge ROC-AUC can hide a useless model, because the vast
   negative class dominates the curve: the fix is
@@ -87,8 +87,8 @@ exists because the two diverge:
 ## The traps, collected
 
 - **Class imbalance** (accuracy is a lie on imbalanced data: "99%
-  accurate" on a 1% fraud rate is the all-negative predictor —
-  the first thing to check, always).
+  accurate" on a 1% fraud rate is the all-negative predictor,
+the first thing to check, always).
 - **The wrong split** (a metric measured on leaked or
   non-temporal data: the [training pipeline's](/ai-ml/systems/training-data-pipelines)
   leakage family, which produces *excellent* metrics and worthless

@@ -1,0 +1,125 @@
+---
+title: "Largest Number"
+difficulty: "Medium"
+variant: "Custom Comparator"
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/largest-number/"
+---
+
+## Problem
+
+Given a list of non-negative integers, arrange them so that, written side
+by side, they form the largest possible number. Return it as a string,
+since it may not fit in an integer type.
+
+**Constraints**
+
+- `1 <= nums.length <= 100`
+- `0 <= nums[i] <= 10^9`
+
+**Example**
+
+```text
+Input:  nums = [3, 30, 34, 5, 9]
+Output: "9534330"
+
+Input:  nums = [0, 0]
+Output: "0"
+```
+
+## Brute force
+
+Try every ordering and keep the biggest result.
+
+```cpp
+std::string largestNumberBrute(const std::vector<int>& nums) {
+    std::vector<std::string> parts;
+    for (int value : nums) {
+        parts.push_back(std::to_string(value));
+    }
+    std::sort(parts.begin(), parts.end());     // next_permutation starts here
+    std::string best;
+    do {
+        std::string candidate;
+        for (const std::string& part : parts) {
+            candidate += part;
+        }
+        best = std::max(best, candidate);
+    } while (std::next_permutation(parts.begin(), parts.end()));
+    return best[0] == '0' ? "0" : best;
+}
+```
+
+Every candidate has the same length, so plain string comparison is the
+same as numeric comparison. That part is right. The trouble is the n!
+orderings: 100 numbers is hopeless.
+
+## Optimal: sort by the pair that wins
+
+Plain descending order fails. "30" sorts above "3", but "330" beats
+"303". The right question is local: for two pieces `a` and `b`, which
+order reads bigger, `a + b` or `b + a`? Put `a` first exactly when
+`a + b > b + a`, and sort with that rule.
+
+```cpp
+std::string largestNumber(const std::vector<int>& nums) {
+    std::vector<std::string> parts;
+    parts.reserve(nums.size());
+    for (int value : nums) {
+        parts.push_back(std::to_string(value));
+    }
+    std::sort(parts.begin(), parts.end(),
+              [](const std::string& a, const std::string& b) {
+                  return a + b > b + a;          // which order reads bigger?
+              });
+    if (parts[0] == "0") {
+        return "0";                              // all zeros: not "000"
+    }
+    std::string result;
+    for (const std::string& part : parts) {
+        result += part;
+    }
+    return result;
+}
+```
+
+The `"0"` check matters. If the biggest piece is "0", every piece is "0",
+and the answer is a single zero, not a string of them.
+
+## Why the comparator is legal
+
+`std::sort` requires a *strict weak ordering*. Break that contract and
+the behavior is undefined: wrong output, or a crash on some inputs. Two
+properties are worth checking for any custom comparator you write.
+
+- **Irreflexive.** `comp(a, a)` must be false. Here `a + a > a + a` is
+  false. Writing `>=` instead would break this, and it is the most common
+  way people corrupt a sort.
+- **Transitive.** If `a` goes before `b` and `b` before `c`, then `a`
+  must go before `c`. For concatenation order this holds: `a + b > b + a`
+  is equivalent to comparing the fractions `a / (10^len(a) - 1)`, and
+  comparing numbers is transitive.
+
+You do not need the proof in an interview. You do need the habit of
+asking "is my comparator strict and transitive?" every time you hand one
+to `sort`, `set`, `map`, or `priority_queue`.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Try every ordering | O(n! · L) | O(n · L) |
+| Sort with pair comparator | O(n log n · L) | O(n · L) |
+
+`L` is the digit length (at most 10), because each comparison builds two
+concatenations. This is the
+[sorting](/dsa/patterns/sorting-and-selection) idea in its purest form:
+when a global order is hard to state, find a pairwise rule that is
+consistent, and let the sort assemble the global answer.
+
+## Related C++ tools
+
+- [Custom Comparators](/cpp/comparators): the ordering contract every comparator must keep.
+- [std::function & Lambdas](/cpp/function-lambdas): closures, captures, and recursive lambdas.
+- [Sorting & nth_element](/cpp/algorithms): sort, nth_element, and what each guarantees.

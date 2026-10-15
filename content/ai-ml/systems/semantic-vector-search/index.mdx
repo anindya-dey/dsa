@@ -55,7 +55,7 @@ graph TD
 
 - **The two indexes** (vector (semantic) + inverted (keyword): the
   [hybrid](/system-design/fundamentals/search-and-inverted-index)
-  default, merged by a score-blend — the reason "just vectors" is
+  default, merged by a score-blend, the reason "just vectors" is
   usually wrong: keyword search catches the exact-match cases
   embeddings blur, and the merge is the ranking design).
 - **The embedding model as infrastructure** (the query embeds
@@ -63,14 +63,14 @@ graph TD
   tens of ms: the latency budget's first line), the items embed
   *at ingest* (the [offline pipeline](/ai-ml/systems/batch-vs-real-time-prediction),
   the [feature-store](/ai-ml/systems/feature-stores) pattern:
-  precomputed, versioned) — and the *model-era* discipline (a new
+  precomputed, versioned), and the *model-era* discipline (a new
   embedding model = re-embed everything: the
   [migration](/ai-ml/systems/feature-model-backfills)).
 - **The reranker** (the [two-stage
   retrieve-then-rank](/ai-ml/systems/rag) shape: the ANN
   returns ~100 candidates *fast* (recall), a
   [cross-encoder](https://en.wikipedia.org/wiki/Learning_to_rank)
-  reranks the top ~20 *accurately* (precision) — the
+  reranks the top ~20 *accurately* (precision), the
   [filter-then-refine](/system-design/fundamentals/geospatial-indexing)
   pattern, and the quality lever).
 
@@ -80,21 +80,21 @@ graph TD
   *relevance-modeling* problem: naive score addition is wrong
   (the scales differ), so the standard is [reciprocal rank
   fusion](https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf)
-  or a learned blend — the [ranking](/system-design/hld/recommendation-system)
+  or a learned blend, the [ranking](/system-design/hld/recommendation-system)
   problem, search-shaped, and tuned against a labeled set).
 - **Filtered search** (the [filtered-vector-search
   problem](/ai-ml/systems/similarity-search-ann), again:
-  "semantic search *within* category X / tenant Y" — the *actual*
+  "semantic search *within* category X / tenant Y", the *actual*
   query, and the one the naive implementations get wrong).
 - **The ANN dial as a product decision** (recall vs. latency vs.
   memory: the [HNSW/IVF/PQ](/ai-ml/systems/similarity-search-ann)
   choice and its tuning, and the *honest* statement of the recall
-  target — a search engine that "misses 5% of the best results" is a
+  target, a search engine that "misses 5% of the best results" is a
   *decision*, documented).
 - **Freshness** (the ingest-to-searchable latency: the
   [incremental indexing](/ai-ml/systems/chunking-indexing-strategies)
   pipeline, and the ANN index's *update* story (HNSW is incremental;
-  IVF rebuilds — the [index-choice](/ai-ml/systems/similarity-search-ann)
+  IVF rebuilds, the [index-choice](/ai-ml/systems/similarity-search-ann)
   consequence for freshness).
 - **Evaluation** (search quality is measured on a *labeled*
   query→relevant-items set: the [NDCG](/ai-ml/systems/evaluation-metrics)

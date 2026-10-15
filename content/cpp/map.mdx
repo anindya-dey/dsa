@@ -6,7 +6,7 @@ summary: "Ordered containers: O(log n) everything, lower_bound/upper_bound, and 
 `std::map` and `std::set` are the **balanced-tree** containers
 (a [red-black tree](https://en.wikipedia.org/wiki/Red%E2%80%93black_tree),
 in every major implementation): elements kept **sorted by key**, every
-operation O(log n) *guaranteed*, and the ordering is the product —
+operation O(log n) *guaranteed*, and the ordering is the product:
 iteration is sorted, range queries are native, and
 `lower_bound`/`upper_bound` answer the boundary questions that
 [binary search](/dsa/patterns/binary-search-variants) asks of
@@ -32,7 +32,7 @@ std::prev(m.end())->first;         // largest key (rbegin() too)
 ```
 
 The same API as [unordered_map](/cpp/unordered-map) for the
-lookup half, plus the ordering layer — which is why the choice
+lookup half, plus the ordering layer, which is why the choice
 between the two is the choice the
 [hash-based structures entry](/dsa/patterns/hash-based-structures)
 posed as a price list: hash for O(1) average, tree for order.
@@ -53,9 +53,9 @@ for (auto it = m.lower_bound("mango");
 ```
 
 This is the
-[first-and-last-position](/dsa/patterns/binary-search-variants/problems/first-and-last-position-in-sorted-array)
+[first-and-last-position](/dsa/patterns/binary-search-variants/first-and-last-position-in-sorted-array)
 operation, as a container native: no manual binary search over a
-sorted vector, no careful index arithmetic — the tree *is* the
+sorted vector, no careful index arithmetic, the tree *is* the
 sorted array with O(log n) insertion. The
 [DSA entry](/dsa/patterns/binary-search-variants) covers the
 algorithm over arrays (the `std::lower_bound` free-function form
@@ -67,7 +67,7 @@ is the container that maintains the sort for you.
 - **Insert/erase invalidate only the affected element's iterators**
   (and, on erase, what it returned): tree nodes don't move, so
   references and pointers to elements are **stable across
-  insertions** — the guarantee unordered containers give up on
+  insertions**, the guarantee unordered containers give up on
   rehash, and the reason pointer-to-element designs prefer the
   tree.
 - **The erase idiom**: `it = m.erase(it)` advances safely

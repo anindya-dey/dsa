@@ -2,7 +2,9 @@
 title: "Count Inversions"
 difficulty: "Hard"
 variant: "Merge Sort Counting"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode (Reverse Pairs variant)"
+    href: "https://leetcode.com/problems/reverse-pairs/"
 ---
 
 ## Problem
@@ -116,11 +118,11 @@ means right never jumps over an equal. And the scratch vectors (`left`,
 `right`) matter because the merge writes back into `nums` while still
 reading the halves: without the copies, the merge would overwrite values
 not yet compared, the same shared-memory trap as
-[merge sorted array](/dsa/patterns/sorting-and-selection/problems/merge-sorted-array)
+[merge sorted array](/dsa/patterns/sorting-and-selection/merge-sorted-array)
 solved by merging from the back.
 
 The alternative worth naming: a
-[Fenwick tree over ranks](/dsa/patterns/range-query-structures/problems/count-of-smaller-numbers-after-self)
+[Fenwick tree over ranks](/dsa/patterns/range-query-structures/count-of-smaller-numbers-after-self)
 counts inversions by sweeping right-to-left, asking "how many inserted
 values are below me", which is the same problem answered by a different
 tool (an order-statistics structure instead of sort-with-counting).
@@ -139,3 +141,7 @@ This is the canonical "solve on the way up"
 is not incidental, it is the *mechanism*, and the counting rides inside
 the combine step that the sort needed anyway. Every "count pairs across a
 split" problem is this shape wearing a story.
+
+## Related C++ tools
+
+- [Integer Overflow & Limits](/cpp/integer-overflow): where int runs out, and how this code stays inside it.

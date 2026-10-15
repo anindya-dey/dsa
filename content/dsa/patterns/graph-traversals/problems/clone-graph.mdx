@@ -2,7 +2,9 @@
 title: "Clone Graph"
 difficulty: "Medium"
 variant: "DFS with Visit Map"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/clone-graph/"
 ---
 
 ## Problem
@@ -84,7 +86,7 @@ The load-bearing line is `copies_[node] = copy` **before** the recursion.
 Register the copy first, then fill its neighbors; that way, when a neighbor
 recurses back to `node`, it finds the half-built copy and links to it
 rather than looping. This is the same "mark before you recurse" discipline
-as [flood fill](/dsa/patterns/matrix-and-grid-algorithms/problems/number-of-islands),
+as [flood fill](/dsa/patterns/graph-traversals/number-of-islands),
 applied to object identity instead of grid cells.
 
 A BFS version is equivalent: a queue of originals, a map of copies, and for
@@ -104,3 +106,7 @@ This problem is the cleanest demonstration of the difference between
 traversing a tree and traversing a graph: the only change is a visited
 map, and that single addition is what turns a non-terminating recursion
 into a linear one.
+
+## Related C++ tools
+
+- [std::unordered_map / unordered_set](/cpp/unordered-map): average O(1) lookups, and find versus operator[].

@@ -2,7 +2,9 @@
 title: "Spiral Matrix"
 difficulty: "Medium"
 variant: "Layer Traversal"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/spiral-matrix/"
 ---
 
 ## Problem
@@ -62,7 +64,7 @@ std::vector<int> spiralOrderTurtle(
 
 Correct, O(mn) time and O(mn) extra memory for the visited matrix, and
 it generalizes (this exact loop answers
-[rotting oranges](/dsa/patterns/graph-traversals/problems/rotting-oranges)-style
+[rotting oranges](/dsa/patterns/graph-traversals/rotting-oranges)-style
 grid walks). Its problems: the visited matrix is pure overhead (the
 spiral structure *tells* you what is visited), and every step pays a
 bounds check plus a turn check, when the spiral is a perfectly regular
@@ -142,3 +144,7 @@ version drops the auxiliary memory and the per-step checks, and
 canonical "traversal order as a discipline" problem: the naive answer
 works, and the four-pointer version is what it looks like when the
 structure is understood rather than discovered.
+
+## Related C++ tools
+
+- [std::vector](/cpp/vector): the dynamic array underneath almost every solution.

@@ -10,7 +10,7 @@ its capacity, not a fact. Unit and integration tests prove
 load, the data, or a dependency misbehaves?). This page is the
 *fleet-scale* testing discipline: load and stress testing (does it
 survive the traffic?), and chaos testing (does it survive the
-failures?) — the practices that turn "we think it scales" into "we
+failures?), the practices that turn "we think it scales" into "we
 know how it fails."
 
 ## The testing pyramid, extended
@@ -19,7 +19,7 @@ The classic pyramid (unit → integration → end-to-end) covers
 *correctness*. The scale tier adds, on top:
 
 - **Load testing** (drive *expected peak* traffic and measure:
-  latency percentiles, throughput, error rate — the
+  latency percentiles, throughput, error rate, the
   [latency-vs-throughput](/system-design/fundamentals/latency-vs-throughput)
   metrics, at load. The question: does it meet the
   [SLO](/system-design/fundamentals/reliability-engineering) at the
@@ -30,10 +30,10 @@ The classic pyramid (unit → integration → end-to-end) covers
   [backpressure](/system-design/fundamentals/backpressure-and-flow-control)
   behavior, tested).
 - **Soak testing** (run *sustained* load for hours/days: find the
-  *slow leaks* — memory growth, connection leaks, log-disk fill,
-  cache degradation — the failures that only appear over time).
+  *slow leaks*, memory growth, connection leaks, log-disk fill,
+  cache degradation, the failures that only appear over time).
 - **Chaos testing** (inject *failures*: kill a node, add latency to
-  a dependency, partition a network — the
+  a dependency, partition a network, the
   [availability](/system-design/fundamentals/availability-and-reliability)
   machinery, exercised. The question: does the system *survive
   component failure* as designed, or does the redundancy only exist
@@ -46,17 +46,17 @@ The discipline, and the traps:
 - **Model realistic traffic** (a synthetic load that hits one
   endpoint with no cache misses is not your traffic: model the
   *mix*, the *read:write ratio*, the *cache behavior*, the *data
-  sizes* — a load test that misrepresents the workload produces a
+  sizes*, a load test that misrepresents the workload produces a
   confident, wrong answer).
 - **Measure the *tail*** (average latency is useless under load:
   the [p99/p99.9](/system-design/fundamentals/latency-vs-throughput)
   is what breaks, and the *shape* of the curve as load rises (where
-  does the knee happen?) is the finding — the
+  does the knee happen?) is the finding, the
   [queueing](/system-design/fundamentals/latency-vs-throughput)
   behavior, measured).
 - **The bottleneck moves** (you fix the app tier, and the *database*
   becomes the limit; the load test must be re-run after each fix,
-  because the binding constraint *changes* — the
+  because the binding constraint *changes*, the
   [scalability](/system-design/fundamentals/scalability) ladder, one
   rung at a time).
 - **Test against production-like data volumes** (a query that is
@@ -78,34 +78,34 @@ to *fail* something.
 
 The methods, in rising aggressiveness: **fault injection** (kill a
 pod, add latency to a dependency, return errors from a mock),
-**network chaos** (partition, drop packets, add jitter — the
+**network chaos** (partition, drop packets, add jitter, the
 [partition](/system-design/fundamentals/cap-theorem-and-consistency-models)
 that tests the consistency design), **resource stress** (fill the
 disk, exhaust memory, saturate the CPU), and **game days** (a
 scheduled, team-run failure exercise, with a hypothesis and a
-review — the [incident-response](/system-design/fundamentals/reliability-engineering)
+review, the [incident-response](/system-design/fundamentals/reliability-engineering)
 drill). The output is not "it passed" but *confidence* (the failover
-works) and *findings* (it did not — a bug found by chaos is a bug
+works) and *findings* (it did not, a bug found by chaos is a bug
 found *before* the real outage).
 
 The discipline that makes it safe: **start small** (one failure at a
 time), **have a hypothesis** ("killing one node should not affect
 p99"), **blast-radius control** (chaos experiments are themselves
-gated and reversible — the [canary](/system-design/fundamentals/reliability-engineering)
+gated and reversible, the [canary](/system-design/fundamentals/reliability-engineering)
 discipline, for experiments), and **run in production** (staging
 never matches production's scale and complexity, so the *most
-honest* chaos is in production, carefully — the mature practice, and
+honest* chaos is in production, carefully, the mature practice, and
 a cultural one as much as a technical one).
 
 ## The systems view
 
 Both load and chaos testing are *experiments*: a hypothesis about the
-system's behavior, an injected condition, a measured outcome — the
+system's behavior, an injected condition, a measured outcome, the
 [scientific method](/ai-ml/systems/ab-testing-experimentation),
 applied to reliability. And both share the honest limitation: they
 test the *conditions you thought of*, which is why they *complement*
 (in not replace) the [observability](/system-design/fundamentals/observability)
-that catches the failures you *did not* — the tests are the
+that catches the failures you *did not*, the tests are the
 *rehearsal*, production monitoring is the *performance*.
 
 ## Related concepts

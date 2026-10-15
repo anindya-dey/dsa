@@ -28,11 +28,11 @@ bool present = it != v.end() && *it == x;   // lower_bound alone is not "presenc
 
 The questions each answers, as the mental model:
 
-- **`lower_bound(x)`**: "where does x *or its slot* begin?" — the
+- **`lower_bound(x)`**: "where does x *or its slot* begin?", the
   first element `>= x`: the [insertion
   point](/dsa/patterns/binary-search-variants) (insert *at* the
   iterator, keeping order), and the *lower* edge of x's run.
-- **`upper_bound(x)`**: "where does x's run *end*?" — the first
+- **`upper_bound(x)`**: "where does x's run *end*?", the first
   element `> x`: the upper edge.
 - Together: x's run is `[lower, upper)`, its
   **count is `upper - lower`** without a scan
@@ -65,10 +65,10 @@ auto it = std::lower_bound(...);
 auto it2 = std::upper_bound(...);
 ```
 
-The whole [first-and-last-position](/dsa/patterns/binary-search-variants/problems/first-and-last-position-in-sorted-array)
-problem, [solved on this site](/dsa/patterns/binary-search-variants/problems/first-and-last-position-in-sorted-array)
+The whole [first-and-last-position](/dsa/patterns/binary-search-variants/first-and-last-position-in-sorted-array)
+problem, [solved on this site](/dsa/patterns/binary-search-variants/first-and-last-position-in-sorted-array)
 with a hand-written loop, is `lower_bound` + `upper_bound` in
-library form — and the reason the hand-written version is taught is
+library form, and the reason the hand-written version is taught is
 the *understanding* (which boundary, off by which one) that the
 library calls then encode.
 
@@ -82,11 +82,11 @@ library calls then encode.
   index, and remember `end()` means "past everything," not
   "found nothing."
 - **`lower_bound` is not presence**: it finds the insertion point
-  whether or not x exists — the `*it == x` check (with the `!=
+  whether or not x exists, the `*it == x` check (with the `!=
   end()` guard) is the caller's half.
 - **On [associative containers](/cpp/map), use the MEMBER
   functions** (`m.lower_bound(k)`, not
-  `std::lower_bound(m.begin(), m.end(), k)`) — the member version
+  `std::lower_bound(m.begin(), m.end(), k)`), the member version
   uses the tree's structure (O(log n)) where the free function
   would walk the tree linearly (O(n)): the classic
   accidental-quadratic.

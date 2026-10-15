@@ -9,7 +9,7 @@ is the [geospatial indexing](/system-design/fundamentals/geospatial-indexing)
 problem transplanted into meaning-space: "which k items are closest
 to this query point?", asked at query rate, over a set too large to
 scan. The exact answer (compare all, sort, take top k) is O(n·d) per
-query — seconds over a billion — and the field's answer is
+query, seconds over a billion, and the field's answer is
 **Approximate Nearest Neighbor (ANN)**: indexes that find
 *nearly* the nearest k in *milliseconds*, by giving up some recall
 (the guarantee becomes "X% of the true top-k, with high
@@ -20,7 +20,7 @@ the recall/speed/memory dial that tunes them.
 
 Every ANN index exploits one insight: **the nearest neighbors of a
 query are *reachable through* the neighbors of neighbors**, so you
-do not need to compare against everything — you need a structure
+do not need to compare against everything: you need a structure
 that lets you *walk toward the answer*, comparing as you go, and
 prune the rest. The three families each implement the walk
 differently:
@@ -40,7 +40,7 @@ graph TD
 **Hierarchical Navigable Small World** ([HNSW](https://en.wikipedia.org/wiki/Hierarchical_Navigable_Small_World_Graph))
 is the industry-standard index (pgvector, Pinecone, Qdrant,
 Weaviate: everyone's default), and its structure: each vector links
-to its **nearest neighbors as a graph**, in **layers** — a sparse
+to its **nearest neighbors as a graph**, in **layers**, a sparse
 top layer (long-range edges, coarse navigation: "the general
 direction"), each layer down denser (shorter edges, fine
 navigation), and the search *greedily descends*: enter at the top,
@@ -114,12 +114,12 @@ distances: precomputed in a tiny table, so a distance estimate is
 ~8 lookups and adds instead of a 300-dim dot product), giving
 ~10-50x memory reduction at a *real* recall cost (the estimates
 are coarse: the recall dial is the codebook size and the
-re-rank step). The production stack — **IVF-PQ**: cluster the
+re-rank step). The production stack, **IVF-PQ**: cluster the
 compressed codes, scan the nearest clusters, **re-rank the top
 candidates with the full vectors** (store the originals too, and
 the approximate pass only narrows: the
 [filter-then-refine](/system-design/fundamentals/geospatial-indexing)
-discipline, applied at vector scale) — is how the billion-item
+discipline, applied at vector scale), is how the billion-item
 systems actually ship.
 
 ## The recall/speed/memory dial, formalized
@@ -145,7 +145,7 @@ trade as every index tier).
 ## The filtered-query problem
 
 The real-world query is *"nearest neighbors, **where category =
-coffee and price < $10**"* — the pure ANN indexes answer
+coffee and price < $10**"*, the pure ANN indexes answer
 *unconditional* nearness, and the **filter** composes badly (the
 filter-then-search (check the filter, then ANN: the filter might
 void entire clusters) and the search-then-filter (ANN returns 100
@@ -154,8 +154,8 @@ naively). The standard answers: **pre-filter with the index aware**
 (IVF per category: the [partitioning](/system-design/hld/distributed-message-queue)
 idea, per filterable dimension), or **in-filter verification during
 the walk** (HNSW's per-node filter check: expand only through
-matching nodes), and the honest statement that this — *filtered
-vector search* — is the actual hard problem of the vector-database
+matching nodes), and the honest statement that this, *filtered
+vector search*, is the actual hard problem of the vector-database
 world, not the raw ANN.
 
 ## Related concepts

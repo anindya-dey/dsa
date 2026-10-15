@@ -1,0 +1,104 @@
+---
+title: "Maximum Subarray"
+difficulty: "Medium"
+variant: "Kadane's Algorithm"
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/maximum-subarray/"
+---
+
+## Problem
+
+Given an integer array `nums`, find the contiguous non-empty subarray with
+the largest sum and return that sum.
+
+**Constraints**
+
+- `1 <= nums.length <= 10^5`
+- `-10^4 <= nums[i] <= 10^4`
+
+**Example**
+
+```text
+Input:  nums = [-2, 1, -3, 4, -1, 2, 1, -5, 4]
+Output: 6            // [4, -1, 2, 1]
+
+Input:  nums = [-3, -1, -2]
+Output: -1           // non-empty: the best single element
+```
+
+## Brute force
+
+Try every start. From each start, extend the end one step at a time and
+keep a running sum.
+
+```cpp
+int maxSubArrayBrute(const std::vector<int>& nums) {
+    int n = static_cast<int>(nums.size());
+    int best = nums[0];
+    for (int start = 0; start < n; ++start) {
+        int sum = 0;
+        for (int end = start; end < n; ++end) {
+            sum += nums[end];               // sum of nums[start..end]
+            best = std::max(best, sum);
+        }
+    }
+    return best;
+}
+```
+
+The running sum already saves a factor of n over re-adding each subarray.
+It is still O(n²): 10^10 steps at the upper limit. The waste is that every
+start recomputes sums that some earlier start already walked through.
+
+## Optimal: best subarray ending here
+
+Change the question. Instead of "best subarray anywhere", ask "best
+subarray that *ends* at index i". Call it `endingHere`. Any subarray ending
+at i either is `nums[i]` alone, or is the best subarray ending at `i - 1`
+with `nums[i]` added. So:
+
+`endingHere(i) = max(nums[i], endingHere(i - 1) + nums[i])`
+
+Read that as a decision. If the run you are carrying has a negative total,
+it can only drag the next element down, so you drop it and restart at
+`nums[i]`. Otherwise you extend it. The overall answer is the best
+`endingHere` you ever see.
+
+```cpp
+int maxSubArray(const std::vector<int>& nums) {
+    int endingHere = nums[0];             // best sum of a run ending at i
+    int best = nums[0];
+    for (int i = 1; i < static_cast<int>(nums.size()); ++i) {
+        endingHere = std::max(nums[i], endingHere + nums[i]);  // restart or extend
+        best = std::max(best, endingHere);
+    }
+    return best;
+}
+```
+
+Trace the example. The running value goes -2, 1, -2, 4, 3, 5, 6, 1, 5. At
+index 3 the carried run is -2, so the 4 starts fresh. The peak is 6.
+
+Starting both variables at `nums[0]`, not 0, is what handles the
+all-negative case. A version that starts at 0 would wrongly return 0 for
+`[-3, -1, -2]`, the sum of an empty subarray the problem does not allow.
+
+## Complexity
+
+| Approach | Time | Space |
+| --- | --- | --- |
+| Every start, running sum | O(n²) | O(1) |
+| Kadane (best run ending here) | O(n) | O(1) |
+
+This is the smallest
+[dynamic programming](/dsa/patterns/dynamic-programming) solution you
+will meet. The state is one number, the recurrence has two choices, and
+the table collapses to a single variable because each step needs only the
+previous one. The same "best ending at i" state solves maximum product
+subarray, where you track the best *and* worst run because a negative
+times a negative flips sign.
+
+## Related C++ tools
+
+- [std::vector](/cpp/vector): the dynamic array underneath almost every solution.

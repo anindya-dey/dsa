@@ -2,7 +2,9 @@
 title: "Jump Game"
 difficulty: "Medium"
 variant: "Greedy Reachability"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/jump-game/"
 ---
 
 ## Problem
@@ -92,7 +94,7 @@ The follow-up, Jump Game II ("minimum jumps to reach the end"), is the
 same sweep grouped into layers: the current jump's range is
 `farthest_{layer}` to `farthest_{layer + 1}`, and you count how many
 layers the end falls in. It is
-[level-order BFS](/dsa/patterns/binary-trees-and-bsts/problems/binary-tree-level-order-traversal)
+[level-order BFS](/dsa/patterns/binary-trees-and-bsts/binary-tree-level-order-traversal)
 disguised as a greedy, which is exactly the relationship you would expect
 between reachability and breadth-first search.
 
@@ -109,3 +111,7 @@ property being tracked is monotone. The same one-number sweep solves the
 gas-station problem ("can you complete the circuit") and video-stitching
 ("cover the interval with fewest clips"), which are the same reachability
 structure with the interval framing.
+
+## Related C++ tools
+
+- [std::vector](/cpp/vector): the dynamic array underneath almost every solution.

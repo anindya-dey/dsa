@@ -2,7 +2,9 @@
 title: "Design Add and Search Words Data Structure"
 difficulty: "Medium"
 variant: "Trie with Wildcards"
-practiceLinks: []
+practiceLinks:
+  - label: "LeetCode"
+    href: "https://leetcode.com/problems/design-add-and-search-words-data-structure/"
 ---
 
 ## Problem
@@ -148,3 +150,8 @@ still avoids re-walking each word's shared prefix from the root.
 The value of the trie here is concentrated in the literal-prefix portion
 of the query: those characters prune the search to one path, which is
 what makes the wildcard branching tractable instead of exhaustive.
+
+## Related C++ tools
+
+- [std::pair / std::tuple](/cpp/pair-tuple): pairs, structured bindings, and lexicographic comparison.
+- [std::string](/cpp/string): substr, find, and the operations that copy.

@@ -4,7 +4,7 @@ summary: "When the relationship itself changes, and how fast the model must be r
 ---
 
 [Data drift](/ai-ml/systems/model-monitoring-drift) is the
-inputs moving; **concept drift is the *answer* moving** — the same
+inputs moving; **concept drift is the *answer* moving**, the same
 input now maps to a different outcome, because the world's
 *relationship* changed, not just its distribution. The spam
 patterns evolve (spammers adapt to the filter), the fraud tactics
@@ -25,7 +25,7 @@ system notices and replaces it.**
   than the model goes stale).
 - **Sudden concept drift** (a shock: a policy change, a new fraud
   campaign, a global event): the model is wrong *now*, and a
-  weekly schedule is too slow — the system needs **drift detection
+  weekly schedule is too slow, the system needs **drift detection
   as a trigger** (the [monitoring](/ai-ml/systems/model-monitoring-drift)
   breach fires retraining, not the calendar), and the honest
   admission that *detection latency + training latency + deploy
@@ -57,7 +57,7 @@ graph LR
 The components, and the trap in each:
 
 - **The trigger** (schedule, drift breach, or a **data-volume
-  trigger**: "retrain when N new labels accumulated" — the
+  trigger**: "retrain when N new labels accumulated", the
   [fraud](/system-design/hld/fraud-detection) case, where labels
   *are* the input): the honest design supports several, because
   the drift mode is not always known in advance.
@@ -76,7 +76,7 @@ The components, and the trap in each:
 - **The deploy** (the new model through the
   [canary/shadow](/ai-ml/systems/offline-vs-online-evaluation)
   funnel: the *automatic* promotion when guardrails hold, the
-  *automatic rollback* when they break — the
+  *automatic rollback* when they break, the
   [reliability](/system-design/fundamentals/reliability-engineering)
   discipline, because a retrained model is a *deployment* and
   deserves the same safety as any code change, more so because its
@@ -97,7 +97,7 @@ honest spectrum:
 - **Fully automatic** (retrain → eval → canary → promote, no human:
   the [fraud](/system-design/hld/fraud-detection) case, and the
   only viable shape when drift is adversarial and fast), with the
-  guardrails (the automatic rollback) *doing* the human's job — which
+  guardrails (the automatic rollback) *doing* the human's job, which
   is why full automation is only as good as its guardrail metrics,
   and why "we automated it" without a rollback story is how a bad
   retrain ships at 3 AM.
@@ -113,7 +113,7 @@ are the [exploration](/ai-ml/systems/supervised-unsupervised-rl)
 discipline (log propensities, explore deliberately, so the training
 data is not fully determined by the previous policy) and the
 *holdout* discipline (keep a slice of traffic on a fixed policy, so
-there is always unbiased data to learn from) — the same
+there is always unbiased data to learn from), the same
 [A/B](/ai-ml/systems/ab-testing-experimentation) holdout that
 makes experiments honest, doing double duty as the retraining
 loop's anchor.

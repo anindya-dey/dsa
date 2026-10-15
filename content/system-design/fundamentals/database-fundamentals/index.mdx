@@ -61,6 +61,8 @@ The deeper question is what happens if the primary dies. **Failover**
 promotes a replica to primary, but two replicas can both believe they're the
 new primary (split brain), and the resolution of that is
 [consensus](/system-design/fundamentals/consensus-and-leader-election).
+[Replication](/system-design/fundamentals/replication) covers lag,
+failover, and the multi-leader and leaderless designs in depth.
 
 ## Sharding: splitting the data itself
 
@@ -86,6 +88,8 @@ The common partitioning strategy is **hash sharding**
 (hash the key, take the remainder), and its refinement,
 [consistent hashing](/system-design/fundamentals/consistent-hashing),
 which makes adding a machine cheaper than re-shuffling everything.
+[Partitioning & Sharding](/system-design/fundamentals/partitioning-and-sharding)
+goes further into key choice, hot keys, and secondary indexes.
 
 ## SQL vs. NoSQL: what the trade actually is
 
@@ -116,6 +120,9 @@ truth for money and relationships, and a NoSQL store (or a
 
 ## Related concepts
 
+- [Replication](/system-design/fundamentals/replication) and
+  [Partitioning & Sharding](/system-design/fundamentals/partitioning-and-sharding)
+  are the deep dives on the two scaling sections above.
 - [Caching](/system-design/fundamentals/caching) protects the database from
   repeated reads, usually the first fix before any of the above.
 - [Consistent Hashing](/system-design/fundamentals/consistent-hashing) is

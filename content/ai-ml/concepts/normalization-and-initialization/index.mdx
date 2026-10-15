@@ -8,7 +8,7 @@ most of the reason they now work: **normalization** (rescaling the
 activations inside the network) and **initialization** (choosing the
 starting weights carefully). Neither is conceptually deep, and both
 were essential to making networks with dozens or hundreds of layers
-trainable — they are the plumbing that keeps gradients healthy and
+trainable: they are the plumbing that keeps gradients healthy and
 training stable.
 
 ## The problem: unstable training
@@ -16,7 +16,7 @@ training stable.
 Two failure modes, both about *scale*:
 
 - **Exploding/vanishing activations** (as data flows through many
-  layers, the outputs can grow huge or shrink to nothing — the
+  layers, the outputs can grow huge or shrink to nothing, the
   gradients follow, and training stalls or diverges).
 - **Bad initialization** (if weights start too large, activations
   explode; too small, they vanish; and either way the network starts
@@ -29,7 +29,7 @@ step, which is what normalization and initialization do.
 
 The old default (small random weights) does not scale to depth. The
 principled approaches set the initial weight *variance* so that the
-activations' variance stays roughly constant through the layers —
+activations' variance stays roughly constant through the layers:
 **Xavier/Glorot** (for tanh/sigmoid-like activations) and **He**
 (for ReLU) initialization. The idea: choose the starting scale so
 signal neither amplifies nor attenuates as it passes through the
@@ -54,14 +54,14 @@ scale drifted:
   no dependence on the batch). This is what
   [transformers](/ai-ml/concepts/transformers) use, because sequence
   models have variable batch structure and cannot rely on batch
-  statistics — the reason LayerNorm is the default in modern
+  statistics, the reason LayerNorm is the default in modern
   architectures.
 - **RMSNorm** (a simplified LayerNorm): cheaper, and now common in
   large language models.
 
 The intuition: normalization keeps every layer in the "well-behaved"
 regime (activations neither exploding nor vanishing), so gradients
-flow and training is stable — the reason it became standard.
+flow and training is stable, the reason it became standard.
 
 ## Residual connections (the third stabilizer)
 
@@ -70,7 +70,7 @@ a layer's output is *added* to its input rather than replacing it)
 give gradients a direct path backward, which is what makes *very*
 deep networks (ResNets, transformers, hundreds of layers) trainable.
 Where normalization keeps activations scaled, residuals keep the
-gradient path short — together they are why "deep" stopped being a
+gradient path short: together they are why "deep" stopped being a
 barrier.
 
 ## Why it matters
@@ -79,7 +79,7 @@ These are the techniques that turned "deep networks are hard to
 train" into "deep networks train reliably", and they are why the
 architectures that dominate today (transformers, ResNets) use them by
 default. The lesson: **architecture alone is not enough; training
-stability is engineered** — through initialization, normalization,
+stability is engineered**, through initialization, normalization,
 and skip connections, the unglamorous engineering that makes the
 glamorous models work.
 

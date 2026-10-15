@@ -29,7 +29,7 @@ the word "balanced" means in balanced trees.
 [recursion](/dsa/patterns/recursion-and-math) applies in full: trust
 the call, do not re-verify, and do not call twice on the same half.
 The "one call, used twice" rule is the difference between O(log n) and
-O(n) in [fast exponentiation](/dsa/patterns/recursion-and-math/problems/pow-x-n-recursive),
+O(n) in [fast exponentiation](/dsa/patterns/recursion-and-math/pow-x-n-recursive),
 and between O(n log n) and O(n²) in naive recursion-tree merges.
 
 **Combine** the results of the halves. This is where the actual
@@ -89,7 +89,7 @@ quadratic count.
 
 The same shape answers "count pairs (i, j) with a[i] + a[j] > x", "count
 smaller elements after self" (which this site covers with a
-[Fenwick tree](/dsa/patterns/range-query-structures/problems/count-of-smaller-numbers-after-self),
+[Fenwick tree](/dsa/patterns/range-query-structures/count-of-smaller-numbers-after-self),
 the other tool for the same question), and reverse-pair counting. The
 recognition move is: **if sorting the halves would make the pair question
 trivial, and you were going to need sorted data anyway, merge-sort with

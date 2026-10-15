@@ -5,8 +5,8 @@ summary: "The dynamic array: contiguous memory, amortized growth, and the invali
 
 `std::vector` is the default container, and the reason is physics:
 **contiguous memory**, which means index arithmetic (element i at
-`data + i * size`), which means O(1) access, and — the part that
-dominates real performance —
+`data + i * size`), which means O(1) access, and, the part that
+dominates real performance,
 [prefetching](https://en.wikipedia.org/wiki/Cache_prefetching): the
 CPU loads the neighbors of whatever you touch, so a vector walk is
 sequential memory at full memory bandwidth, while a pointer-chasing
@@ -33,7 +33,7 @@ v.push_back(5);                    // size 5: REALLOCATION, capacity ~8
 
 ## The rules that matter
 
-**Growth**: `push_back` is amortized O(1) — a single push can
+**Growth**: `push_back` is amortized O(1), a single push can
 reallocate (copy everything), but n pushes copy O(n) total, the
 [geometric-growth](https://en.wikipedia.org/wiki/Dynamic_array#Geometric_expansion)
 argument. **Know the size? Say it**: `v.reserve(n)` before a loop
@@ -46,14 +46,14 @@ single highest-leverage vector optimization.
   pointers, and references** (the buffer moved).
 - `erase`/`insert` in the middle **invalidates everything at or
   after the position** (elements shifted).
-- The silent killer: `for (auto& x : v) v.push_back(...)` — the
+- The silent killer: `for (auto& x : v) v.push_back(...)`, the
   range's end iterator is captured *before* the loop, but the
   buffer moves *inside* it, and the loop reads freed memory.
   Growing inside iteration over the vector requires index-based
   loops (`for (size_t i = 0; i < v.size(); ++i)`) with the size
   re-checked each iteration.
 
-**The erase idiom**: `v.erase(std::remove_if(...), v.end())` —
+**The erase idiom**: `v.erase(std::remove_if(...), v.end())`,
 [Erase-remove](https://en.wikipedia.org/wiki/Erase%E2%80%93remove_idiom):
 `remove_if` shifts the kept elements forward and returns the new
 logical end, `erase` truncates. O(n) with no per-element shift,
@@ -86,7 +86,7 @@ std::sort(v.begin(), v.end());   // [sorting](/dsa/patterns/sorting-and-selectio
   refill (the allocation stays), which is usually what you want,
   and the memory-not-released surprise when you do not.
 - **The bool specialization**: `std::vector<bool>` is a *packed
-  bitset*, not an array of bools — `v[i]` returns a proxy, not a
+  bitset*, not an array of bools, `v[i]` returns a proxy, not a
   reference, and `&v[i]` does not exist. When you need a real
   array of bools, `std::vector<char>` (or `std::deque<bool>`) is
   the workaround; when you wanted the packing, you wanted

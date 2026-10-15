@@ -4,7 +4,7 @@ summary: "Measuring disparate impact, and making a model's decisions legible to 
 ---
 
 A model learns whatever its data encodes, and its data encodes the
-world's existing patterns — including the ones society has decided
+world's existing patterns, including the ones society has decided
 are unacceptable. **Fairness** is the discipline of measuring *whose
 outcomes differ* and deciding whether the difference is
 justified; **explainability** is the discipline of making a
@@ -17,7 +17,7 @@ lacks in the abstract.
 
 ## The fairness definitions, and their impossibility
 
-The measurement vocabulary — and the reason fairness is *hard*,
+The measurement vocabulary, and the reason fairness is *hard*,
 not just *underspecified*: several intuitive definitions are
 **mutually incompatible** (the
 [impossibility theorems](https://en.wikipedia.org/wiki/Fairness_(machine_learning)#Definitions))
@@ -38,7 +38,7 @@ which fairness*:
 
 The design consequence, and the honest thing to say out loud: **you
 cannot satisfy all of them at once**, so the *product* and *legal*
-context must pick — which is a *governance* decision (the
+context must pick, which is a *governance* decision (the
 [responsible-AI](/ai-ml/systems/responsible-ai-safety) page's
 territory), encoded as a metric the system is measured against,
 audited, and monitored. "We chose equal opportunity, and here is the
@@ -82,7 +82,7 @@ each needs its own mitigation:
 - **Post-processing** (adjust the *thresholds per group*: the
   direct way to hit equal-opportunity, at the cost of an explicit
   group-based rule, which is itself legally fraught in some
-  jurisdictions — the honest tension the design must surface, not
+  jurisdictions, the honest tension the design must surface, not
   hide).
 
 The systems point: the intervention's *placement* determines its
@@ -94,17 +94,17 @@ fair).
 
 - **Global explanations** ("what does this model rely on overall?"):
   feature importances, SHAP summaries, the surrogate-model
-  approach — for the model owner, the reviewer, and the
+  approach, for the model owner, the reviewer, and the
   governance record.
 - **Local explanations** ("why *this* decision?"): the
   [fraud](/system-design/hld/fraud-detection) block's reason code,
   the credit denial's adverse-action notice (a *legal requirement*
   in lending: the specific reasons), the "because you watched"
-  [surface](/system-design/hld/recommendation-system) — for the
+  [surface](/system-design/hld/recommendation-system), for the
   affected person, and this is the one that is a *product and legal
   requirement*, not a nice-to-have.
 - **Inherently interpretable models** (linear models, small trees,
-  rule lists): the alternative strategy — *choose a model you can
+  rule lists): the alternative strategy, *choose a model you can
   explain*, accepting lower accuracy, which for high-stakes,
   regulated decisions (credit, hiring, parole) is often the correct
   trade and the reason those domains still run
@@ -125,7 +125,7 @@ fair).
 - **Explanation production** (the serving path emits reasons, not
   just scores: the [fraud](/system-design/hld/fraud-detection)
   reason codes, the [recommendation](/system-design/hld/recommendation-system)
-  sources — the [API contract](/system-design/fundamentals/api-design)
+  sources, the [API contract](/system-design/fundamentals/api-design)
   carries them, and the explanation's *provenance* is part of the
   decision log).
 - **The governance loop** (the fairness metric chosen, audited,

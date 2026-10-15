@@ -5,8 +5,8 @@ summary: "Audit trails, approval workflows, and the records regulators and revie
 
 Model governance is the **organizational discipline** that keeps
 deployed models *accountable*: who approved this model, on what
-evidence, with what oversight, and — the part that makes it
-*engineering* — the **records** that answer those questions after
+evidence, with what oversight, and, the part that makes it
+*engineering*, the **records** that answer those questions after
 the fact. It sits at the intersection of the
 [responsible-AI](/ai-ml/systems/responsible-ai-safety)
 practices (the guardrails and evals), the
@@ -21,7 +21,7 @@ version, on this date."
 
 - **The model card** (the *documentation* per model: what it does,
   what data it was trained on, its known limitations, its fairness
-  metrics, its intended use — the [documentation
+  metrics, its intended use, the [documentation
   discipline](/system-design/fundamentals/api-design), for models,
   and increasingly a *regulatory requirement* (the EU AI Act's
   high-risk documentation, and the general expectation that a
@@ -29,23 +29,23 @@ version, on this date."
 - **The approval record** (who signed off, on what evidence: the
   [eval results](/ai-ml/systems/evaluating-llm-systems), the
   [fairness audit](/ai-ml/systems/bias-fairness-explainability),
-  the risk assessment — the [change-management](/system-design/fundamentals/reliability-engineering)
+  the risk assessment, the [change-management](/system-design/fundamentals/reliability-engineering)
   record, model-shaped, and the *human gate* the
   [responsible-AI](/ai-ml/systems/responsible-ai-safety) page
   requires for high-stakes models).
 - **The lineage** (the full provenance: data, code, config,
   [reproducibility](/ai-ml/systems/reproducibility-metadata)
-  metadata — the *technical* record governance *depends on*, which
+  metadata, the *technical* record governance *depends on*, which
   is why governance and MLOps are not separable: governance without
   lineage is paperwork).
 - **The monitoring record** (the model's *ongoing* behavior: the
   [drift](/ai-ml/systems/model-monitoring-drift) reports, the
-  fairness monitoring, the incidents — because governance is not a
+  fairness monitoring, the incidents, because governance is not a
   *launch* gate, it is a *standing* obligation: a model that was
   fair at launch and biased a year later is a governance failure).
 - **The decision log** (which model scored which decision, with
   what explanation: the [fraud-detection
-  pattern](/system-design/hld/fraud-detection), generalized — the
+  pattern](/system-design/hld/fraud-detection), generalized, the
   record that answers "why did the system decide this about me",
   the [explainability](/ai-ml/systems/bias-fairness-explainability)
   requirement, *retained*).
@@ -76,7 +76,7 @@ The regulatory environment is tightening (the EU AI Act, sector
 rules (lending, hiring, health), and the general expectation that
 automated decisions are *explainable and appealable*), which means
 governance moves from "best practice" to "requirement" for a
-growing set of models — and the engineering that makes it
+growing set of models, and the engineering that makes it
 *survivable* (not a bottleneck) is exactly the machinery above:
 lineage that is *already recorded* for reproducibility (governance
 *reads* it), model cards generated *from* the metadata (not written
@@ -84,7 +84,7 @@ by hand), audits that are *queries* over the registry (not manual
 reviews), and gates that are *automated checks* (not meetings).
 The teams that treat governance as *paperwork* find it slows them
 down; the teams that treat it as *records already produced by a
-good platform* find it nearly free — which is the page's point.
+good platform* find it nearly free, which is the page's point.
 
 ## Related concepts
 

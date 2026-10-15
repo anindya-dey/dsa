@@ -20,6 +20,17 @@ function loadMermaid(): Promise<MermaidApi> {
   return mermaidPromise;
 }
 
+// A short accessible name built from the diagram's own node labels, so a
+// screen reader announces what the figure shows instead of just "Diagram".
+function describeChart(chart: string): string {
+  const labels = Array.from(
+    chart.matchAll(/\w[[({]+"?([^\]"(){}|]+?)"?[\])}]+/g),
+    (match) => match[1].trim(),
+  ).filter(Boolean);
+  const unique = [...new Set(labels)].slice(0, 6);
+  return unique.length > 0 ? `Diagram: ${unique.join(", ")}` : "Diagram";
+}
+
 export function Mermaid({ chart }: { chart: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +76,7 @@ export function Mermaid({ chart }: { chart: string }) {
 
   return (
     <figure className="mermaid-figure not-prose">
-      <div ref={containerRef} role="img" aria-label="Diagram" />
+      <div ref={containerRef} role="img" aria-label={describeChart(chart)} />
     </figure>
   );
 }

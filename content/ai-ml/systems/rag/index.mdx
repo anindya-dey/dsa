@@ -6,7 +6,7 @@ summary: "Grounding generation in retrieved context: the retrieval/generation pi
 A large language model knows what it was trained on and nothing
 else: ask it about *your* documents, *last week's* data, or anything
 outside its training cut-off, and it will either say it does not
-know or — worse — **confidently make something up**. **Retrieval-
+know or, worse, **confidently make something up**. **Retrieval-
 Augmented Generation (RAG)** is the standard fix: before generating,
 *retrieve* relevant documents and put them *in the prompt*, so the
 model answers from the retrieved context rather than from memory.
@@ -44,18 +44,18 @@ RAG's quality problems are almost never "the LLM is bad": they are
 
 - **Retrieval miss** (the right chunk was not retrieved: the answer
   is not in the context, so the model either refuses or
-  hallucinates — the *most common* failure, and the reason
+  hallucinates, the *most common* failure, and the reason
   [chunking](/ai-ml/systems/chunking-indexing-strategies) and
   hybrid search dominate RAG quality work: you cannot generate from
   context you did not retrieve).
-- **Chunking damage** (the chunk split the answer in half — a
-  table's header in one chunk, its rows in another — so the
+- **Chunking damage** (the chunk split the answer in half, a
+  table's header in one chunk, its rows in another, so the
   retrieved context is *incomplete*: the
   [chunking page's](/ai-ml/systems/chunking-indexing-strategies)
   whole subject).
 - **Context overload** (too many chunks retrieved, the relevant one
   buried among noise, and the model distracted: "lost in the
-  middle" is a documented behavior — more context is *not* better,
+  middle" is a documented behavior, more context is *not* better,
   and the [rerank](/ai-ml/systems/rag) step exists to keep
   the *few* most relevant).
 - **The generation ignores the context** (the model answers from
@@ -67,7 +67,7 @@ RAG's quality problems are almost never "the LLM is bad": they are
 - **Stale index** (the documents changed, the index did not: the
   [freshness](/system-design/fundamentals/caching) problem, and the
   reason the offline pipeline is a *standing* system, not a one-time
-  job — the [re-indexing](/ai-ml/systems/chunking-indexing-strategies)
+  job, the [re-indexing](/ai-ml/systems/chunking-indexing-strategies)
   discipline).
 
 ## The design decisions
@@ -76,7 +76,7 @@ RAG's quality problems are almost never "the LLM is bad": they are
   keyword-only (exact, misses paraphrase), or **hybrid** (both,
   merged: the modern default, and the
   [search page's](/system-design/fundamentals/search-and-inverted-index)
-  hybrid argument) — plus **reranking** (a second, slower model
+  hybrid argument), plus **reranking** (a second, slower model
   scores the top ~100 retrieved chunks and keeps the top ~5: the
   *precision* stage after the *recall* stage, the
   [filter-then-refine](/system-design/fundamentals/geospatial-indexing)
@@ -89,11 +89,11 @@ RAG's quality problems are almost never "the LLM is bad": they are
 - **Citations and grounding** (the answer should cite *which chunk*
   it used: a *product* requirement (trust, verifiability) and a
   *quality* mechanism (a citation the user can check is a
-  hallucination the system can catch) — the
+  hallucination the system can catch), the
   [evaluation page's](/ai-ml/systems/evaluating-llm-systems)
   groundedness, surfaced to the user).
 - **Access control** (retrieval must respect permissions: the
-  user's search must only return *their* documents — the
+  user's search must only return *their* documents, the
   [multi-tenancy](/system-design/fundamentals/multi-tenancy-and-data-residency)
   discipline, and a real RAG vulnerability when the vector store
   ignores authz: the *filtered-search* problem, with security

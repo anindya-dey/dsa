@@ -38,7 +38,7 @@ noisy, [Snorkel](https://en.wikipedia.org/wiki/Snorkel_(software))-shaped),
 and **human annotation** (the accurate, expensive, slow option with
 its own pipeline: guidelines, inter-annotator agreement, and the
 [quality control](/system-design/fundamentals/observability) of the
-annotators themselves — see
+annotators themselves: see
 [data labeling](/ai-ml/systems/data-labeling-annotation)).
 
 The supervised systems design consequences: a
@@ -47,7 +47,7 @@ The supervised systems design consequences: a
 [weeks-late chargeback](/system-design/hld/fraud-detection) problem),
 an [evaluation](/system-design/fundamentals/reliability-engineering)
 discipline (held-out data, metrics, and the honest **leakage**
-traps — a feature computed *using* the answer is the classic
+traps, a feature computed *using* the answer is the classic
 corruption), and the bias in **logged-outcome labels** (you only
 have labels for what the system *did* show: the
 [feedback loop](/system-design/hld/recommendation-system) problem,
@@ -80,7 +80,7 @@ drift, and everything downstream drifts with them
 ## Reinforcement: learning inside the product
 
 Reinforcement learning (RL: recommend, observe the reward, update
-the policy — the [bandit](https://en.wikipedia.org/wiki/Multi-armed_bandit)
+the policy, the [bandit](https://en.wikipedia.org/wiki/Multi-armed_bandit)
 family is the industrial subset) reverses the direction: instead of
 learning from a fixed dataset, the *system interacts* to generate
 its own data. The contract: actions, rewards, and the exploration
@@ -97,7 +97,7 @@ The systems consequences are the deepest of the three:
 - **Logging the counterfactual** (the reward *received* for the
   action *taken*: the [propensity](https://en.wikipedia.org/wiki/Importance_sampling)
   machinery that makes the biased interaction log usable for
-  learning — the
+  learning, the
   [A/B](/system-design/fundamentals/reliability-engineering)
   infrastructure is the *same* infrastructure, which is why every
   serious experimentation platform is also an RL platform).
@@ -117,8 +117,8 @@ it does *not* exist, the labeling pipeline *is* the project (see
 [data labeling](/ai-ml/systems/data-labeling-annotation)). If no label
 can exist ("what *is* the right assortment?"), unsupervised or RL,
 and the *evaluation* problem (how do you know it is working) is
-your real design problem. That question — answerable in five
-minutes, architectural in its consequences — is the single most
+your real design problem. That question, answerable in five
+minutes, architectural in its consequences, is the single most
 useful thing this page teaches.
 
 ## Related concepts
