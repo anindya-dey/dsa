@@ -5,7 +5,6 @@ import { RoadmapSection } from "@/components/roadmap-section";
 import { TopicList } from "@/components/topic-list";
 import {
   getAiMlGroupsByTrack,
-  getAiMlTopicsByTrack,
   aiMlTrackDescriptions,
   aiMlTrackTitles,
 } from "@/lib/catalog/ai-ml";
@@ -32,11 +31,7 @@ export default function AiMlRoadmapPage() {
 
       <div className="space-y-10 lg:space-y-14">
         {TRACKS.map((track, index) => {
-          const topics = getAiMlTopicsByTrack(track);
           const groups = getAiMlGroupsByTrack(track);
-          const ready = topics.filter((topic) =>
-            topicHasContent(track, topic.slug),
-          ).length;
 
           return (
             <RoadmapSection
@@ -45,8 +40,6 @@ export default function AiMlRoadmapPage() {
               index={index + 1}
               title={aiMlTrackTitles[track]}
               description={aiMlTrackDescriptions[track]}
-              ready={ready}
-              total={topics.length}
             >
               <div className="space-y-8">
                 {groups.map((group) => (

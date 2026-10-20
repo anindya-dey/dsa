@@ -94,24 +94,28 @@ The [cheat sheet](https://dsa.anindyadey.com/dsa/cheat-sheet) maps problem
 clues to all 29 patterns. Problems link to LeetCode where an equivalent
 exists.
 
-### System Design: three tracks (97 topics)
+### System Design: three tracks (100 topics)
 
-- **Fundamentals** (43 topics): Scalability & Performance, Data & Storage
+- **Fundamentals** (44 topics): Scalability & Performance, Data & Storage
   (including replication, partitioning, and probabilistic data
   structures), Communication & APIs, Distributed Systems, Reliability &
-  Operations, Security, and Platform Engineering.
+  Operations (including deployment strategies), Security, and Platform
+  Engineering.
 - **Low-Level Design** (21 topics): classic object-modeling problems such
   as parking lot, elevator, chess, caches, schedulers, ledgers, undo/redo.
-- **High-Level Design** (33 topics): Infrastructure Components (load
-  balancers, CDNs, message queues, storage) and Product Case Studies (URL
-  shortener, chat, feeds, payments, maps, exchanges).
+- **High-Level Design** (35 topics): Infrastructure Components (load
+  balancers, CDNs, message queues, storage, lock services) and Product
+  Case Studies (URL shortener, chat, feeds, payments, maps, exchanges,
+  search engines).
 
-### AI/ML: two tracks (106 topics)
+### AI/ML: two tracks (110 topics)
 
-- **Concepts** (39 topics): how models work, in plain language and
-  diagrams rather than derivations. Foundations of learning, classical
-  models, neural networks, architectures (CNNs, RNNs, transformers,
-  diffusion, MoE), NLP, vision, speech and multimodal, RL and safety.
+- **Concepts** (43 topics): how models work, in plain language and
+  diagrams rather than derivations. Foundations of learning (including
+  self-supervised learning), classical models (including time-series
+  forecasting), neural networks, architectures (CNNs, RNNs, transformers,
+  diffusion, MoE), NLP, vision, speech and multimodal, RL (including
+  bandits) and safety.
 - **Systems** (67 topics): the engineering side. The learning problem,
   data, serving state, evaluation and operations, serving and inference,
   GenAI/LLM systems, MLOps and platform, case studies, and code-level

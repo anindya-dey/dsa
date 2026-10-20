@@ -1,0 +1,110 @@
+---
+title: "Data Augmentation"
+summary: "Manufacturing training examples from the data you already have: flips, crops, and masks, and why a bigger dataset can be free."
+---
+
+The most reliable way to make a model generalize better is not a cleverer
+architecture. It is *more data*. Data augmentation is the shortcut: take
+the dataset you have and manufacture new training examples from it,
+with transforms that change the pixels or tokens without changing what
+the example *means*. A photo of a dog, rotated 15 degrees, cropped a
+little, and shot with different lighting, is four more dog photos for
+free.
+
+The reason it works is the same reason
+[regularization](/ai-ml/concepts/regularization) works: it is harder to
+memorize. If the model must label the same dog correct at every angle,
+it cannot learn "this exact photo is a dog". It has to learn the shape,
+the texture, the *concept*, which is what you wanted all along.
+Augmentation attacks [overfitting](/ai-ml/concepts/overfitting-and-bias-variance)
+from the data side instead of the loss-function side.
+
+## The rule that governs every transform
+
+Augmentation has one law: **the transform must preserve the label**.
+Everything else is detail.
+
+When it holds, you have free data. When it quietly breaks, you have
+labeled garbage. The classic break in vision: flipping digits
+horizontally turns a `9` into something that looks like a `6`-ish shape
+to a model trained on unflipped digits. Flipping a page of English text
+breaks it completely. Meanwhile flipping a landscape photo changes
+nothing, because "mountain on the left" is not part of "mountain". The
+transform is legal or illegal *per problem*, not in general, and the
+question to ask of each one is: does this change what a human would
+answer?
+
+## The standard transforms, by domain
+
+**Vision** has the richest toolbox, because photographs vary in ways
+that never change their meaning: crops (the object may sit anywhere in
+the frame, so learn it everywhere), flips and small rotations, color
+jitter (brightness, saturation, hue, because lighting is not the
+label), and noise or blur. The aggressive end, *mixup* (blend two images
+and their labels) and *cutout* (blank out a patch, so the model cannot
+fixate on one feature), deliberately destroy detail, and works because
+it forces attention onto what survives.
+
+**Text** has a harder job, because words are discrete and their meaning
+is brittle. Valid moves: replacing a word with a
+[synonym](/ai-ml/concepts/word-embeddings) (the label usually survives),
+*back-translation* (translate to French and back, getting a paraphrase),
+and swapping sentence order in documents where order is not the label.
+Illegal moves: dropping the word that carries the sentiment, or anything
+that turns "not good" into "good".
+
+**Tabular and time series** augmentations are the most constrained,
+because rows are not interchangeable: the common choices are small
+noise on numeric features, interpolations between neighbors, and window
+slicing for sequences. When the label depends on one precise value, most
+transforms break it, which is why
+[time series](/ai-ml/concepts/time-series-forecasting) relies on
+windowing rather than warping.
+
+## Where it sits in the pipeline
+
+Augmentation is a *training-time* concern, and that placement is its
+superpower: it happens in the data loading path, costs nothing at
+inference, and needs no serving change. Each epoch sees a different
+variant of each example, which is what makes it act like infinite data
+rather than a bigger fixed dataset. The dataset is effectively
+resampled, not enlarged on disk: 10,000 photos trained for 50 epochs can
+behave like hundreds of thousands of distinct ones.
+
+The same machinery has a second life at *evaluation time*: test-time
+augmentation averages predictions over several transforms of one input,
+trading a little inference cost for a less noisy answer, a small
+[ensemble](/ai-ml/concepts/decision-trees-and-ensembles) of shifted
+views rather than of models.
+
+## When it stops working
+
+- **The model learns the transform**: aggressive augmentation, applied
+  at random, can become a puzzle the model solves ("blur this much,
+  guess the rest") instead of the task. The fix is moderation and
+  matching transforms to the domain.
+- **Distribution mismatch**: if training images are cropped tighter than
+  real inputs ever are, the model spends capacity learning to undo your
+  transform. Augment toward the variety the *test* data has, not the
+  variety you wish it had.
+- **The transform leaks the label**: in medical imaging, a disease marker
+  may correlate with where the hospital crops the image, so random crops
+  corrupt the label. Domain knowledge is the only defense.
+- **You needed real data instead**: augmentation makes the most of what
+  you have; it does not create coverage for cases you never saw. A
+  class with two examples cannot be augmented into a robust one, and the
+  honest fix is [labeling](/ai-ml/systems/data-labeling-annotation) or
+  collection.
+
+## Related concepts
+
+- [Overfitting, Underfitting & Bias-Variance](/ai-ml/concepts/overfitting-and-bias-variance)
+  is the problem augmentation attacks from the data side.
+- [Regularization](/ai-ml/concepts/regularization) is the same goal
+  attacked from the loss side; the two compose.
+- [Self-Supervised & Contrastive Learning](/ai-ml/concepts/self-supervised-learning)
+  makes augmentation the *engine* of training, not a helper.
+- [Image Classification](/ai-ml/concepts/image-classification) is the
+  domain where every transform above was invented.
+- [Data Labeling & Annotation](/ai-ml/systems/data-labeling-annotation)
+  is the alternative when augmentation cannot manufacture coverage.

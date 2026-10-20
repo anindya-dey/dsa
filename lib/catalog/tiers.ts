@@ -92,6 +92,7 @@ const TIERS: Record<string, Tier> = {
   "zero-trust-supply-chain": "advanced",
   "cloud-cost-finops": "intermediate",
   "testing-at-scale": "advanced",
+  "deployment-strategies": "intermediate",
 
   // LLD
   "parking-lot": "foundational",
@@ -130,6 +131,7 @@ const TIERS: Record<string, Tier> = {
   "distributed-file-storage": "advanced",
   "metrics-monitoring-system": "advanced",
   "log-aggregation-system": "advanced",
+  "distributed-lock-service": "advanced",
   "web-crawler": "advanced",
   "rate-limiter-distributed": "advanced",
   "chat-application": "advanced",
@@ -150,6 +152,7 @@ const TIERS: Record<string, Tier> = {
   "ad-click-aggregator": "advanced",
   "webhook-delivery": "advanced",
   "large-scale-migration": "advanced",
+  "search-engine": "advanced",
 
   // AI/ML Systems: The Learning Problem
   "ml-system-design-basics": "foundational",
@@ -238,11 +241,14 @@ const TIERS: Record<string, Tier> = {
   // AI/ML Concepts: more foundations
   regularization: "intermediate",
   "curse-of-dimensionality": "intermediate",
+  "data-augmentation": "intermediate",
+  "self-supervised-learning": "advanced",
   // AI/ML Concepts: Classical Models
   "decision-trees-and-ensembles": "intermediate",
   "gradient-boosting": "intermediate",
   "support-vector-machines": "intermediate",
   "clustering-and-knn": "intermediate",
+  "time-series-forecasting": "intermediate",
   // AI/ML Concepts: Neural Networks
   "perceptrons-and-mlps": "foundational",
   "activation-functions": "foundational",
@@ -273,6 +279,7 @@ const TIERS: Record<string, Tier> = {
   "vision-language-models": "advanced",
   // AI/ML Concepts: Reinforcement Learning & Safety
   "reinforcement-learning-basics": "intermediate",
+  "bandits-and-exploration": "intermediate",
   rlhf: "advanced",
   interpretability: "intermediate",
   "alignment-and-safety": "advanced",

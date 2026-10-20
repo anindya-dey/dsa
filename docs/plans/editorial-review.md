@@ -1,6 +1,6 @@
 # Editorial review plan
 
-A careful, article-by-article read of the whole site: 375 articles,
+A careful, article-by-article read of the whole site: 382 articles,
 about 247,000 words of prose. Mechanical problems (links, compiling code,
 Mermaid syntax, em-dashes, titles, tiers) are already caught automatically
 by `pnpm check:content` and `pnpm check:cpp`. This plan covers what those
@@ -225,4 +225,4 @@ were found.
 
 | Found in | Finding | Status |
 | --- | --- | --- |
-| (none yet) | | |
+| Batch 9 (gap fill) | Seven articles were added after this plan was written and are not in any batch above: `deployment-strategies`, `distributed-lock-service`, `search-engine`, `data-augmentation`, `self-supervised-learning`, `time-series-forecasting`, `bandits-and-exploration`. Review them with the same checklist, as a batch of their own. | todo |

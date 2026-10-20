@@ -1,0 +1,115 @@
+---
+title: "Time-Series Forecasting"
+summary: "Predicting the next value from its own history: trend, seasonality, and why the naive baseline is hard to beat."
+---
+
+A time series is any measurement taken in order over time: hourly
+traffic, daily sales, a stock price every second. Forecasting asks the
+narrow, brutal question: what will the *next* values be, given only the
+past ones? It is the rare ML setting where time is the whole game,
+because the past is all you have and the future refuses to hold still
+while you look at it.
+
+The field's most important fact, learned by everyone who tries it: **the
+naive baseline is hard to beat**. "Tomorrow equals today" (or, with
+weekly patterns, "next Tuesday equals this Tuesday") is a forecast with
+zero parameters, and sophisticated models regularly lose to it. Any
+model you build has to justify its existence *against* that baseline,
+and most don't.
+
+## The vocabulary: what a series is made of
+
+Most series decompose into three behaviors:
+
+- **Trend**: the long drift, up or down.
+- **Seasonality**: repeating patterns with a fixed period (daily, weekly,
+  yearly). Traffic peaks every morning; retail spikes every December.
+- **Remainder**: the noise left over, hopefully random.
+
+A forecast is a bet that these components *persist*. Trend and
+seasonality usually do, for a while, and that persistence is exactly
+what a model exploits. When it stops persisting, the series has
+**changed regime**, and every method here fails at once, which is the
+moment this becomes less a modeling problem and more a
+[drift](/ai-ml/systems/concept-drift-retraining) problem.
+
+## The classical toolkit
+
+**Exponential smoothing**, and its grown-up version Holt-Winters, is
+statistics for a series: an exponentially weighted moving average that
+*is* the model, extended with explicit trend and seasonality terms.
+Interpretable, cheap, and strong on stable series. If you have nothing
+but a few years of history, start here.
+
+**ARIMA** is the same idea through autoregression: predict the next
+value from a weighted mix of recent values (the AR part) and recent
+*errors* (the MA part), after differencing away the trend. Fitting the
+orders is its own art. It deserves respect for one structural insight:
+it forces you to decide whether your series is *stationary* (its
+statistics don't drift), because nothing works honestly on a series
+that keeps changing what it is.
+
+**Gradient boosting on lag features** turns forecasting into ordinary
+supervised learning: the features are lags, rolling means, day-of-week,
+holiday flags, and a tree ensemble
+[regresses](/ai-ml/concepts/gradient-boosting) the next value off them.
+This is the default winner on messy real-world series with external
+signals (promotions, weather), because trees absorb calendar effects
+and interactions without you specifying the seasonality by hand.
+
+**Neural sequence models** (deep
+[recurrent](/ai-ml/concepts/recurrent-neural-networks) or transformer
+forecasts) are the frontier option: strongest when you have *many
+related* series to learn from together (every store, every SKU), where
+the network learns the shared seasonality and borrows strength across
+series, or when the series is very long and high-dimensional. On a
+single short series, they overfit and lose to smoothing.
+
+## The evaluation traps
+
+Forecasting's evaluation is where good models go to die.
+
+**You cannot split randomly.** A random
+[train/validation split](/ai-ml/concepts/train-validation-test) leaks
+the future into the training set: the model trains on October to predict
+September, and looks brilliant, and ships broken. Splits must be *in
+time*: train on the past, validate on the future, and use
+walk-forward validation (train to month k, predict month k+1, advance k,
+repeat) so the evaluation matches deployment.
+
+**The horizon is a choice, and per-horizon skill differs.** A model
+may be excellent at tomorrow and hopeless at next month, because each
+step ahead compounds error. Score each horizon separately, and be
+suspicious of any single-number summary.
+
+**Metrics punish asymmetry differently.** MAE treats every miss
+proportionally; squared-error metrics punish big misses; MAPE
+blows up on small actual values. A forecast that is "right most days,
+catastrophically wrong on holidays" looks great under one metric and
+gets you paged under another.
+
+## The honest failure mode
+
+Every classical method assumes the *process* keeps behaving. Breaks in
+the series (a product launch, a pandemic, a silent tracking change)
+invalidate the past, and no amount of smoothing recovers. The mature
+response is operational: monitor the residuals like a
+[monitoring](/ai-ml/systems/model-monitoring-drift) system watches
+inputs, detect when the errors stop looking like the training errors,
+and plan to re-fit on shorter windows, because in a drifting world,
+*recent* history is the only true history.
+
+## Related concepts
+
+- [Train, Validation & Test](/ai-ml/concepts/train-validation-test) is
+  the split discipline, reinterpreted as "in time only".
+- [Gradient Boosting](/ai-ml/concepts/gradient-boosting) is the
+  tabular workhorse behind the lag-feature approach.
+- [Recurrent Neural Networks](/ai-ml/concepts/recurrent-neural-networks)
+  are the sequence-native architecture for long series.
+- [Concept Drift & Retraining](/ai-ml/systems/concept-drift-retraining)
+  is what to do when the past stops predicting the future.
+- [Model Monitoring & Data Drift](/ai-ml/systems/model-monitoring-drift)
+  is the residual-watching that catches regime change in production.
+- [Data Augmentation](/ai-ml/concepts/data-augmentation) covers why
+  sequence transforms must respect order.

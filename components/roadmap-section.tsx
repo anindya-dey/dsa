@@ -5,8 +5,6 @@ interface RoadmapSectionProps {
   index: number;
   title: string;
   description?: string;
-  ready: number;
-  total: number;
   children: ReactNode;
 }
 
@@ -15,12 +13,8 @@ export function RoadmapSection({
   index,
   title,
   description,
-  ready,
-  total,
   children,
 }: RoadmapSectionProps) {
-  const percent = total === 0 ? 0 : Math.round((ready / total) * 100);
-
   return (
     <section
       aria-labelledby={`${id}-title`}
@@ -43,20 +37,6 @@ export function RoadmapSection({
             {description}
           </p>
         )}
-        <div className="mt-3 flex items-center gap-3">
-          <div
-            className="h-1 w-24 overflow-hidden rounded-full bg-line"
-            role="presentation"
-          >
-            <div
-              className="h-full rounded-full bg-accent"
-              style={{ width: `${percent}%` }}
-            />
-          </div>
-          <span className="font-mono text-[11px] text-ink-faint">
-            {ready}/{total} ready
-          </span>
-        </div>
       </div>
 
       <div className="mt-3 lg:mt-0">{children}</div>

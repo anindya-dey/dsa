@@ -60,8 +60,6 @@ export default function DsaRoadmapPage() {
               id={`phase-${phase}`}
               index={phase}
               title={dsaPhaseTitles[phase]}
-              ready={items.filter((item) => item.available).length}
-              total={items.length}
             >
               <TopicList items={items} />
             </RoadmapSection>

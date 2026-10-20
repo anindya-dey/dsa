@@ -1,0 +1,131 @@
+---
+title: "Multi-Armed Bandits & Exploration"
+summary: "Choosing under uncertainty with partial feedback: the exploration/exploitation trade behind ranking and experimentation."
+---
+
+You have ten headlines and one slot on the front page. Which do you show?
+You could run an [A/B test](/ai-ml/systems/ab-testing-experimentation):
+split traffic evenly, wait two weeks, and promote the winner. Or you
+could watch clicks as they happen: try each headline a little, keep
+whichever does best in front of more readers, and adjust continuously.
+That second option is a **multi-armed bandit**, and the difference is
+what it does with the losers of the world: it stops showing them while
+it still has the chance to show something better.
+
+The name comes from casinos: rows of slot machines ("one-armed
+bandits"), each with an unknown payout rate. You have a budget of plays.
+Do you stick with the machine that has paid best so far, or try others
+in case one is better? [Reinforcement
+learning](/ai-ml/concepts/reinforcement-learning-basics) calls this
+**exploration versus exploitation**, and the bandit is its cleanest
+form: one decision, repeated, with no long-game strategy complicating
+it. What makes the problem hard is **partial feedback**: you see the
+reward only for the arm you pulled. The nine headlines you did not show
+might have done better, and you will never know.
+
+## The problem, formally
+
+A bandit is `k` arms with unknown average rewards. Each round: pull an
+arm, observe its reward. Maximize the total over all rounds. The gap
+between your accumulated reward and the best arm's is **regret**, and
+regret is the honest measure: a good policy does not pick the right arm
+immediately, it *converges* to it while wasting few plays on bad arms.
+
+The tension is provable: commit to the current favorite too early and
+you may lock in a mediocre arm forever (no exploration); keep sampling
+everything forever and you keep paying for known-bad arms (no
+exploitation). Every policy is a rule for balancing those two errors.
+
+## The classic policies
+
+**Epsilon-greedy** is the policy you would write yourself: exploit the
+best-known arm, except with probability ε, try a random one. Simple,
+and it wastes exploration uniformly on *known-bad* arms forever, which
+is why it is the baseline rather than the answer.
+
+**Upper Confidence Bound (UCB)** fixes that waste with a principle:
+**optimism under uncertainty**. Score each arm as "best it could
+plausibly be, given what I have seen": an arm tried rarely has a wide
+plausibility interval, so its *upper* bound stays high, and it keeps
+getting a chance until the data narrows. Arms proven bad drop out on
+their own. Play the arm with the highest upper bound, and exploration
+goes exactly where uncertainty lives, the policy that earns confidence
+instead of assuming it.
+
+**Thompson sampling** takes the Bayesian route: keep a probability
+distribution over each arm's reward, sample one plausible value per arm
+per round, and play the arm whose *sampled* value is highest. Uncertain
+arms produce wildly varying samples, so they keep occasionally winning;
+well-measured arms win exactly as often as they are actually best. It
+is a small amount of bookkeeping with excellent empirical behavior,
+and the one most production systems land on.
+
+## Contextual bandits
+
+The plain bandit assumes everyone is the same, which no audience is.
+The **contextual bandit** sees a context (the user, the query, the
+device) before choosing, and learns a policy from context to arm.
+"Show the sports headline to sports readers" is not learnable by a
+context-free bandit. This is the bandit that matches reality, and it is
+no longer simple statistics: the arm-selection function is a model, a
+[regression](/ai-ml/concepts/linear-and-logistic-regression) or an
+ensemble, trained on (context, arm, reward) logs.
+
+Contextual bandits are quietly everywhere:
+
+- **News and feed ranking**: articles are arms, the user is context,
+  the click is the reward, and the
+  [recommendation system](/system-design/hld/recommendation-system) is
+  the bandit with a warehouse behind it.
+- **Ad and offer selection**: the [CTR-ranking](/ai-ml/systems/ctr-ad-ranking)
+  world, where every impression is a pull.
+- **Experimentation that never ends**: A/B tests end; bandits adapt, and
+  on slow-moving questions (which plan should the pricing page lead
+  with?) the always-on bandit is the better instrument.
+
+## Bandits versus A/B tests
+
+The choice is about what you want to know.
+
+An A/B test buys *statistical knowledge*: a clean, unbiased answer to
+"which arm is better", with confidence, for a fixed cost in traffic.
+A bandit buys *accumulated reward*: more total value during the
+experiment, because it stops spending traffic on losers, at the price
+of a messier answer (the assignment was adaptive, so the estimate is
+biased toward the arms you explored early). The rule of thumb: run A/B
+when the decision needs to be *proven* (a launch, a headline change for
+a big event) and a bandit when the decision must keep being *made*
+(ongoing personalization, continuous content rotation). And note the
+structural trap: adaptive assignment can bias the very metrics you
+wanted to compare, the reason serious A/B analysis is randomized and
+the reason bandit logs are analyzed with bandit-aware methods, not
+naive averages.
+
+## What goes wrong in production
+
+- **Delayed feedback**: rewards that arrive hours later (a purchase) make
+  every policy over-explore in the meantime, because unobserved rewards
+  look like zero.
+- **Non-stationary arms**: yesterday's winning headline is boring today.
+  The fix is discounting or sliding windows, so the bandit *forgets*,
+  or you have rebuilt
+  [drift](/ai-ml/systems/concept-drift-retraining) the hard way.
+- **Rich-get-richer**: exploitation collapses diversity, feedback loops
+  entrench one arm, and the system stops learning anything at all.
+- **Reward design**: "clicks" is not "value"; optimizing the first made
+  every homepage in the world worse, the same
+  [reward-design](/ai-ml/concepts/reinforcement-learning-basics) trap
+  RLHF exists to manage.
+
+## Related concepts
+
+- [Reinforcement Learning Basics](/ai-ml/concepts/reinforcement-learning-basics)
+  is the full problem, of which the bandit is the stateless core.
+- [A/B Testing & Experimentation](/ai-ml/systems/ab-testing-experimentation)
+  is the fixed-horizon alternative, and when to prefer it.
+- [Design a Recommendation System](/system-design/hld/recommendation-system)
+  is the contextual bandit at production scale.
+- [Design a CTR / Ad Ranking System](/ai-ml/systems/ctr-ad-ranking)
+  is the bandit's biggest deployment arena.
+- [Concept Drift & Retraining](/ai-ml/systems/concept-drift-retraining)
+  is why bandits must forget.

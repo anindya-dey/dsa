@@ -332,6 +332,13 @@ export const systemDesignTopics: SystemDesignTopicMeta[] = [
     group: "Security",
     summary: "Assume-breach networking and securing the software you depend on.",
   },
+  {
+    slug: "deployment-strategies",
+    title: "Deployment Strategies (Blue-Green & Canary)",
+    track: "fundamentals",
+    group: "Reliability & Operations",
+    summary: "Rolling, blue-green, and canary releases: shipping a new version without a maintenance window or a bet-the-farm cutover.",
+  },
 
   // Low-Level Design
   {
@@ -546,6 +553,13 @@ export const systemDesignTopics: SystemDesignTopicMeta[] = [
     group: "Infrastructure Components",
     summary: "Low-latency prefix matching and ranking for typeahead search.",
   },
+  {
+    slug: "distributed-lock-service",
+    title: "Design a Distributed Lock Service",
+    track: "hld",
+    group: "Infrastructure Components",
+    summary: "ZooKeeper/etcd-style coordination: leases, fencing tokens, and why mutual exclusion over a flaky network is hard.",
+  },
 
   // High-Level Design: Product Case Studies
   {
@@ -694,6 +708,13 @@ export const systemDesignTopics: SystemDesignTopicMeta[] = [
     track: "hld",
     group: "Product Case Studies",
     summary: "Moving a live monolith to new services, piece by piece, without downtime.",
+  },
+  {
+    slug: "search-engine",
+    title: "Design a Search Engine",
+    track: "hld",
+    group: "Product Case Studies",
+    summary: "Crawl, index, rank: the end-to-end pipeline that answers queries against a web-scale corpus in milliseconds.",
   },
 
 ];

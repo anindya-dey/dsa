@@ -5,7 +5,6 @@ import { RoadmapSection } from "@/components/roadmap-section";
 import { TopicList } from "@/components/topic-list";
 import {
   getSystemDesignGroupsByTrack,
-  getSystemDesignTopicsByTrack,
   systemDesignTrackDescriptions,
   systemDesignTrackTitles,
 } from "@/lib/catalog/system-design";
@@ -32,11 +31,7 @@ export default function SystemDesignRoadmapPage() {
 
       <div className="space-y-10 lg:space-y-14">
         {TRACKS.map((track, index) => {
-          const topics = getSystemDesignTopicsByTrack(track);
           const groups = getSystemDesignGroupsByTrack(track);
-          const ready = topics.filter((topic) =>
-            topicHasContent(track, topic.slug),
-          ).length;
 
           return (
             <RoadmapSection
@@ -45,8 +40,6 @@ export default function SystemDesignRoadmapPage() {
               index={index + 1}
               title={systemDesignTrackTitles[track]}
               description={systemDesignTrackDescriptions[track]}
-              ready={ready}
-              total={topics.length}
             >
               <div className="space-y-8">
                 {groups.map((group) => (

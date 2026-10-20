@@ -493,6 +493,8 @@ export const aiMlTopics: AiMlTopicMeta[] = [
   { slug: "regularization", title: "Regularization", track: "concepts", group: "Foundations of Learning", summary: "Penalizing complexity to generalize better: L1, L2, dropout, and early stopping." },
   { slug: "train-validation-test", title: "Train, Validation & Test", track: "concepts", group: "Foundations of Learning", summary: "The three splits, why they must be separate, and cross-validation." },
   { slug: "curse-of-dimensionality", title: "The Curse of Dimensionality", track: "concepts", group: "Foundations of Learning", summary: "Why high-dimensional space behaves strangely, and what it means for models." },
+  { slug: "data-augmentation", title: "Data Augmentation", track: "concepts", group: "Foundations of Learning", summary: "Manufacturing training examples from the data you already have: flips, crops, and masks, and why a bigger dataset can be free." },
+  { slug: "self-supervised-learning", title: "Self-Supervised & Contrastive Learning", track: "concepts", group: "Foundations of Learning", summary: "Labels manufactured from the data itself: the pretext tasks and contrastive objectives behind modern pretraining." },
 
   // Concepts: Classical Models
   { slug: "linear-and-logistic-regression", title: "Linear & Logistic Regression", track: "concepts", group: "Classical Models", summary: "The two simplest models, and why they remain baselines worth knowing." },
@@ -500,6 +502,7 @@ export const aiMlTopics: AiMlTopicMeta[] = [
   { slug: "gradient-boosting", title: "Gradient Boosting", track: "concepts", group: "Classical Models", summary: "Building an ensemble one corrective tree at a time: the tabular-data workhorse." },
   { slug: "support-vector-machines", title: "Support Vector Machines", track: "concepts", group: "Classical Models", summary: "Finding the widest separating margin, and the kernel trick, conceptually." },
   { slug: "clustering-and-knn", title: "Clustering & k-Nearest Neighbors", track: "concepts", group: "Classical Models", summary: "Grouping by similarity, and predicting from the nearest examples." },
+  { slug: "time-series-forecasting", title: "Time-Series Forecasting", track: "concepts", group: "Classical Models", summary: "Predicting the next value from its own history: trend, seasonality, and why the naive baseline is hard to beat." },
 
   // Concepts: Neural Networks
   { slug: "perceptrons-and-mlps", title: "Perceptrons & Multilayer Perceptrons", track: "concepts", group: "Neural Networks", summary: "From a single neuron to stacked layers that learn non-linear functions." },
@@ -536,6 +539,7 @@ export const aiMlTopics: AiMlTopicMeta[] = [
 
   // Concepts: Reinforcement Learning & Safety
   { slug: "reinforcement-learning-basics", title: "Reinforcement Learning Basics", track: "concepts", group: "Reinforcement Learning & Safety", summary: "Agents, environments, and rewards: learning from interaction rather than labels." },
+  { slug: "bandits-and-exploration", title: "Multi-Armed Bandits & Exploration", track: "concepts", group: "Reinforcement Learning & Safety", summary: "Choosing under uncertainty with partial feedback: the exploration/exploitation trade behind ranking and experimentation." },
   { slug: "rlhf", title: "Reinforcement Learning from Human Feedback (RLHF)", track: "concepts", group: "Reinforcement Learning & Safety", summary: "Aligning models to human preferences: the training method behind instruction-following LLMs." },
   { slug: "interpretability", title: "Interpretability", track: "concepts", group: "Reinforcement Learning & Safety", summary: "Understanding what a model learned, and why it made a decision." },
   { slug: "alignment-and-safety", title: "Alignment & Safety", track: "concepts", group: "Reinforcement Learning & Safety", summary: "Keeping capable models helpful, honest, and harmless, conceptually." },

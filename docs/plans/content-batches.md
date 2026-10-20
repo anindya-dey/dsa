@@ -66,6 +66,7 @@ requirements and templates) and `2026-10-14-roadmap-review-decisions.md`
 | 7c | AI/ML: GenAI / LLM systems | — | LLM Serving · Prompt Engineering as a System Concern · RAG · Chunking & Indexing · Fine-Tuning vs Prompting vs RAG · LoRA/PET · Agents & Tool Use · Guardrails · Evaluating LLMs · Cost & Token Budgets · LLM Caching · LLM Gateways (12) | **done** |
 | 7d | AI/ML: MLOps, case studies, LLD | — | MLOps & CI/CD · Registry · Experiment Tracking · Reproducibility · Distributed Training · Hyperparameter Tuning · AutoML · Governance · Cost Optimization · Multi-Tenant Platforms · Backfills (11) + case studies (RAG chat, semantic search, serving platform, feature platform, CTR, moderation, LLM gateway, anomaly detection, training platform) + LLDs (feature store, registry, tokenizer, embedding cache, vector index, pipeline) | **done** |
 | 8 | C++ Toolkit reference track | 14 entries written (vector, string, unordered_map, map, deque, stack/queue, priority_queue, pair/tuple, optional, function/lambdas, algorithms, binary search, numeric, invalidation); "Related C++ tools" end sections added to 17 DSA pattern overviews; no inline links per the plan | — | **done** |
+| 9 | Roadmap gap fill (post-review) | — | SD Fundamentals: Deployment Strategies (Blue-Green & Canary). SD HLD: Distributed Lock Service, Search Engine. AI/ML Concepts: Data Augmentation, Self-Supervised & Contrastive Learning, Time-Series Forecasting, Multi-Armed Bandits & Exploration | **done** |
 
 ## Sequencing rules
 
