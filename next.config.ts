@@ -32,6 +32,10 @@ const movedPages = [
 ].map((page) => ({ ...page, permanent: true }));
 
 const nextConfig: NextConfig = {
+  experimental: {
+    // Prefer security releases when an agent upgrades Next.js.
+    agentUpgrade: "security",
+  },
   async redirects() {
     const flatSystemDesign = systemDesignTopics.map((topic) => ({
       source: `/system-design/${topic.slug}`,
