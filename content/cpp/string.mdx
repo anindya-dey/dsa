@@ -1,76 +1,128 @@
 ---
 title: "std::string"
-summary: "Construction, comparison, substr, and the operations that copy."
+summary: "Owned text: character access, copying versus viewing, and safe parsing and pointer use."
 ---
 
-`std::string` is a `vector<char>` with attitude: contiguous, growable,
-and O(1) length (it stores its size, unlike C strings). Almost
-everything from [the vector entry](/cpp/vector) transfers, the
-growth, the
-[invalidation rules](/cpp/invalidation), the amortized argument,
-with a string-specific layer on top: small-string optimization
-(SSO), and a copy-semantics trap that C++ interviewers love.
+An ordinary C-style string is read until a zero character marks its end.
+`std::string` owns its characters and records their length separately, so
+it can grow, copy its text, and report its size without scanning for that
+marker. Use it when your program needs to keep and modify text.
 
-## Small-string optimization
+## Characters, length, and access
 
-Short strings (~15-22 chars, library-dependent) are stored **inside
-the string object itself** (no heap allocation): construction is a
-stack write, copying is memcpy, and the whole short-string path is
-dramatically faster than the long-string one. The consequence that
-matters for reasoning: `sizeof(std::string)` is fixed (~24-32
-bytes) regardless of content length, and *moving* a short string
-gains nothing over copying it (there is no heap buffer to steal).
-Moving a long string is the usual O(1) pointer theft.
-
-## The API surface, with the costs
+The characters occupy contiguous storage. A **NUL terminator**, the zero
+character written as `'\0'`, follows the stored text. It is not included
+in `size()`. C APIs expecting NUL-terminated text can read the characters
+through the pointer returned by `c_str()`.
+`size()` and `length()` return the same count in O(1). For UTF-8 text, this
+is a byte count, not necessarily the number of characters you see on screen.
+Strings can also contain embedded zero characters: `size()` counts them,
+but an API expecting NUL-terminated text stops at the first zero.
 
 ```cpp
-std::string s = "hello";
-s.size(); s.length();               // O(1), same thing
-s.empty();
-s[i]; s.at(i);                      // indexing: same rules as vector
-s.substr(1, 3);                     // "ell": COPIES (allocates)
-s.find("ll");                       // npos if not found
-s.compare(t);                       // lexicographic, < 0 / 0 / > 0
-s + t; s += t;                      // concatenation: += cheaper (no new object)
-s.insert(i, t); s.erase(i, len);    // O(n): the shift, like vector
-s.c_str();                          // NUL-terminated view: valid until modification
-s.replace(pos, len, t);             // the multi-arg version, O(n)
+#include <cassert>
+#include <string>
+#include <string_view>
+
+int main() {
+    std::string message = "hello";
+    message += "!";
+
+    assert(message.size() == 6);
+    assert(message.at(0) == 'h');
+    assert(message.substr(1, 3) == "ell");
+    assert(message.find("ll") == 2);
+    assert(message[message.size()] == '\0');
+}
 ```
 
-The operators read the way you want:
-`s == t` (size-then-memcmp), `s < t` (lexicographic:
-[schoolbook order](https://en.cppreference.com/w/cpp/string/basic_string/operator_cmp)).
-That comparison *is* the [sorted-container](/cpp/map) ordering and
-the reason string keys in `std::map` behave like a dictionary.
+`substr(1, 3)` copies three characters starting at index 1. `find` returns
+the first matching position, or `std::string::npos`, a special value meaning
+"not found". Check for `npos` before using the result as an index.
 
-## The copy traps
+`message[i]` is unchecked, while `message.at(i)` throws `std::out_of_range`
+when `i` is not an element index. You may read `message[message.size()]`
+to inspect the terminator, but `at(size())` throws. Access beyond the
+terminator, or changing it to a nonzero character, is undefined behavior
+in C++20.
 
-- **`substr` copies**: `auto part = s.substr(0, 100)` from a 10 MB
-  string copies 100 bytes (fine), but a loop of substr-then-concat
-  builds a string character-group-by-character-group at O(n²)-ish
-  cost. `s.substr(start)` to the end, or iterator ranges, for the
-  cheap paths; `+=` for building.
-- **Pass by value for "read" is a copy**: a function taking
-  `std::string s` copies at every call (unless the compiler
-  elides); taking `const std::string& s` is the read-only idiom;
-  taking `std::string s` *by value and modifying it* is a
-  deliberate move-or-copy-and-use idiom.
-- **`c_str()`'s lifetime**: the pointer is valid until the *next
-  modification* of the string, which is the classic dangling
-  `const char*` when the string is a temporary
-  (`const char* p = (s + t).c_str();`, the temporary dies at the
-  semicolon).
+Equality compares the stored text. Ordering is **lexicographic**: compare
+the first differing characters, with a shorter matching prefix coming
+first. This follows character-code order, not language-aware dictionary order.
 
-## The parsing/formatting toolkit
+## Copies, views, and function arguments
 
-`std::stoi(s)` / `std::to_string(x)` for numeric round-trips
-(throwing on garbage input: wrap it), and
-[`std::getline(stream, s, delim)`](https://en.cppreference.com/w/cpp/string/getline)
-for the split-by-delimiter idiom. For heavy text work, a
-`std::stringstream` is the classic answer, and
-[`std::format`](https://en.cppreference.com/w/cpp/utility/format)
-(C++20) is the modern one. The
-[tokenizer](/system-design/fundamentals/search-and-inverted-index)
-entry covers the *design* of text processing; this entry covers
-the type's mechanics.
+Calling `substr` on a named string makes a separate owned copy. A `std::string_view`
+(C++17) instead refers to existing characters without owning them. That
+saves copying, but also means it observes changes to those characters:
+
+```cpp
+std::string original = "hello";
+std::string copy = original.substr(1, 3);
+std::string_view view = std::string_view{original}.substr(1, 3);
+
+original[1] = 'a';
+assert(copy == "ell");
+assert(view == "all");
+```
+
+Keep the source alive while using a view, and do not use the view after an
+operation invalidates its storage. A view also need not end at a NUL
+terminator, so its `data()` is not automatically a C-style string.
+
+For a function that only reads an existing string, `const std::string&`
+avoids copying it. A by-value `std::string` parameter owns its own text;
+passing an existing string normally copies it, while a temporary or an
+explicitly moved argument can avoid a copy. Choose according to whether
+the function needs to borrow the text or own it.
+
+Common libraries use **small-string optimization**: short text fits inside
+the string object without a separate allocation. The size threshold is
+implementation-dependent. A short substring still copies characters even
+when that copy needs no heap allocation; an ordinary string move may
+transfer a large allocation, but moving a short string usually copies its
+inline characters.
+
+## Building text and keeping pointers valid
+
+`a + b` creates a result string; `a += b` appends to `a`. Repeatedly
+rebuilding a growing result with `+` can take O(n²) copying. Prefer
+appending, and use `reserve` when you know the expected final size.
+Insertion and erasure can shift the remaining characters; replacing text
+also copies the replacement, so these operations can be linear in the
+amount of text affected.
+
+`c_str()` returns a pointer into the string's NUL-terminated storage.
+It is not a separate copy. Destruction makes that pointer unusable, and
+operations such as appending or assignment may invalidate it. Obtain a
+fresh pointer after such changes. Writing an existing character through
+`s[i]` changes the text without invalidating the pointer.
+
+Never save a pointer from a temporary such as `(a + b).c_str()`: the
+temporary normally dies at the statement's semicolon. String invalidation
+rules are not identical to vector's, so do not assume that avoiding
+reallocation preserves every saved handle.
+
+## Parsing and formatting text
+
+`std::stoi` converts an integer prefix. It throws `std::invalid_argument`
+if no number can be read, and `std::out_of_range` if the result cannot fit
+in an `int`. It accepts leading whitespace and an optional sign. Trailing
+text does not automatically cause an exception:
+
+```cpp
+std::string input = "42x";
+std::size_t used = 0;
+int value = std::stoi(input, &used);
+assert(value == 42 && used == 2);
+```
+
+For a whole-string integer, also require `used == input.size()`.
+`std::to_string` formats a number. `std::getline` reads up to a chosen
+delimiter without storing that delimiter, while `std::format` (C++20)
+builds formatted text.
+
+## Related C++ tools
+
+- [std::vector](/cpp/vector) explains contiguous storage and capacity.
+- [std::map / std::set](/cpp/map) explains ordering when strings are keys.

@@ -73,10 +73,11 @@ outside it:
 - **The crossover point.** Curves cross: past some n₀ the better
   asymptotics win, and below it the constants win. For `n <= 20` or so,
   constants usually dominate everything.
-- **The memory hierarchy.** The notation counts operations, but the
-  machine counts *cache misses*: a linked list and an array can both be
-  O(n) to traverse, and the array is many times faster, because
-  contiguous memory is prefetched and pointer-chasing is not.
+- **The memory hierarchy.** Operation counts do not capture cache
+  behavior. A linked list and an array can both be O(n) to traverse;
+  sequential array access often has better cache locality and more
+  predictable addresses for hardware prefetching. That does not guarantee
+  maximum memory bandwidth, or a cache miss at every linked-list step.
 
 Big-O is a model of cost, chosen because it is simple enough to reason
 about, and knowing it is a model (with known blind spots) is what
@@ -84,25 +85,51 @@ separates "knows the notation" from "knows the analysis".
 
 ## Amortized: paying for the expensive rare case
 
-One more pricing tool that belongs in the basic kit: **amortized
-analysis** prices a sequence of operations by averaging the expensive
-ones over the cheap ones. The canonical example: appending to a
-`std::vector` is O(1) *amortized*, because doubling means n appends
-cost O(n) total copying, not O(n) each; and the same argument prices a
-[monotonic stack](/dsa/patterns/monotonic-structures) pass ("each
-element is pushed once and popped once, so the nested loop is linear
-total") and every two-pointer algorithm whose inner loop "runs more than
-once" per outer step.
+**Amortized analysis** bounds the total work of a sequence, then divides
+that bound by the number of operations. An occasional expensive
+operation is paid for by many cheap ones. It does not say that every
+operation takes the same time, and it does not depend on random inputs.
 
-The phrase "each element is pushed at most once and popped at most
-once, so the total work is O(n) despite the nested loop" is the standard
-amortized argument, and it recurs across this entire site: it is how
-[sliding windows](/dsa/patterns/sliding-window/minimum-window-substring),
-[monotonic structures](/dsa/patterns/monotonic-structures), and
-[quickselect](/dsa/patterns/sorting-and-selection) all justify their
-complexities. Amortized cost is a *sequence* guarantee, not a
-per-operation one: an individual append can be O(n), and that is fine,
-because the promise is about the total.
+Consider appending 16 elements to an initially empty dynamic array.
+For illustration, let its capacities grow as 1, 2, 4, 8, then 16.
+When an append exceeds capacity, you allocate a larger buffer and
+relocate the existing elements:
+
+```text
+Existing elements relocated: 1 + 2 + 4 + 8 = 15
+New elements written:                      16
+Total element operations:                  31
+```
+
+Across 16 appends, that is fewer than two element operations per
+append on average, even though the ninth append relocates eight elements.
+With this doubling model, for n appends the series of relocations is less than 2n;
+adding n new writes gives O(n) total work, or **O(1) amortized per append**.
+Here we count each element move, copy, or write as constant-cost work.
+An expensive element type adds its own cost.
+
+This explains `std::vector`'s amortized append guarantee under normal
+growth. The standard does not require doubling; typical implementations
+use geometric growth with different factors. Other fixed geometric factors
+change the constant, not the O(n) total-work bound. The bound assumes ordinary
+appends, not explicitly forcing a reallocation before each append.
+An individual append can still take O(n): the guarantee concerns the
+sequence's total, not each operation's latency.
+
+The same accounting explains a
+[monotonic stack](/dsa/patterns/monotonic-structures): each element is
+pushed once and popped at most once, so the whole pass is O(n) despite
+its nested loop. For monotone
+[sliding-window pointers](/dsa/patterns/sliding-window/minimum-window-substring),
+each pointer advances at most n times. Check that bounded advancement;
+not every two-pointer algorithm has linear total work.
+
+**Expected complexity is different.** Randomized
+[quickselect](/dsa/patterns/sorting-and-selection) has O(n) expected
+time over its random pivot choices, but O(n²) worst-case time.
+That is not the deterministic sequence guarantee behind vector's
+amortized appends. State whether your bound concerns a sequence's total
+work or an expectation over randomness.
 
 ## Space, and the recursion stack
 
@@ -135,9 +162,10 @@ For any code you are pricing:
   trees and recurrences that this page prices.
 - [Sorting & Selection](/dsa/patterns/sorting-and-selection) is the
   Θ(n log n) family, with the Ω(n log n) lower bound argument.
-- [Hash-Based Structures](/dsa/patterns/hash-based-structures) is the
-  O(1) average, O(n) worst-case trade that the notation's "amortized and
-  expected" hedging is about.
+- [Hash-Based Structures](/dsa/patterns/hash-based-structures) covers
+  O(1) average lookup, O(n) worst-case lookup, and rehashing. Distinguish
+  assumptions about hash distribution from amortizing resizing work
+  across insertions.
 - Every pattern page on this site applies this one, so the cross-links
   here are genuinely "all of them": the notation is the currency
   everywhere else.

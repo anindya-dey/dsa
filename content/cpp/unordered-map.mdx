@@ -1,81 +1,130 @@
 ---
 title: "std::unordered_map / unordered_set"
-summary: "Hash containers: O(1) average, iteration-order gotchas, and the load factor dial."
+summary: "Hash-based lookup: unique keys, safe reads, sets, and the effects of rehashing."
 ---
 
-The unordered containers are the
-[hash table](/dsa/patterns/hash-based-structures) as a library type:
-**O(1) average** lookup, insert, and erase, keyed by a hash of the
-key, with the honest asterisks (worst case O(n) under collisions,
-iteration order unspecified, pointers invalidated by rehash) that
-the [design-a-hashmap entry's](/dsa/patterns/design-data-structures/design-hashmap)
-own implementation made visible.
+A key-based container is useful when you want to count words or look up an
+object by its ID. `std::unordered_map`
+stores one value for each unique key. `std::unordered_set` stores unique
+keys without associated values, so it answers membership questions instead.
 
-## The API surface
+## Counting and looking up values
+
+A frequency table is a useful example because a missing count should start
+at zero. Here the keys are words and the values are their counts:
 
 ```cpp
-std::unordered_map<std::string, int> counts;
-counts["a"] = 1;                       // INSERTS if missing (default-init!)
-counts.at("b");                        // throws if missing
-counts.find("c");                      // returns end() if missing: the LOOKUP form
-if (m.find(k) != m.end()) { ... }      // THE existence check
-m.count(k);                            // 0 or 1 (2 for multimap)
-m.insert({k, v}); m.insert_or_assign(k, v);
-m.emplace(k, v);                       // construct in place
-m.erase(k);
-m.reserve(n);                          // pre-size buckets: the performance knob
-m.load_factor(); m.max_load_factor(f); // the tuning dial
-for (auto& [key, value] : m) { ... }   // structured bindings (any order)
+#include <cassert>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+
+int main() {
+    std::unordered_map<std::string, int> counts;
+    for (const auto& word : {"cat", "dog", "cat"}) {
+        ++counts[word];
+    }
+
+    assert(counts.at("cat") == 2);
+    assert(counts.at("dog") == 1);
+    assert(counts.size() == 2);
+
+    auto it = counts.find("cat");
+    assert(it != counts.end() && it->second == 2);
+    assert(!counts.contains("owl"));
+}
 ```
 
-The single most-used line is the
-[find-end existence check](https://en.cppreference.com/w/cpp/container/unordered_map/find),
-and the single most-caught trap is `operator[]`'s
-**insert-if-missing**: `if (m["x"] == 5)` *creates* `x` with a
-default value (0), silently mutating the map during a "read". Use
-`find` for reading, `[]` for "get-or-create".
+`find` returns an **iterator**, a position referring to an entry, or
+`end()` if the key is absent. For a map entry, `it->first` is the key and
+`it->second` is its value. Never dereference the result before checking
+that it is not `end()`. `contains` (C++20) is simpler when you only need
+to know whether a key exists. Neither operation inserts a missing key.
 
-## The complexity, honestly
+`at` retrieves a value but throws `std::out_of_range` if the key is missing.
+The subscript operator, `[]`, behaves differently: it creates a missing
+entry and initializes its value. For an `int`, that initial value is zero:
 
-- **Average O(1)** per operation, the
-  [separate-chaining / open-addressing](/dsa/patterns/hash-based-structures)
-  machinery underneath.
-- **Worst case O(n)**: all keys colliding into one bucket
-  (adversarial or pathological keys), which is the standing
-  asterisk, and the reason
-  [std::map](/cpp/map) (the tree) exists for the
-  guaranteed-latency cases.
-- **Iteration: O(n) over the buckets** (empty buckets included),
-  in an **unspecified order** that can *change after a rehash*: the
-  trap that bites anyone who snapshots iteration order, or expects
-  "insertion order" (that is
-  [`std::unordered_map`'s cousins in other
-  languages](https://en.wikipedia.org/wiki/Hash_table#History);
-  C++ standard has no insertion-ordered hash map).
+```cpp
+std::unordered_map<std::string, int> counts = {{"cat", 2}};
+int missing = counts["owl"];
+assert(missing == 0);
+assert(counts.size() == 2);  // The lookup added "owl".
+```
 
-## The invalidation rules, the load factor, and the custom key
+That behavior makes counting convenient, but it can accidentally change
+a map during a supposed read. Use `[]` when creation is intended.
+`insert` and `emplace` leave an existing value unchanged;
+`insert_or_assign` (C++17) replaces it or inserts a new entry.
 
-**Rehashing invalidates iterators** (the buckets moved) but *not*
-references/pointers to elements (the nodes/chaining stay: elements
-don't move in memory, only the bucket index changes). `erase`
-invalidates only what it erases (plus, formally, iterators to the
-erased element: save-the-iterator-then-erase returns the next
-iterator:
-`it = m.erase(it)` [the idiom](/cpp/invalidation)).
+## Sets store membership, not counts
 
-**The load factor dial**: `max_load_factor` (default 1.0: size
-reaches buckets) triggers the rehash (bucket count ~ doubles).
-`reserve(n)` pre-buckets for n elements, the same
-[pre-size-the-vector](/cpp/vector) discipline, and it is the
-performance knob when the final size is known ("build a map of a
-million entries": reserve it).
+Repeated insertion into an `unordered_set` still leaves one copy of a key:
 
-**Custom keys**: a `std::hash<Key>` specialization (or a
-`Hash` template argument) plus `operator==`, and the pair must
-agree (equal keys *must* hash equal: the invariant whose violation
-produces "the element is not found but count says it exists",
-the classic custom-key bug). For pairs and tuples, a
-[combine-hash](https://en.cppreference.com/w/cpp/utility/hash)
-(`h1 ^ (h2 << 1)`-style, or `boost::hash_combine`), the same
-[fingerprint](/dsa/patterns/hash-based-structures/group-anagrams)
-idea the algorithms use.
+```cpp
+std::unordered_set<std::string> seen;
+seen.insert("cat");
+seen.insert("cat");
+assert(seen.size() == 1);
+assert(seen.contains("cat"));
+assert(!seen.contains("dog"));
+```
+
+A set has no mapped value, so it has no map-style `[]`, `at`, or
+`insert_or_assign`. Both containers support `erase(key)`. Their `count(key)`
+is either zero or one; the separate multimap and multiset types allow
+multiple equivalent keys and can return larger counts.
+
+## Why lookup is usually fast
+
+A **hash function** computes a number from a key. The container uses it
+to choose a **bucket**, a group of possible matches, then checks equality
+to find the actual key. Several keys can share a bucket. If too many do,
+finding an entry requires more comparisons.
+
+Lookup, single-element insertion, and erasure are O(1) on average, but
+O(n) in the worst case, where n is the number of entries. These bounds
+treat hashing and equality checks as constant-cost operations; long string
+keys add character-processing work. Traversing all entries takes O(n).
+
+"Unordered" means that iteration order is unspecified, not that it is
+guaranteed to be random. Do not rely on sorted order or insertion order.
+Rehashing can change the order you observe.
+
+## Growth and saved iterators
+
+**Rehashing** rebuilds the bucket organization. It invalidates all saved
+iterators, but preserves pointers and references to existing elements.
+An insertion may trigger it, so re-find an entry if you need an iterator
+after growth. Erasure invalidates only handles to the erased entries.
+When erasing through an iterator, `it = counts.erase(it)` gives you the
+next position to continue from.
+
+The **load factor** is the number of entries divided by the number of
+buckets. Its default maximum is 1.0. Insertion increases the bucket count
+as needed to respect that maximum. If you expect 1,000 entries,
+`counts.reserve(1000)` prepares enough buckets for that total at the current
+maximum load factor; it does not create entries.
+
+If you choose a different positive `max_load_factor`, set it before calling
+`reserve`. Changing the maximum alone does not force immediate rehashing.
+Reserving and rehashing are not O(1): their average cost is O(n), with
+O(n²) worst-case cost.
+
+## Custom keys and container choice
+
+Built-in number types and `std::string` have standard hash support. For a custom key,
+you may need to provide a hash function and an equality comparison. They
+must agree: keys considered equal must produce the same hash, and their
+hash and equality behavior must not change while stored.
+
+Choose an unordered container when fast key-based lookup is your main
+requirement. Choose an ordered container when you need sorted traversal,
+key ranges, or guaranteed logarithmic lookup. The
+[hash-based structures guide](/dsa/patterns/hash-based-structures) explains
+the underlying algorithms in more detail.
+
+## Related C++ tools
+
+- [std::map / std::set](/cpp/map) maintains keys in a defined order.
+- [std::vector](/cpp/vector) is useful when access is primarily by position.

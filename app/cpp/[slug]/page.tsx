@@ -34,7 +34,6 @@ export default async function CppEntryPage({ params }: PageProps) {
     <Container>
       <PageHeader
         back={{ href: "/cpp", label: "C++ Toolkit" }}
-        eyebrow="C++ Toolkit"
         title={page.meta.title}
         description={page.meta.summary}
       >
