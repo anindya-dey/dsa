@@ -5,11 +5,11 @@ export interface CppEntryMeta {
 }
 
 export const cppEntries: CppEntryMeta[] = [
-  { slug: "vector", title: "std::vector", summary: "The dynamic array: contiguous memory, amortized growth, invalidation rules." },
-  { slug: "string", title: "std::string", summary: "Construction, comparison, substr, and the operations that copy." },
-  { slug: "unordered-map", title: "std::unordered_map / unordered_set", summary: "Hash containers: O(1) average, iteration-order gotchas." },
-  { slug: "map", title: "std::map / std::set", summary: "Ordered containers: O(log n) everything, lower_bound/upper_bound." },
-  { slug: "deque", title: "std::deque", summary: "Double-ended queue: block storage, front/back O(1), not contiguous." },
+  { slug: "vector", title: "std::vector", summary: "A growable array: contiguous storage, size versus capacity, and safe access to its elements." },
+  { slug: "string", title: "std::string", summary: "Owned text: character access, copying versus viewing, and safe parsing and pointer use." },
+  { slug: "unordered-map", title: "std::unordered_map / unordered_set", summary: "Hash-based lookup: unique keys, safe reads, sets, and the effects of rehashing." },
+  { slug: "map", title: "std::map / std::set", summary: "Sorted keys: lookup, range queries, comparator rules, and stable iterators." },
+  { slug: "deque", title: "std::deque", summary: "Efficient operations at both ends, indexed access, and the limits of reference stability." },
   { slug: "stack-queue", title: "std::stack / std::queue", summary: "Adapters over a container: LIFO and FIFO with a chosen underlying store." },
   { slug: "priority-queue", title: "std::priority_queue", summary: "The heap: max-heap by default, the comparator trick, no decrease-key." },
   { slug: "pair-tuple", title: "std::pair / std::tuple / std::array", summary: "Structured bindings, lexicographic comparison, fixed-size arrays." },

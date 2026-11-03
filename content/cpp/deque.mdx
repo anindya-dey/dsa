@@ -1,76 +1,109 @@
 ---
 title: "std::deque"
-summary: "Double-ended queue: block storage, front/back O(1), and why it is not contiguous."
+summary: "Efficient operations at both ends, indexed access, and the limits of reference stability."
 ---
 
-`std::deque` (double-ended queue, "deck") is the container that
-gives **O(1) push and pop at *both* ends**, which
-[vector](/cpp/vector) cannot (front operations are O(n) shifts)
-and [list](/dsa/patterns/linear-structures) cannot do with cache
-behavior. Its secret is a structure worth understanding because
-it explains its whole personality: **a fixed array of pointers to
-fixed-size blocks** ("chunked storage").
+Adding an element to the front of a vector shifts its existing elements.
+If your algorithm regularly adds or removes items at either end,
+`std::deque` avoids that repeated shifting. Its name means **double-ended
+queue**, pronounced "deck". It also supports O(1) access by index.
+
+## Working with both ends
+
+`push_front` and `push_back` add an element at the chosen end.
+`pop_front` and `pop_back` remove one. The pop operations do not return the
+removed value; read it with `front()` or `back()` before removing it if
+you need to keep it.
+
+```cpp
+#include <cassert>
+#include <deque>
+
+int main() {
+    std::deque<int> d = {2, 3};
+    d.push_front(1);
+    d.push_back(4);
+    assert((d == std::deque<int>{1, 2, 3, 4}));
+
+    d.pop_front();
+    d.pop_back();
+    assert((d == std::deque<int>{2, 3}));
+    assert(d.front() == 2 && d.back() == 3);
+    assert(d.at(1) == 3);
+}
+```
+
+Calling `front`, `back`, or either pop on an empty deque is undefined
+behavior in C++20, with no guaranteed result or automatic error.
+`d[i]` is also unchecked, while `d.at(i)` throws `std::out_of_range` for an
+invalid index. Both provide O(1) access.
+
+Single-element insertion and removal at either end have O(1) container
+complexity. An insertion may still allocate storage, so this is not a
+promise that every call takes the same elapsed time. Inserting or erasing
+in the middle can take O(n), where n is the number of elements, because
+existing values may need to shift.
+
+## Why its storage is not contiguous
+
+A typical implementation stores elements in separate fixed-size blocks
+and uses a growable directory of pointers to find those blocks. This
+**segmented storage** explains how it can grow at either end without moving
+the existing elements into one larger buffer. Unlike vector, its elements
+have no contiguous-storage guarantee. The diagram shows the idea,
+not a required layout or a particular block size:
 
 ```mermaid
 graph TD
-    MAP[Map of pointers: the deque's spine] --> B1[Block: 8 elems]
-    MAP --> B2[Block: 8 elems]
-    MAP --> B3[Block: 8 elems]
-    FRONT[push_front: new block, or room in the first] --> MAP
-    BACK[push_back: room in the last, or new block] --> MAP
+    DIRECTORY[Directory of block pointers] --> B1[First block]
+    DIRECTORY --> B2[Middle block]
+    DIRECTORY --> B3[Last block]
+    FRONT[Front operations] --> B1
+    BACK[Back operations] --> B3
 ```
 
-- `push_back` fills the last block, allocating a new block when
-  full and a new pointer slot in the map when *that* is full:
-  amortized O(1), like vector's growth but at both ends.
-- `push_front` fills the first block *backward*: the same trick in
-  the other direction, which is the whole point.
-- Indexing is **two arithmetic steps** (map lookup + block
-  offset): O(1), like vector, but *two cache-unfriendly steps*
-  (the map, then the block), which is why
-  [contiguous](/cpp/vector) still beats it for iteration speed.
+Indexing finds the right block and then the element within it. That takes
+constant time, but adds indirection compared with a contiguous vector.
+Deque has no `data()` pointer covering every element and no `reserve()`
+operation. Do not treat an element pointer as the start of a contiguous
+array spanning the deque.
 
-## The API surface
+## What remains valid after a change
 
-```cpp
-std::deque<int> d;
-d.push_back(x); d.push_front(x);     // O(1) both ends
-d.pop_back(); d.pop_front();         // O(1) both ends
-d[i]; d.at(i);                       // O(1): map lookup + offset
-d.front(); d.back();
-d.insert(d.begin() + i, x);         // O(n): shifting (faster at ends)
-d.erase(...);
-d.resize(n);
-// NO d.data(), NO d.reserve(): the block structure has no
-// single contiguous buffer to point at or preallocate.
-```
+An **iterator** represents a traversal position. A pointer or reference
+identifies an element, with a reference acting as an alias for that element.
+These are different ways to retain access, and deque treats them differently:
 
-## The invalidation rules (the deque's real difference)
+- Adding at either end preserves pointers and references to existing
+  elements, but invalidates all iterators, including the old `end()`.
+- Popping at an end invalidates handles to the removed element, while
+  iterators, pointers, and references to surviving elements remain valid.
+  The old `end()` is invalidated by `pop_back`, and by `pop_front` when it
+  removes the last element.
+- Middle insertion, or erasure that touches neither end, invalidates all
+  iterators, pointers, and references to elements. Do not carry saved
+  handles across those operations.
 
-- **Insert/erase in the MIDDLE**: iterators invalidated (blocks may
-  shift), references *not* invalidated at the ends (elements
-  don't move between blocks: only the map's ends shift).
-- **push/pop at the ends**: iterators invalidated (formally, the
-  standard is conservative), *references to existing elements
-  stay valid* (the blocks don't move), which is *better* than
-  vector (growth moves everything) and the reason
-  deque-backed designs hold element pointers safely.
-- The formal rules are fiddly; the practical summary:
-  **deque invalidates iterators more readily than vector, but
-  invalidates references less readily**, and it is the container
-  of choice when you need *both-end* growth with *stable-element*
-  guarantees, [the sliding-window
-  structures](/dsa/patterns/monotonic-structures) that hold
-  indices-into-a-deque rely on exactly this.
+An index is different again. If an element was at index 0, `push_front`
+moves its index to 1 even though a reference to the element stays valid.
+`pop_front` shifts the surviving indices back. Stable references do not
+mean stable positions.
 
-## Where this site uses it
+## When a deque fits
 
-The [monotonic deque](/dsa/patterns/monotonic-structures/sliding-window-maximum)
-is the canonical consumer: a window's maximum maintained by
-pushing/popping at both ends with O(1), which
-[the circular-deque design](/dsa/patterns/linear-structures/design-circular-deque)
-implements from scratch (a fixed-capacity ring, the same idea with
-a single block instead of a block map). The
-[priority queue](/cpp/priority-queue) is the *other* end-focused
-container, trading order-of-pops (extreme only) for what deque
-gives (strict FIFO/LIFO at the ends).
+Choose a deque when you need efficient changes at both ends together with
+indexed access. If you mainly append at the back and scan the sequence,
+a vector is often simpler and more cache-friendly; measure representative
+operations when either container could work.
+
+The [sliding-window maximum](/dsa/patterns/monotonic-structures/sliding-window-maximum)
+uses a deque of indices into the input array. It removes expired candidates
+from the front and candidates with smaller or equal values from the back.
+Each input index enters
+once and leaves at most once, so the total deque work is O(n). It does not
+depend on stable indices into the deque itself.
+
+## Related C++ tools
+
+- [std::vector](/cpp/vector) offers contiguous storage and efficient back growth.
+- [std::stack / std::queue](/cpp/stack-queue) builds simpler stack and queue interfaces over a container.

@@ -1,90 +1,124 @@
 ---
 title: "std::map / std::set"
-summary: "Ordered containers: O(log n) everything, lower_bound/upper_bound, and when order beats hashing."
+summary: "Sorted keys: lookup, range queries, comparator rules, and stable iterators."
 ---
 
-`std::map` and `std::set` are the **balanced-tree** containers
-(a [red-black tree](https://en.wikipedia.org/wiki/Red%E2%80%93black_tree),
-in every major implementation): elements kept **sorted by key**, every
-operation O(log n) *guaranteed*, and the ordering is the product:
-iteration is sorted, range queries are native, and
-`lower_bound`/`upper_bound` answer the boundary questions that
-[binary search](/dsa/patterns/binary-search-variants) asks of
-sorted data.
+Keeping keys in order is useful when you want a sorted inventory, the
+smallest key, or all entries between two keys. `std::map` maintains that
+order while associating one value with each unique key. `std::set`
+maintains ordered keys without associated values.
 
-## The API surface
+## Sorted keys and ordinary lookup
 
-```cpp
-std::map<std::string, int> m;
-m["a"] = 1;                        // inserts if missing (same trap as unordered)
-m.at("b");                         // throws if missing
-auto it = m.find("c");             // end() if missing
-m.insert({k, v}); m.emplace(k, v);
-m.erase(k);
+With the default comparator, integers appear in ascending order and strings
+in lexicographic order. The latter compares character codes rather than
+applying a language-specific dictionary order. Entries stay ordered as
+you insert and erase them; you do not need to sort the container yourself.
 
-// THE ordered-container extras:
-m.lower_bound(k);                  // first element >= k
-m.upper_bound(k);                  // first element >  k
-m.equal_range(k);                  // [lower, upper) pair
-for (auto& [k, v] : m) { }         // SORTED iteration, by key
-m.begin()->first;                  // smallest key
-std::prev(m.end())->first;         // largest key (rbegin() too)
-```
+`find(key)` returns an **iterator**, a traversal position referring to an
+entry, or `end()` if the key is missing. In a map, `it->first` is the key
+and `it->second` is the mapped value; in a set, `*it` is the key itself.
+Check for `end()` before reading either. `contains` (C++20) checks membership
+without returning an iterator. Neither inserts a key.
 
-The same API as [unordered_map](/cpp/unordered-map) for the
-lookup half, plus the ordering layer, which is why the choice
-between the two is the choice the
-[hash-based structures entry](/dsa/patterns/hash-based-structures)
-posed as a price list: hash for O(1) average, tree for order.
+For a map, `at(key)` returns the mapped value or throws `std::out_of_range`.
+`operator[]` creates a missing entry, initializing an `int` value to zero.
+Use it when insertion is intended, not for a read that must leave the map
+unchanged. `insert` and `emplace` do not replace an existing value;
+`insert_or_assign` (C++17) does.
 
-## The boundary functions: the real reason to reach for map
+## Finding a range of keys
 
-`lower_bound(k)` returns the first element with key **>= k**, and
-`upper_bound(k)` the first with key **> k**: together they answer
-"everything in [lo, hi)" with two iterator walks:
+For the default ascending order, `lower_bound(key)` finds the first key
+greater than or equal to the argument. `upper_bound(key)` finds the first
+strictly greater key. Both return `end()` if there is no such entry.
+
+To select a **half-open range**, include its lower endpoint and exclude
+its upper endpoint. That requires `lower_bound` at both ends:
 
 ```cpp
-// Everything from "mango" up to (but not including) "pear":
-for (auto it = m.lower_bound("mango");
-     it != m.upper_bound("pear") && it != m.end();
-     ++it) {
-    // sorted, in-range: the range query
+#include <cassert>
+#include <functional>
+#include <map>
+#include <set>
+#include <string>
+#include <vector>
+
+int main() {
+    std::map<std::string, int> stock = {
+        {"pear", 4}, {"apple", 1}, {"melon", 3}, {"mango", 2}
+    };
+    assert(stock.begin()->first == "apple");
+    assert(stock.rbegin()->first == "pear");
+    assert(stock.at("mango") == 2);
+
+    auto first = stock.lower_bound("mango");
+    auto last = stock.lower_bound("pear");
+    std::vector<std::string> selected;
+    for (auto it = first; it != last; ++it) {
+        selected.push_back(it->first);
+    }
+    assert((selected == std::vector<std::string>{"mango", "melon"}));
 }
 ```
 
-This is the
-[first-and-last-position](/dsa/patterns/binary-search-variants/first-and-last-position-in-sorted-array)
-operation, as a container native: no manual binary search over a
-sorted vector, no careful index arithmetic, the tree *is* the
-sorted array with O(log n) insertion. The
-[DSA entry](/dsa/patterns/binary-search-variants) covers the
-algorithm over arrays (the `std::lower_bound` free-function form
-in [the algorithms entry](/cpp/binary-search-algos)); this entry
-is the container that maintains the sort for you.
+The loop visits mango and melon, but not pear. Using `upper_bound("pear")`
+would include pear. Compute the endpoints once, and ensure that the lower
+endpoint does not come after the upper one under the container's ordering.
+Searching the endpoints costs O(log n); visiting r results adds O(r).
 
-## The invalidation and stability rules
+For the default order, `begin()` refers to the smallest key and `rbegin()`
+to the largest. Do not dereference either on an empty container.
+`equal_range(key)` returns the lower and upper bounds together; in a map
+or set, that range contains at most one equivalent key.
 
-- **Insert/erase invalidate only the affected element's iterators**
-  (and, on erase, what it returned): tree nodes don't move, so
-  references and pointers to elements are **stable across
-  insertions**, the guarantee unordered containers give up on
-  rehash, and the reason pointer-to-element designs prefer the
-  tree.
-- **The erase idiom**: `it = m.erase(it)` advances safely
-  ([the invalidation entry](/cpp/invalidation)), the
-  iterate-and-erase-correctly pattern.
-- **`operator[]` inserts-if-missing**: same trap as
-  [unordered_map](/cpp/unordered-map) (reading with `[]`
-  default-constructs), same fix (`find` for reads).
+## Sets and custom ordering
 
-## Choosing map over unordered_map
+A set supports lookup, insertion, erasure, and the same boundary operations,
+but has no mapped value, so it has no `[]` or `at` interface. You can change
+the ordering of either container by providing a **comparator**, a function
+object that answers whether one key should come before another:
 
-The ordered container when you need *any* of: sorted iteration
-(the listing), range queries (`lower_bound`/`upper_bound`),
-min/max by key (the ends), guaranteed O(log n) (no pathological
-collisions), **stable references** to elements across inserts, or
-a key type without a hash but with an ordering (the tree needs
-`operator<`; the hash needs a hash function). And the
-[unordered entry](/cpp/unordered-map)'s side when you need none
-of those and want the O(1) average: the default is unordered,
-map is a *feature* choice, not a default.
+```cpp
+std::set<int, std::greater<int>> scores = {10, 30, 20};
+assert(*scores.begin() == 30);
+assert(*scores.rbegin() == 10);
+```
+
+This comparator puts larger values first. Custom ordering must be consistent;
+the C++ requirement is called a **strict weak ordering**. In particular,
+a key must not compare before itself, so `<=` is not a valid comparator.
+Two keys count as equivalent when neither compares before the other, even
+if their `operator==` says otherwise. Iteration and bounds follow that
+comparator, so ascending-order interpretations do not apply to every map.
+
+Keys cannot be changed through the container's iterators because that could
+break the ordering. A map's mapped values can still be changed.
+
+## Cost, stability, and when to use them
+
+These containers are usually implemented as balanced trees, but that
+specific representation is not required. With n stored keys, lookup, ordinary
+insertion, and erase-by-key have O(log n) complexity. Full traversal is O(n), while erasing
+one entry through an iterator is amortized O(1). These bounds assume
+constant-cost comparisons; long keys can add comparison work.
+
+Iterators let you walk forward or backward, but not jump directly to the
+ith element. Reaching it from `begin()` takes O(i) steps, unlike indexing
+a vector.
+
+Insertion preserves existing iterators, pointers, and references. Erasure
+invalidates only handles to the removed entries; `it = stock.erase(it)`
+returns the next iterator for continuing a loop. Unordered containers also
+preserve element pointers and references during rehashing, but invalidate
+iterators. Iterator stability is the distinction, not reference stability.
+
+Choose map or set when sorted traversal, key ranges, or guaranteed logarithmic
+lookup matter. If you only need membership or key-based lookup, an unordered
+container may be a better fit with its average O(1) operations.
+
+## Related C++ tools
+
+- [std::unordered_map / unordered_set](/cpp/unordered-map) prioritizes lookup over order.
+- [Custom Comparators](/cpp/comparators) explains the ordering contract in more detail.
+- [lower_bound & upper_bound](/cpp/binary-search-algos) covers searching sorted sequences.
