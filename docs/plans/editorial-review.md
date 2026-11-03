@@ -125,7 +125,7 @@ list once tested.
 
 | Batch | Articles | Status |
 | --- | --- | --- |
-| C1 | `content/cpp/vector.mdx`<br>`content/cpp/string.mdx`<br>`content/cpp/unordered-map.mdx`<br>`content/cpp/map.mdx`<br>`content/cpp/deque.mdx` | todo |
+| C1 | `content/cpp/vector.mdx`<br>`content/cpp/string.mdx`<br>`content/cpp/unordered-map.mdx`<br>`content/cpp/map.mdx`<br>`content/cpp/deque.mdx` | done; `7a476d8`; clarify container concepts, correctness, examples, and prose |
 | C2 | `content/cpp/stack-queue.mdx`<br>`content/cpp/priority-queue.mdx`<br>`content/cpp/pair-tuple.mdx`<br>`content/cpp/optional.mdx`<br>`content/cpp/function-lambdas.mdx` | todo |
 | C3 | `content/cpp/comparators.mdx`<br>`content/cpp/algorithms.mdx`<br>`content/cpp/binary-search-algos.mdx`<br>`content/cpp/numeric.mdx`<br>`content/cpp/integer-overflow.mdx` | todo |
 | C4 | `content/cpp/bit-operations.mdx`<br>`content/cpp/invalidation.mdx`<br>`content/cpp/smart-pointers.mdx` | todo |
@@ -218,6 +218,255 @@ list once tested.
 | A21 | `content/ai-ml/systems/feature-store-lld/index.mdx`<br>`content/ai-ml/systems/model-registry-lld/index.mdx`<br>`content/ai-ml/systems/tokenizer-lld/index.mdx`<br>`content/ai-ml/systems/embedding-cache-lld/index.mdx`<br>`content/ai-ml/systems/vector-index-lld/index.mdx` | todo |
 | A22 | `content/ai-ml/systems/feature-transform-pipeline/index.mdx` | todo |
 
+## Batch C1 review notes
+
+Findings recorded before editing (line numbers refer to the original files):
+
+- `content/cpp/vector.mdx:6-41,45-54,64-96`: byte-offset wording,
+  cache behavior, object layout, growth factors, and allocation advice are
+  presented as guarantees. Distinguish the contiguous-storage contract
+  from typical implementations, bound what `reserve` prevents, and explain
+  move versus copy. Cover insertion reallocation, invalidation of `end()`
+  even without reallocation, bounded index loops, empty-container access,
+  optional bounds diagnostics, the non-binding shrink request, and the
+  `vector<bool>` exception. Move the Markdown link out of the C++ comment.
+- `content/cpp/string.mdx:6-38,41-68`: string invalidation is not identical
+  to vector's; SSO and its sizes are implementation details, not necessarily
+  stack storage. `s[s.size()]` permits reading the terminator, a short
+  substring need not allocate, and suffix/iterator copies are not zero-copy
+  alternatives. Explain `string_view` lifetime, when pass-by-value copies
+  or moves, pointer invalidation versus character changes, and numeric
+  parsing's partial consumption and exceptions. Add a worked parsing example.
+- `content/cpp/unordered-map.mdx:6-29,38-80`: the opening wrongly says
+  rehash invalidates pointers; the API switches variable names and contains
+  uncompilable ellipses. Correct value-initialization and multimap counts,
+  add a worked frequency example, distinguish ordinary operation costs from
+  rehash costs and key-processing costs, and remove the empty-bucket scan
+  claim. Separate load-factor tuning from rehashing and unspecified bucket
+  growth; explain matching hash/equality contracts without promising a
+  particular symptom when violated.
+- `content/cpp/map.mdx:3,6-9,17-32,42-59,67-90`: not every operation is
+  logarithmic. Qualify lookup/insertion/key-erase costs, iterator erase,
+  traversal, and comparator costs. The half-open range wrongly uses
+  `upper_bound` and recomputes it per iteration: use two cached
+  `lower_bound` results and a concrete example, with O(log n + r) cost.
+  Guard extrema access on empty maps, correct insertion/erase stability,
+  remove the false reference-stability advantage over hash containers, and
+  explain custom comparator ordering, equivalence, and the set API difference.
+- `content/cpp/deque.mdx:6-31,35-64,68-76`: the block-pointer array is
+  growable, block sizes and cache behavior are implementation-dependent,
+  and the complexity discussion conflates the contract with allocation
+  latency. Add a worked end-operation example and valid erase syntax.
+  Middle insertion/erasure can invalidate all references; end pushes
+  invalidate all iterators, while end pops preserve surviving element
+  iterators with distinct `end()` rules. Explain index shifts, and correct
+  the sliding-window link's rationale: it stores indices into the input,
+  not stable indices or references into the deque.
+- `lib/catalog/cpp.ts:11` (found during browser verification): the
+  rendered map header and listings use the catalog summary, which also
+  claims "O(log n) everything". Correct that copy along with the article's
+  frontmatter so the visible summary does not repeat the error.
+
+All listed C1 findings were corrected. Claims checked against the C++ library requirements:
+[vector modifiers](https://eel.is/c++draft/vector.modifiers),
+[vector capacity](https://eel.is/c++draft/vector.capacity),
+[string access](https://eel.is/c++draft/string.access),
+[string invalidation](https://eel.is/c++draft/string.require),
+[numeric conversions](https://eel.is/c++draft/string.conversions),
+[substring semantics](https://en.cppreference.com/w/cpp/string/basic_string/substr),
+[unordered containers](https://eel.is/c++draft/unord.req),
+[ordered containers](https://eel.is/c++draft/associative.reqmts), and
+[deque modifiers](https://eel.is/c++draft/deque.modifiers).
+
+Verification (2026-11-02):
+
+- All 9 C++ blocks compiled verbatim with C++20 after supplying headers and
+  placeholder declarations. A one-off runtime harness caught the API
+  fragments' documented missing-key exceptions so later statements could
+  run, checked each example's result, and passed 206 assertions with Apple
+  Clang 21 under AddressSanitizer and UBSan.
+- Additional checks covered reserved vector growth, bounded append loops,
+  erase-remove, string copies versus views, terminator access, parsing
+  errors and `INT_MIN`/`INT_MAX`, rehash reference stability and collisions,
+  half-open/empty map ranges and custom ordering, and deque growth/pop
+  stability. Invalidated iterators were never dereferenced; those rules
+  were verified against the standard, not inferred from sanitizer silence.
+- Prose-only word counts: vector 530, string 487, unordered-map 468,
+  map 478, deque 369. All are within the 300-600 band.
+- Browser checks confirmed that the corrected deque diagram renders as
+  an SVG and the map article renders its half-open range example. A bare
+  Node Mermaid parse could not initialize DOMPurify; the browser check
+  used the application's real Mermaid renderer instead.
+- `pnpm lint`, `pnpm typecheck`, `pnpm check:content` (3,987 links),
+  `pnpm check:cpp` (125 DSA problem pages), and `git diff --check` passed.
+- Initial `pnpm validate` and a standalone `pnpm build` retry each
+  generated all 395 pages, then exited with `SecurityFatalError` on the
+  existing Next.js 16.4.0 security advisory gate. The required build check
+  is therefore still failing; the batch is reviewed but not `done`, and no
+  commit or push was made. Upgrade dependencies in a separately approved
+  change, then rerun validation before completing this batch.
+
+### Reader-feedback follow-up (2026-11-03)
+
+Findings recorded before applying the requested clarifications:
+
+- `content/cpp/vector.mdx:6-25,37-43,94-100`: define contiguous versus
+  continuous and distinguish program addresses from physical RAM. Explain
+  `data()`'s pointer types, element-sized arithmetic, valid indices, empty
+  vectors, and pointer lifetime with a runnable example. Separate cache-line
+  locality from hardware prefetching, remove unexplained speed qualifications,
+  and specify what to benchmark after choosing containers by requirements.
+  Expand the packed-bit exception with a proxy-versus-value example and link
+  the first body use of amortized complexity to the existing DSA section.
+- `content/dsa/patterns/asymptotic-analysis/index.mdx:76-105,138-140`:
+  correct the blanket prefetching claim and explain amortized analysis with
+  the 16-append geometric-growth example. State that doubling is illustrative,
+  distinguish deterministic sequence bounds from expected bounds, remove the
+  claim that every two-pointer algorithm has this argument, and correct the
+  randomized quickselect comparison. Reuse the existing section rather than
+  creating a duplicate article. This is a targeted correction, not completion
+  of batch D1's full article review.
+
+All requested clarifications were applied. Verification (2026-11-03):
+
+- All 11 C1 C++ blocks compiled; 221 runtime assertions passed under
+  AddressSanitizer and UBSan. The new pointer example also compiled and ran
+  verbatim as a complete program. Checks cover mutable/const `data()` types,
+  element-pointer arithmetic, empty-vector access without dereferencing,
+  and bool proxy aliasing versus an independent copied value.
+  Pointer and specialization claims were checked against
+  [vector data](https://eel.is/c++draft/vector.data) and
+  [vector bool](https://eel.is/c++draft/vector.bool).
+- Both edited articles compiled as MDX and rendered to HTML. The first
+  body use of amortized complexity links to the actual generated
+  `amortized-paying-for-the-expensive-rare-case` heading. The bool heading
+  and both new C++ examples also rendered correctly.
+- Browser verification of the production output confirmed that clicking
+  `amortized O(1)` navigates from the vector page to the intended section
+  and scrolls that heading into view.
+- Recomputed `1 + 2 + 4 + 8 = 15` relocations, 16 new writes, and 31 total
+  element operations. An illustrative doubling model verified the example,
+  the ninth append's eight relocations, and the bounds for 1-1,024 appends.
+  Tests do not assume that the standard library's vector doubles capacity.
+- Length exceptions are deliberate: vector is now 829 prose words to answer
+  all seven reader questions without unexplained pointer/cache/proxy terms;
+  Asymptotic Analysis is 1,290 words to retain its existing reference sections
+  alongside a worked amortization example and the expected-cost distinction.
+  No duplicate amortization article or catalog entry was added.
+- No hardware performance benchmark was run: the revised text explains
+  what readers should measure and avoids promising a particular cache
+  miss rate, prefetch behavior, or bandwidth.
+- `pnpm validate` passed: lint, typecheck, content checks (3,987 links),
+  C++ compilation (125 DSA problems), and production generation (395 pages).
+  `git diff --check` also passed.
+- This run used installed Next.js 16.4.4, while `package.json` and
+  `pnpm-lock.yaml` still declare 16.4.0. Neither dependency file was changed
+  by this review. The cause of the installed-version change was not
+  investigated. A fresh frozen install still selects the declared version;
+  do not treat this local pass as completing the separately approved
+  dependency upgrade. Reconcile the dependency pin and installed version,
+  then validate that reproducible dependency set before finalizing C1.
+
+### Learner-facing editorial pass (2026-11-03)
+
+Scope approved by the reader: review all five C1 articles for natural,
+complete prose, conceptual clarity, and precision without turning the
+Toolkit into a detailed implementation guide. Keep useful explanations,
+not an arbitrary word count, as the reason for additional length.
+
+Findings recorded before editing:
+
+- Vector repeats storage qualifications, explains private pointer layout
+  before everyday size/capacity behavior, and separates performance guidance
+  from the container-choice question. Keep the seven reader clarifications,
+  but organize them around storage, growth, safe access, and practical choice.
+- String opens with several undefined terms and puts optimization before
+  ownership. Replace the API dump and lvalue/rvalue/prvalue terminology with
+  concrete text, copy/view, and lifetime examples. Define the zero terminator,
+  explain what string length counts, and avoid suggesting linguistic sorting.
+- Unordered containers are described through asides and fragments instead of
+  a clear key/value model. Define hashing, buckets, and rehashing before tuning
+  or iterator rules; demonstrate read-only lookup separately from insertion.
+  Explain sets with a real membership example and custom keys without a
+  detour into hash-combining implementations.
+- Ordered containers jump between an API list, tree internals, and advanced
+  terminology. Start with sorted keys, retain the corrected half-open example,
+  explain set/comparator behavior plainly, and keep complexity and stability
+  distinctions without shorthand such as "the ordering is the product".
+- Deque's explanation includes a confusing internal "map", abbreviated
+  operation lists, and a tangential priority-queue comparison. Lead with
+  end operations, simplify the segmented-storage diagram, and explain index,
+  iterator, and reference stability in complete sentences.
+- Across all five, replace undefined code placeholders and deliberately
+  failing API sequences with meaningful, verifiable examples. Move links to
+  other Toolkit entries into short related-reading sections; the separate
+  invalidation article remains a recorded C3 follow-up, not a source for
+  these articles' correctness claims.
+
+Revisions applied. All five articles were reread as prose and checked in
+the production browser view, not just searched for mechanical issues.
+The pass keeps complete sentences, defines terms before relying on them,
+and removes private object-layout details, fixed SSO sizes, and tangential
+implementation discussions. Vector retains all seven requested clarifications.
+
+Verification (2026-11-03):
+
+- All 12 C++ blocks compiled and ran under AddressSanitizer and UBSan.
+  Each article starts with a complete program; shorter examples use only
+  the headers shown there and a function wrapper. No invented placeholder
+  declarations or catches were needed to make the examples run.
+- The examples and additional checks passed 244 assertions. Coverage includes
+  size versus capacity, pointer/proxy behavior, copies versus views, embedded
+  zero characters, UTF-8 byte counts, parsing failures, integer boundaries,
+  map/set behavior, rehash stability, key ranges, and deque end operations.
+- All five articles compiled as MDX and rendered to HTML. Titles and summaries
+  match the catalog, and the amortization link still targets its actual
+  generated heading. Browser reads covered all five articles; the simplified
+  deque diagram rendered as SVG with its directory and block labels.
+- A final reading also made map-versus-set iterator access explicit and
+  limited the zero-termination statement to C APIs that expect terminated text.
+- Final prose word counts: vector 758, string 685, unordered-map 659,
+  map 688, deque 593. These intentionally exceed the original band where
+  needed for clear definitions and caveats, following the reader's instruction
+  not to compress sentences abruptly. This is a concise conceptual guide,
+  not a detailed standard-library implementation survey.
+- `pnpm validate` passed. After the last prose corrections, content checks
+  (3,972 internal links), the production build (395 pages), MDX rendering,
+  snippet execution, and `git diff --check` passed again.
+- Validation still uses installed Next.js 16.4.4 while the repository pins
+  16.4.0. No dependency or unrelated header/layout changes were made by this
+  pass. The separately recorded dependency reconciliation remains pending;
+  these editorial changes were not committed or pushed.
+
+### Main synchronization and completion (2026-11-03)
+
+Pulled `origin/main` at `6dca1ac` with a fast-forward, preserving all local
+article and Toolkit header edits. The new baseline includes:
+
+- `d148dd5`: the Next.js security upgrade to 16.4.4.
+- `9ece3d1`: compatible dependency updates.
+- `6dca1ac`: side-by-side TypeScript 6 API and TypeScript 7 tooling.
+
+`pnpm install --frozen-lockfile` succeeded without changing the dependency
+files. Declared and installed Next.js versions now both read 16.4.4, and
+the npm registry advisory query for that version returned no entries.
+The earlier pin/runtime mismatch is resolved by the upstream change,
+not by an unrecorded local dependency modification.
+
+All 12 C1 C++ examples and 244 sanitizer assertions passed again after
+installing the updated dependency set. MDX rendering, catalog consistency,
+the amortization anchor, and the illustrative growth arithmetic also passed.
+`pnpm validate` passed against the frozen-installed dependency set: lint,
+typecheck, content validation (3,972 internal links), compilation of all
+125 DSA problem pages, and production generation of 395 pages. No conflicts
+or new validation failures were found. The pre-existing local Toolkit
+header edit was preserved and included.
+
+Review commit: `7a476d8` (`docs(review): batch C1 - clarify core C++ containers`).
+The completion record is committed separately so it can reference that
+immutable review commit. Batch C1 is complete; the C3 invalidation article
+and the previously unbatched articles remain follow-ups.
+
 ## Follow-ups
 
 Findings too large for a single batch go here, with the batch where they
@@ -225,4 +474,6 @@ were found.
 
 | Found in | Finding | Status |
 | --- | --- | --- |
+| C1 | Upgrade the existing Next.js 16.4.0 dependency in a separate change. The npm registry confirms high/critical advisories [GHSA-p3m5-59mp-jv5r](https://github.com/advisories/GHSA-p3m5-59mp-jv5r), [GHSA-2464-fhr4-w9xw](https://github.com/advisories/GHSA-2464-fhr4-w9xw), and [GHSA-673q-mjm6-r5xr](https://github.com/advisories/GHSA-673q-mjm6-r5xr). Application-specific exploitability was not assessed; no dependency versions were changed in this editorial batch. | done in main's `d148dd5`; verified after the pull and frozen install |
+| C1 | In C3, correct `content/cpp/invalidation.mdx`: the table treats string rules as vector rules, omits vector's non-reallocating `end()` invalidation, and incorrectly preserves deque references on middle edits. Its prose also overstates reference stability, misstates the cause of erase-loop invalidation, and omits unordered iterator-erase worst-case complexity. Align it with the corrected C1 entries and distinguish character writes from string pointer invalidation. | todo |
 | Batch 9 (gap fill) | Seven articles were added after this plan was written and are not in any batch above: `deployment-strategies`, `distributed-lock-service`, `search-engine`, `data-augmentation`, `self-supervised-learning`, `time-series-forecasting`, `bandits-and-exploration`. Review them with the same checklist, as a batch of their own. | todo |
