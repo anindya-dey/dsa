@@ -1,95 +1,92 @@
 ---
 title: "Iterator Invalidation"
-summary: "Which operations invalidate which iterators: erase-while-iterating and friends."
+summary: "When saved iterators and references stop working, and how to erase safely while looping."
 ---
 
-The collected invalidation rules, the one page that every
-[container entry](/cpp/vector) points to when it says "and the
-invalidation rules that bite everyone once." The subject: **which
-operations invalidate which iterators, references, and pointers,
-and the idioms that make the common cases safe.**
+An iterator, pointer, or reference that you saved can stop working after
+the container changes. Using it afterwards is **invalidated** access:
+undefined behavior that may crash, return stale data, or seem fine on
+small tests. This page lists when that happens and the safe patterns.
 
-## The rules, by container
+## The rules by container
 
-| Container | Insert/erase at end | Insert/erase in middle | Rehash/grow | References stable? |
-| --- | --- | --- | --- | --- |
-| [vector](/cpp/vector) | erase: ok; **insert: reallocate if grown** | invalidates at+after position | **any growth: ALL invalidated** | NO (growth moves) |
-| [string](/cpp/string) | same as vector | same as vector | same as vector | same as vector |
-| [deque](/cpp/deque) | iterators invalidated; **references OK** | iterators invalidated; references at ends OK | n/a (block growth) | **YES (elements don't move)** |
-| [list](/dsa/patterns/linear-structures) / [map,set](/cpp/map) | **only the erased element** | only the erased element | n/a | **YES** |
-| [unordered_*](/cpp/unordered-map) | erase: only that element | erase: only that element | **rehash: ALL iterators** (references OK) | YES (elements don't move) |
+| Container | After an insert | After an erase |
+| --- | --- | --- |
+| `vector` | If it reallocated: everything. Otherwise: positions at or after the insert, and `end()` | Positions at or after the erased element, and `end()` |
+| `string` | Treat everything as invalid after any change in length | Same |
+| `deque` | At either end: all iterators, but references stay valid. In the middle: everything | At either end: only the erased element (and `end()` when the last element goes). In the middle: everything |
+| `map`, `set`, `list` | Nothing | Only the erased element |
+| `unordered_map`, `unordered_set` | Nothing, unless it rehashed: then all iterators, while references stay valid | Only the erased element |
 
-The two dimensions that vary: **iterators** (positions: invalidated
-liberally) and **references/pointers** (to elements: invalidated
-rarely, anything node-based or block-based keeps elements where
-they are). The
-[vector](/cpp/vector) is the pessimist (growth moves everything);
-the [tree containers](/cpp/map) are the optimists (erase touches
-one node).
+A vector reallocates whenever an insert needs more than its current
+capacity, and you rarely know when that is. So in practice: **after any
+`push_back` or `insert` on a vector, assume every saved position is gone.**
 
-## The erase-while-iterating idiom
-
-The classic bug (erase inside a range-for: the loop's `end`
-iterator is invalidated, UB) and the standard fix in every form:
+## A classic bug
 
 ```cpp
-// THE BUG (never do this):
-for (auto it = v.begin(); it != v.end(); ++it) {
-    if (shouldErase(*it)) v.erase(it);      // it is INVALIDATED
-}                                          // ++it on a dead iterator: UB
-
-// THE FIX (iterator-returning erase): erase RETURNS the next iterator
-for (auto it = v.begin(); it != v.end(); /* no ++ here! */) {
-    if (shouldErase(*it)) {
-        it = v.erase(it);                   // erase advances FOR you
-    } else {
-        ++it;
-    }
-}
-
-// THE ALTERNATIVE (erase-remove): filter with remove_if + erase
-v.erase(std::remove_if(v.begin(), v.end(), shouldErase), v.end());
-//            ^ shifts kept elements forward ^^^^ truncate the tail
-// O(n), no per-erase shift: THE bulk-erase idiom for vectors
+std::vector<int> v = {1, 2, 3};
+int& first = v[0];
+v.push_back(4);   // May reallocate.
+// first may now refer to freed memory. Do not use it.
 ```
 
-The [erase-remove](https://en.cppreference.com/w/cpp/algorithm/remove)
-idiom's why: `erase` in a loop is O(n) *per erase* (shifting the
-tail each time: O(n²) total), while `remove_if` shifts each kept
-element once (O(n)) and the final `erase` truncates. For
-node-based containers ([map](/cpp/map),
-[unordered_map](/cpp/unordered-map)), the iterator-returning
-`erase` form is the idiom (no shift, O(1) per erase:
-`m.erase(it++)` or `it = m.erase(it)`, the loop form that the
-[linked-list](/dsa/patterns/linear-structures) entries write by
-hand).
+Save the index `0` instead of a reference, and read `v[0]` again after the
+change. Indices stay meaningful in a vector as long as you only add at the
+end.
 
-## The other classic traps
+## Erasing while looping
 
-- **`reserve`/`push_back` growth inside iteration over the same
-  container**: the loop's iterators (captured at loop start) are
-  dead after the growth, the [vector entry's](/cpp/vector)
-  self-modifying loop. Index-based loops with a re-checked `size()`
-  when growing; iterator loops only when not growing.
-- **`rehash` (unordered containers) on insert**: *any* insert may
-  rehash (size crosses the
-  [load factor](/cpp/unordered-map)), invalidating all iterators,
-but *references* stay (the elements did not move), so
-  pointer-to-element designs survive where iterator-holding
-  designs do not.
-- **Dangling by-reference [lambda
-  captures](/cpp/function-lambdas)**: not container invalidation,
-  the same disease (a pointer into a scope that ended): the
-  closure must not outlive what it captured by reference.
-- **`c_str()` on a [string](/cpp/string) then modifying the
-  string**: the pointer was valid *until the next modification*,
-the [string entry's](/cpp/string) dangling form.
+Erasing inside a range-based `for` over the same container breaks the
+loop. Use an iterator loop and take the iterator that `erase` returns,
+which points to the next element:
 
-## The rule of thumb
+```cpp
+#include <cassert>
+#include <map>
+#include <vector>
 
-**When you mutate, you do not hold iterators.** Save indices, or
-use the mutating-operation's *return value* (erase returns the
-next iterator: the idiom), or re-find after mutation, and when
-you must hold a stable handle across mutation,
-[node-based containers](/cpp/map) hold references where
-[vectors](/cpp/vector) cannot.
+int main() {
+    std::vector<int> v = {1, 2, 3, 4, 5};
+    for (auto it = v.begin(); it != v.end();) {
+        if (*it % 2 == 0) {
+            it = v.erase(it);  // Continue from the next element.
+        } else {
+            ++it;
+        }
+    }
+    assert((v == std::vector<int>{1, 3, 5}));
+
+    std::map<int, int> m = {{1, 10}, {2, 20}, {3, 30}};
+    for (auto it = m.begin(); it != m.end();) {
+        if (it->second > 15) it = m.erase(it);
+        else ++it;
+    }
+    assert(m.size() == 1);
+
+    std::vector<int> w = {1, 2, 3, 4};
+    std::erase_if(w, [](int x) { return x % 2 == 0; });  // C++20.
+    assert((w == std::vector<int>{1, 3}));
+}
+```
+
+The same loop works for `map`, `set`, and the unordered containers. For a
+vector, each `erase` shifts the rest of the elements, so erasing many in a
+loop costs O(n²). `std::erase_if(v, pred)` (C++20) removes every match in
+one O(n) pass. Before C++20 the same job was written as
+`v.erase(std::remove_if(v.begin(), v.end(), pred), v.end())`.
+
+## Rules of thumb
+
+- Do not add to or remove from a container inside a range-based `for`
+  over that same container.
+- Save indices into a vector, not iterators or references, if it may grow.
+- When erasing in a loop, always continue from the iterator `erase` returns.
+- When you need stable references across inserts, a `map`, `set`, or
+  `list` keeps every element in place.
+
+## Related C++ tools
+
+- [std::vector](/cpp/vector) explains capacity and reallocation.
+- [std::deque](/cpp/deque) explains why its references survive end insertions.
+- [std::unordered_map / unordered_set](/cpp/unordered-map) explains growth and rehashing.

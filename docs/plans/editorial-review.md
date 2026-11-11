@@ -125,10 +125,10 @@ list once tested.
 
 | Batch | Articles | Status |
 | --- | --- | --- |
-| C1 | `content/cpp/vector.mdx`<br>`content/cpp/string.mdx`<br>`content/cpp/unordered-map.mdx`<br>`content/cpp/map.mdx`<br>`content/cpp/deque.mdx` | done; `7a476d8`; clarify container concepts, correctness, examples, and prose |
-| C2 | `content/cpp/stack-queue.mdx`<br>`content/cpp/priority-queue.mdx`<br>`content/cpp/pair-tuple.mdx`<br>`content/cpp/optional.mdx`<br>`content/cpp/function-lambdas.mdx` | todo |
-| C3 | `content/cpp/comparators.mdx`<br>`content/cpp/algorithms.mdx`<br>`content/cpp/binary-search-algos.mdx`<br>`content/cpp/numeric.mdx`<br>`content/cpp/integer-overflow.mdx` | todo |
-| C4 | `content/cpp/bit-operations.mdx`<br>`content/cpp/invalidation.mdx`<br>`content/cpp/smart-pointers.mdx` | todo |
+| C1 | `content/cpp/vector.mdx`<br>`content/cpp/string.mdx`<br>`content/cpp/unordered-map.mdx`<br>`content/cpp/map.mdx`<br>`content/cpp/deque.mdx` | done; `7a476d8`; clarify container concepts, correctness, examples, and prose. Revised again in the refresher pass and final review (2026-11-11): trimmed to DSA basics |
+| C2 | `content/cpp/stack-queue.mdx`<br>`content/cpp/priority-queue.mdx`<br>`content/cpp/pair-tuple.mdx`<br>`content/cpp/optional.mdx`<br>`content/cpp/function-lambdas.mdx` | done; refresher pass and final review (2026-11-11); simple DSA-focused refresher |
+| C3 | `content/cpp/comparators.mdx`<br>`content/cpp/algorithms.mdx`<br>`content/cpp/binary-search-algos.mdx`<br>`content/cpp/numeric.mdx`<br>`content/cpp/integer-overflow.mdx` | done; refresher pass and final review (2026-11-11); simple DSA-focused refresher |
+| C4 | `content/cpp/bit-operations.mdx`<br>`content/cpp/invalidation.mdx`<br>`content/cpp/smart-pointers.mdx` | done; refresher pass and final review (2026-11-11); simple DSA-focused refresher |
 
 ### Phase 2: DSA (154 articles: each pattern overview, then its problems)
 
@@ -467,6 +467,100 @@ The completion record is committed separately so it can reference that
 immutable review commit. Batch C1 is complete; the C3 invalidation article
 and the previously unbatched articles remain follow-ups.
 
+### C++ Toolkit refresher pass (2026-11-11)
+
+Reader direction: the Toolkit should be a simple, easy-to-follow refresher
+on the basics that help with DSA problems, without excess detail. This pass
+covers all 18 entries, so it completes C2 to C4 and revises C1 again.
+
+Findings recorded before editing:
+
+- **Missing basics.** Vector lacked construction (`(n, x)` versus
+  `{n, x}`), `emplace_back`, `empty()`, loops by reference, unsigned
+  `size() - 1`, copy semantics and reference parameters, grids, and
+  `insert`/`erase` syntax. String lacked `c - 'a'` arithmetic, `<cctype>`,
+  O(n^2) `s = s + c`, `reverse`/`sort` on strings, and splitting words.
+  Unordered containers lacked iteration with structured bindings,
+  `insert(x).second`, and the fact that `std::pair` keys have no hash.
+  Map lacked `multiset` duplicates and `std::prev(lower_bound)` for the
+  largest smaller key. Lambdas lacked recursive helpers with `std::function`.
+- **Too much detail for a refresher (C1).** `data()` pointer arithmetic,
+  `vector<bool>` proxies, cache lines and bandwidth, NUL terminators,
+  `c_str()` lifetime, small-string optimization, load-factor tuning, and
+  the deque block diagram. These were cut or reduced to one sentence.
+- **Errors in C2 to C4.** `priority_queue` was described as
+  "always-sorted" and as usable only over a vector (deque also qualifies).
+  `optional` comparison ordering was garbled. `pair-tuple` called
+  `std::array` stack-allocated and contained the typo "touple".
+  `algorithms` gave a garbled `nth_element` idiom and invalid code such
+  as `std::min_element / max_element(...)`. `numeric` misattributed
+  `midpoint` to C++17 and omitted `pow` despite its summary. `bit-operations`
+  said `1 << 31` overflows, but C++20 defines it as `INT_MIN`. `invalidation`
+  carried the issues already recorded in Follow-ups. Several entries
+  placed Markdown links inside C++ comments, used `...` placeholders that
+  do not compile, and used jargon-heavy, colon-chained prose.
+
+Revisions: every entry now opens with a plain definition and a complete,
+runnable program, then covers the operations DSA solutions use and the
+traps that cause wrong answers. Each ends with a short "Related C++ tools"
+section; links to other Toolkit entries are no longer inline. Catalog
+summaries in `lib/catalog/cpp.ts` match the new frontmatter; titles are
+unchanged. The vector section keeps the reader's "Contiguous versus
+continuous" heading.
+
+Verification (2026-11-11):
+
+- All 47 C++ blocks compiled with Apple Clang (`-std=c++20 -Wall -Wextra`)
+  and ran under AddressSanitizer and UBSan with every assertion passing.
+  Fragments ran inside `main` with standard headers and the declarations
+  from their article's first program.
+- A shell-based link check resolved every internal link in the 18 entries.
+  No em-dashes remain, and `git diff --check` passed.
+- Not run in this first pass: `pnpm validate`. Node was not on the
+  shell's PATH; it was found under nvm for the final review below.
+
+### Final review (2026-11-11)
+
+A last full read of all 18 entries, checking every claim again. Findings:
+
+- `binary-search-algos`: `upper_bound` returns `end()` when no element is
+  larger than `x`, not "when every element is smaller". Corrected.
+- `comparators`: a code comment said "negate" while the code swaps `a`
+  and `b`; the heap-direction sentence was ambiguous. Restated as "the
+  element that would come last if you sorted with the comparator".
+- `bit-operations`: the table's example column claimed `6 op 3` for rows
+  that do not use 3. Each row now shows its own expression; left shift
+  notes "if it fits".
+- `string`: `size()` counts bytes for UTF-8; `substr` copies *up to* `len`
+  characters; `std::stoi("42x")` returns 42. Added.
+- `map`: the multimap heading had no multimap text, and "rbegin is the
+  largest, but only on a nonempty container" misplaced the condition.
+- `function-lambdas`: explained why sets, maps, and heaps need both
+  `decltype(cmp)` and the `cmp` argument.
+- `vector`: replaced "grows geometrically" with plain wording.
+- `unordered-map`, `deque`, `smart-pointers`: inline code split across a
+  line break, an over-long line, and an awkward `make_unique` call.
+
+Verification:
+
+- All 47 C++ blocks compiled with `-Wall -Wextra` and passed under
+  AddressSanitizer and UBSan. A separate program also checked the claims
+  made only in prose: `stoi("42x")`, string ordering, `substr` clamping,
+  `size() - 1` wraparound, `upper_bound` edges, every bit-table row,
+  `1 << 31 == INT_MIN` in C++20, negative `%`, `insert(x).second`,
+  multimap counts, and building a heap from a range.
+- `pnpm validate` passed on Node 26.13.0 with a frozen install: lint,
+  typecheck, content checks (3,934 internal links, 18 C++ entries), C++
+  compilation of 125 DSA problem pages, and the production build of all
+  pages. The built HTML for the table-heavy entries rendered each table,
+  including the escaped `|` cells in Bit Operations.
+- Prose word counts: vector 722, unordered-map 435, invalidation 428,
+  string 428, smart-pointers 421, bit-operations 418, comparators 403,
+  integer-overflow 384, numeric 370, binary-search-algos 370, map 368,
+  function-lambdas 362, priority-queue 328, algorithms 315, pair-tuple 315,
+  stack-queue 300, deque 297, optional 263. Vector exceeds the band
+  because it is the basic container every other entry builds on.
+
 ## Follow-ups
 
 Findings too large for a single batch go here, with the batch where they
@@ -475,5 +569,5 @@ were found.
 | Found in | Finding | Status |
 | --- | --- | --- |
 | C1 | Upgrade the existing Next.js 16.4.0 dependency in a separate change. The npm registry confirms high/critical advisories [GHSA-p3m5-59mp-jv5r](https://github.com/advisories/GHSA-p3m5-59mp-jv5r), [GHSA-2464-fhr4-w9xw](https://github.com/advisories/GHSA-2464-fhr4-w9xw), and [GHSA-673q-mjm6-r5xr](https://github.com/advisories/GHSA-673q-mjm6-r5xr). Application-specific exploitability was not assessed; no dependency versions were changed in this editorial batch. | done in main's `d148dd5`; verified after the pull and frozen install |
-| C1 | In C3, correct `content/cpp/invalidation.mdx`: the table treats string rules as vector rules, omits vector's non-reallocating `end()` invalidation, and incorrectly preserves deque references on middle edits. Its prose also overstates reference stability, misstates the cause of erase-loop invalidation, and omits unordered iterator-erase worst-case complexity. Align it with the corrected C1 entries and distinguish character writes from string pointer invalidation. | todo |
+| C1 | In C3, correct `content/cpp/invalidation.mdx`: the table treats string rules as vector rules, omits vector's non-reallocating `end()` invalidation, and incorrectly preserves deque references on middle edits. Its prose also overstates reference stability, misstates the cause of erase-loop invalidation, and omits unordered iterator-erase worst-case complexity. Align it with the corrected C1 entries and distinguish character writes from string pointer invalidation. | done in the refresher pass (2026-11-11): rewritten with a corrected per-container table; worst-case erase cost left out to keep the refresher simple |
 | Batch 9 (gap fill) | Seven articles were added after this plan was written and are not in any batch above: `deployment-strategies`, `distributed-lock-service`, `search-engine`, `data-augmentation`, `self-supervised-learning`, `time-series-forecasting`, `bandits-and-exploration`. Review them with the same checklist, as a batch of their own. | todo |

@@ -1,87 +1,83 @@
 ---
 title: "Numeric Utilities"
-summary: "accumulate, iota, gcd, minmax, numeric_limits: the small utilities every solution leans on."
+summary: "accumulate, iota, gcd, min and max, abs, numeric_limits, and why pow returns a double."
 ---
 
-The small numeric utilities from `<numeric>`, `<algorithm>`, and
-`<limits>`: none deep enough for their own entry, all of them
-short enough that writing them by hand is a recurring waste:
+A handful of small functions save you from writing the same loops in
+every solution. Most live in `<numeric>`, `<algorithm>`, `<cmath>`, and
+`<limits>`.
 
-## The family
-
-```cpp
-// <numeric>
-std::accumulate(v.begin(), v.end(), 0);              // sum (the init type WIDENS: see below)
-std::accumulate(v.begin(), v.end(), 1, std::multiplies<>{});  // product: the FOLD, generalized
-std::iota(v.begin(), v.end(), 0);                     // 0, 1, 2, 3, ... : the "fill with indices"
-std::gcd(a, b); std::lcm(a, b);                       // C++17, <numeric>
-std::midpoint(a, b);                                  // overflow-safe (a+b)/2: the binary-search middle!
-
-// <algorithm>
-std::min(a, b); std::max(a, b);
-std::minmax(a, b);                                    // pair, ONE evaluation each
-std::min_element(v.begin(), v.end());               // ITERATOR (dereference!)
-std::max_element(v.begin(), v.end());
-std::clamp(x, lo, hi);                                // C++17: the bounded value
-std::abs(x);                                          // <cstdlib> for ints, <cmath> for floats
-std::swap(a, b);                                      // the whole-site staple
-
-// <limits>
-std::numeric_limits<int>::max();                     // the "infinity" constant
-std::numeric_limits<int>::lowest();                  // the honest MINIMUM (most negative)
-std::numeric_limits<int>::infinity();                // floats only
-std::numeric_limits<long long>::max();              // the overflow-safe sum type
-```
-
-## The idioms this site uses constantly
-
-**`iota` + sort = rank mapping** ("sort indices by value": the
-[permutation](/dsa/patterns/sorting-and-selection) idiom):
+## Sums, sequences, and divisors
 
 ```cpp
-std::vector<int> idx(n);
-std::iota(idx.begin(), idx.end(), 0);
-std::sort(idx.begin(), idx.end(), [&](int a, int b) { return v[a] < v[b]; });
-// idx[0] is the index of v's smallest element
+#include <algorithm>
+#include <cassert>
+#include <climits>
+#include <cmath>
+#include <limits>
+#include <numeric>
+#include <vector>
+
+int main() {
+    std::vector<int> v = {4, 1, 3};
+    assert(std::accumulate(v.begin(), v.end(), 0LL) == 8);
+
+    std::vector<int> idx(3);
+    std::iota(idx.begin(), idx.end(), 0);  // {0, 1, 2}
+    std::sort(idx.begin(), idx.end(), [&](int a, int b) { return v[a] < v[b]; });
+    assert((idx == std::vector<int>{1, 2, 0}));  // Indices by value.
+
+    assert(std::gcd(12, 18) == 6 && std::lcm(4, 6) == 12);
+    assert(std::max({3, 9, 2}) == 9);
+    assert(std::clamp(15, 0, 10) == 10);
+    assert(std::abs(-5) == 5);
+    assert(std::numeric_limits<int>::max() == INT_MAX);
+}
 ```
 
-**`accumulate` with the right init type**, the silent-narrowing
-trap: `accumulate(v, 0)` with `int` v and `int` 0 **returns int**
-(overflowing on a sum of ints that exceeds int), while
-`accumulate(v, 0LL)` returns `long long`: the init argument is the
-*accumulator's type*, and passing `0LL` is the
-whole-site convention ([every prefix-sum entry](/dsa/patterns/prefix-sums-and-difference-arrays)).
+`std::accumulate(begin, end, start)` adds every element to `start`. The
+sum uses the type of `start`, so `0` sums in `int` and can overflow, while
+`0LL` sums in `long long`. Use `0LL` unless you are sure the total fits.
 
-**`numeric_limits` as the "infinity" idiom**: Dijkstra's distance
-initialization (`std::vector<int> dist(n,
-std::numeric_limits<int>::max())`), with the [relaxation check](/dsa/patterns/graph-specializations/network-delay-time)
-that treats max as unvisited (`dist[u] != INF` guards), the
-convention that every graph solution on this site follows.
+`std::iota(begin, end, 0)` fills a range with 0, 1, 2, and so on. Combined
+with a sort that compares `v[a] < v[b]`, it gives the indices of `v` in
+order of their values, without moving `v` itself.
 
-**`minmax_element` and the pair idiom**: one pass for both min and
-max (two passes of `min_element` + `max_element` is the waste),
-returning the `[min_it, max_it]` pair, the
-[per-tenant](/system-design/fundamentals/multi-tenancy-and-data-residency)
-"one pass, two answers" discipline at type scale.
+`std::gcd` and `std::lcm` (C++17) compute the greatest common divisor and
+least common multiple. `std::lcm` can overflow for large inputs.
 
-## The traps
+## min, max, and abs
 
-- **`min`/`max` with mixed types** (`std::min(int, unsigned)`) is
-  a compile error (template deduction), and the cast is the fix,
-the reason `std::min<size_t>(a, b)` appears in careful code.
-- **`minmax` evaluates each argument once**: safe with
-  side-effecting arguments (unlike the old
-  [pre-C++11 macros](https://en.cppreference.com/w/cpp/algorithm/min)
-  that every style guide remembers).
-- **`abs` of the most-negative int** is
-  [undefined behavior](/dsa/patterns/recursion-and-math) (the
-  magnitude does not fit: the INT_MIN trap that the
-  [pow entry](/dsa/patterns/recursion-and-math/pow-x-n-recursive)
-  covers in its negative-exponent handling).
-- **`midpoint` for the middle** (not `(a + b) / 2`): the
-  overflow-safe form for binary-search middles, `(a+b)` can
-  overflow when both are large, `midpoint` cannot, and it is the
-  C++20 answer to the [classic binary-search
-  bug](https://lemire.me/blog/2022/05/10/binary-search-overflow/)
-  that the [pattern entry](/dsa/patterns/binary-search-variants)
-  sidesteps with `lo + (hi - lo) / 2`.
+`std::min(a, b)` and `std::max(a, b)` need both arguments to have the same
+type. `std::min(x, v.size())` with an `int` `x` does not compile, because
+`size()` is unsigned; convert one side, as in
+`std::min(x, (int)v.size())`. Pass braces to compare more than two values:
+`std::max({a, b, c})`. `std::clamp(x, lo, hi)` limits `x` to the range
+`[lo, hi]`.
+
+`std::abs(INT_MIN)` is undefined behavior, because the positive value does
+not fit in an `int`.
+
+## Limits and "infinity"
+
+`std::numeric_limits<int>::max()` from `<limits>`, also spelled `INT_MAX`
+in `<climits>`, is the usual starting value when you track a minimum, and
+`INT_MIN` when you track a maximum. In shortest-path code it often marks
+"unreachable". Never add to it: `INT_MAX + 1` overflows. Check
+`dist[u] != INT_MAX` before computing `dist[u] + w`, or choose a smaller
+sentinel such as `1e9` that leaves room for additions.
+
+## pow and sqrt return doubles
+
+`std::pow` and `std::sqrt` from `<cmath>` work in floating point. A result
+such as `std::pow(10, 9)` is a `double`, and converting a large or inexact
+result back to an integer can round down by one. For integer powers,
+multiply in a loop with `long long`, or use fast exponentiation with a
+modulus. To test whether `n` is a perfect square, compute
+`long long r = std::sqrt(n)` and then check `r * r == n`, adjusting `r` by
+one if needed.
+
+## Related C++ tools
+
+- [Integer Overflow & Limits](/cpp/integer-overflow) explains when to switch to `long long`.
+- [Sorting & nth_element](/cpp/algorithms) covers `min_element` and `max_element`.

@@ -1,90 +1,86 @@
 ---
 title: "std::pair / std::tuple / std::array"
-summary: "Structured bindings, lexicographic comparison, fixed-size arrays."
+summary: "Small fixed groups of values: structured bindings, field-by-field comparison, and fixed-size arrays."
 ---
 
-The "small aggregates": `std::pair` (two heterogeneous values),
-`std::tuple` (N heterogeneous values), and `std::array` (N
-same-typed values, on the stack). Their shared superpower is quiet
-and load-bearing across this entire site: **lexicographic
-comparison**, which is why pairs of `(key, value)` sort the way
-you want and why tuples of `(distance, node)` pop from a
-[priority queue](/cpp/priority-queue) in the right order.
+These three types group a fixed number of values. `std::pair` holds two
+values, possibly of different types. `std::tuple` holds any number.
+`std::array` holds a fixed number of values of one type. Pairs and tuples
+come from `<utility>` and `<tuple>`; arrays from `<array>`.
 
-## pair: the two-field workhorse
+## pair
 
 ```cpp
-std::pair<int, std::string> p = {3, "abc"};
-auto [num, str] = p;                  // structured bindings (C++17)
-p.first; p.second;
-std::make_pair(3, "abc");              // deduce types
-p < q;                                // LEXICOGRAPHIC: first, then second
+#include <algorithm>
+#include <array>
+#include <cassert>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
+
+int main() {
+    std::pair<std::string, int> p = {"ada", 36};
+    assert(p.first == "ada" && p.second == 36);
+
+    auto [name, age] = p;  // Structured binding: copies both fields.
+    assert(name == "ada" && age == 36);
+
+    std::vector<std::pair<int, int>> v = {{2, 1}, {1, 9}, {2, 0}};
+    std::sort(v.begin(), v.end());
+    assert((v == std::vector<std::pair<int, int>>{{1, 9}, {2, 0}, {2, 1}}));
+}
 ```
 
-The comparison rule, stated once because it powers half the
-algorithms on this site: **`a < b` compares `a.first < b.first`,
-ties broken by `a.second < b.second`**, pairs sort the way a
-[dictionary sorts two-word phrases](/cpp/string), and the
-consequences:
+A **structured binding**, `auto [a, b] = p;` (C++17), gives each field its
+own name. Write `auto& [a, b]` to refer to the original fields instead of
+copying them. The same syntax names the key and value in
+`for (const auto& [key, value] : someMap)`.
 
-- A [vector of pairs](/cpp/vector) + `std::sort` is a "sort by X,
-  then Y" for free (the compound-comparator idiom).
-- A `priority_queue<pair<int,int>>` is a max-heap by first, ties
-  by second, and `pair<int, pair<int,int>>` extends it (the
-  [Dijkstra](/dsa/patterns/graph-specializations/network-delay-time)
-  idiom: `(distance, node)` pops nearest-first with a *min-heap
-  comparator*, ties broken by node id, all from one type's
-  comparison).
-- `std::map` with a pair key is "a two-dimensional sparse index"
-  (the lexicographic order does the row-major layout).
+Pairs compare **lexicographically**: by `first`, and by `second` only when
+the firsts are equal. That is why sorting a vector of pairs sorts by the
+first field and breaks ties with the second, and why a heap of
+`(distance, node)` pairs orders by distance. To sort by one field
+descending, store it negated, or write a comparator.
 
-## tuple: the N-field generalization
+## tuple
 
 ```cpp
 std::tuple<int, std::string, double> t = {1, "x", 2.5};
-auto [i, s, d] = t;                   // structured bindings
-std::get<0>(t);                       // by index (types may repeat)
-std::get<std::string>(t);             // by type IF unique
-std::make_tuple(...);
-t < u;                                // lexicographic, all fields in order
-std::tie(a, b) = somePair();          // unpack into EXISTING variables
+auto [id, label, score] = t;
+assert(std::get<0>(t) == 1 && label == "x");
+
+int a = 0, b = 0;
+std::tie(a, b) = std::make_pair(3, 4);  // Assigns to existing variables.
+assert(a == 3 && b == 4);
 ```
 
-`std::tie` is the idiom worth knowing (unpacking into existing
-variables rather than declaring new ones), and
-[structured bindings](https://en.cppreference.com/w/cpp/language/structured_binding)
-are the modern form that replaced it for most cases. The
-[map iteration](/cpp/unordered-map) idiom
-(`for (auto& [key, value] : m)`) is the same mechanism binding the
-map's pair-typed elements.
+`std::get<i>(t)` reads field `i`, counting from 0. Tuples also compare
+field by field. `std::tie(a, b)` builds a tuple of references, which can
+receive values or compare several fields at once in a comparator. For
+anything beyond three or four fields, a small `struct` with named members
+is easier to read.
 
-## array: the fixed-size, stack-allocated array
+## array
 
 ```cpp
-std::array<int, 26> counts{};         // {} zero-initializes: the idiom
-counts.size();                        // constexpr: known at compile time
-counts[0];
-counts.fill(x);
-std::sort(counts.begin(), counts.end());  // full container interface
-// Unlike C arrays: it COPIES (assignable, passable by value),
-// knows its size, and works with the algorithms.
-// Unlike vector: no resize, no heap: stack storage, fixed N.
+std::array<int, 26> counts{};  // 26 zeros: the {} matters.
+for (char c : std::string("hello")) ++counts[c - 'a'];
+assert(counts['l' - 'a'] == 2 && counts.size() == 26);
 ```
 
-`std::array` is the answer where this site's code writes
-`std::array<int, 26>` for letter counts and `std::array<TrieNode*, 26>`
-for [trie children](/dsa/patterns/trie-prefix-tree): a
-compile-time-sized, contiguous, zero-initializable aggregate, the
-C array's semantics with a real type's interface. The
-`{}`-initializer ("all zeros") is the idiom that C arrays lacked.
+The size is part of the type and cannot change. The elements live inside
+the `std::array` object itself, with no separate allocation. Without `{}`,
+a local `std::array<int, 26>` holds garbage values, and reading them is
+undefined behavior.
 
-## The collective lesson
+Unlike a plain C array, a `std::array` knows its `size()`, copies on
+assignment, compares with `==`, and can be returned from a function. Unlike
+a vector, it never grows. It suits letter counts, direction tables such as
+`std::array<int, 4> dr = {-1, 1, 0, 0}`, and trie child pointers.
 
-All three are **aggregate types with derived comparison**: they
-carry their values and *define* their order, which is the
-difference between a container's elements and a bag of fields.
-When a solution on this site sorts `pair`s, pops `pair`s, or maps
-`touple`s, the type's lexicographic comparison is doing quiet
-algorithmic work, the same work a hand-written comparator does
-when the natural order is not enough, which is when
-[the lambda entry](/cpp/function-lambdas) takes over.
+## Related C++ tools
+
+- [Custom Comparators](/cpp/comparators) uses `std::tie` to compare several fields.
+- [std::priority_queue](/cpp/priority-queue) orders pairs by their first field.
+- [std::vector](/cpp/vector) is the growable alternative to `std::array`.

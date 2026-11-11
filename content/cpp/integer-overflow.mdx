@@ -3,77 +3,93 @@ title: "Integer Overflow & Limits"
 summary: "Where int runs out, why signed overflow is undefined, and the habits that prevent it."
 ---
 
-An `int` holds roughly ±2.1 × 10^9. Interview inputs routinely reach
-10^5 elements with values up to 10^9, so a single sum or product can pass
-that limit. For signed integers, going past the limit is *undefined
-behavior*. The compiler may assume it never happens, so the result is not
-even reliably "wrapped around".
+An `int` holds roughly ±2.1 × 10^9. Problems routinely give 10^5 values of
+up to 10^9 each, so a single sum or product can pass that limit. For
+signed integers, going past the limit is **undefined behavior**. The
+compiler may assume it never happens, so you cannot rely on the value
+wrapping around.
 
 ## The limits
 
-```cpp
-#include <limits>
+| Type | Largest value | Roughly |
+| --- | --- | --- |
+| `int` | 2,147,483,647 (`INT_MAX`) | 2.1 × 10^9 |
+| `long long` | 9,223,372,036,854,775,807 (`LLONG_MAX`) | 9.2 × 10^18 |
 
-std::numeric_limits<int>::max();        //  2147483647   (about 2.1e9)
-std::numeric_limits<int>::min();        // -2147483648
-std::numeric_limits<long long>::max();  //  9223372036854775807 (about 9.2e18)
-INT_MAX; LLONG_MAX;                     // the <climits> spellings
-```
-
-Note the asymmetry: `min()` is one further from zero than `max()`. That
-is why negating `INT_MIN` overflows, the trap in
-[Pow(x, n)](/dsa/patterns/recursion-and-math/pow-x-n-recursive).
+`INT_MAX` and `LLONG_MAX` come from `<climits>`; the same values are
+available as `std::numeric_limits<int>::max()` from `<limits>`. The
+smallest `int`, `INT_MIN`, is -2,147,483,648: one further from zero than
+`INT_MAX`. That is why `-INT_MIN` and `std::abs(INT_MIN)` overflow, the
+trap in [Pow(x, n)](/dsa/patterns/recursion-and-math/pow-x-n-recursive).
 
 ## Where overflow hides
 
-- **Sums of many values.** 10^5 values of 10^9 sum to 10^14. Use a
-  `long long` accumulator.
-- **Products.** Two values of 10^5 multiply to 10^10. Cast one operand
-  *before* multiplying.
-- **Midpoints.** `(lo + hi) / 2` overflows when both are large. Write
-  `lo + (hi - lo) / 2`.
-- **Infinity sentinels.** `INT_MAX + weight` in a shortest-path
-  relaxation overflows. Check `dist != INF` before adding.
-- **Accumulate's start value.** `std::accumulate(v.begin(), v.end(), 0)`
-  sums in `int` because `0` is an `int`. Write `0LL`.
-
 ```cpp
-long long total = 0;
-for (int x : nums) {
-    total += x;                          // promoted per addition: safe
+#include <cassert>
+#include <numeric>
+#include <vector>
+
+int main() {
+    std::vector<int> nums(100000, 1000000000);  // 10^5 values of 10^9.
+
+    long long total = 0;
+    for (int x : nums) total += x;               // Each x widens: safe.
+    assert(total == 100000000000000LL);
+
+    assert(std::accumulate(nums.begin(), nums.end(), 0LL) == total);
+
+    int width = 100000, height = 100000;
+    long long area = 1LL * width * height;       // Widen first: safe.
+    assert(area == 10000000000LL);
+    // int bad = width * height;                 // Multiplies in int: overflow.
+
+    int lo = 2000000000, hi = 2100000000;
+    int mid = lo + (hi - lo) / 2;                // (lo + hi) / 2 overflows.
+    assert(mid == 2050000000);
 }
-
-long long area = 1LL * width * height;  // cast first, then multiply
-int wrong = width * height;             // multiplies in int, then overflows
-
-long long sum = std::accumulate(v.begin(), v.end(), 0LL);
 ```
 
-The `1LL *` trick works because C++ converts both operands to the wider
-type before the multiplication happens. Casting the *result* is too late.
+- **Sums of many values.** Keep the total in a `long long`. With
+  `std::accumulate`, pass `0LL` as the start value, because `0` sums in `int`.
+- **Products.** Widen *before* multiplying: `1LL * a * b`. Writing
+  `(long long)(a * b)` is too late, because the multiplication has already
+  overflowed in `int`.
+- **Midpoints.** `(lo + hi) / 2` overflows when both are large. Write
+  `lo + (hi - lo) / 2`.
+- **"Infinity" sentinels.** `INT_MAX + w` overflows in a shortest-path
+  update. Check `dist != INT_MAX` before adding.
 
 ## Modular arithmetic
 
 When a problem says "return the answer modulo 10^9 + 7", reduce after
-every operation. Each value stays below the modulus, and a product of two
-of them stays below about 10^18, inside `long long`.
+every addition and multiplication. Each value then stays below the
+modulus, and a product of two of them stays below about 10^18, inside
+`long long`:
 
 ```cpp
 const long long MOD = 1'000'000'007;
-long long result = (a % MOD) * (b % MOD) % MOD;
+long long a = 123456789, b = 987654321;
+long long product = (a % MOD) * (b % MOD) % MOD;
+long long diff = ((a - b) % MOD + MOD) % MOD;  // Never negative.
+assert(product >= 0 && product < MOD && diff >= 0);
 ```
+
+In C++, `%` of a negative number is negative: `-3 % 5` is `-3`. After a
+subtraction, add `MOD` and reduce again, as in `diff` above.
 
 ## Unsigned is not a fix
 
 Unsigned arithmetic wraps around in a defined way, but that only swaps
-undefined behavior for silent wrong answers. Mixing it with signed values
-causes its own bugs: `v.size() - 1` is a huge number when `v` is empty,
-because `size()` is unsigned. Cast sizes to `int` before subtracting, or
-compare `i + 1 < v.size()` instead.
+undefined behavior for silent wrong answers. `v.size()` is unsigned, so
+`v.size() - 1` is a huge number when `v` is empty. Compare
+`i + 1 < v.size()` instead, or convert the size to `int` before subtracting.
 
 ## Catching it
 
 Compile with `-fsanitize=undefined` while testing. It reports signed
-overflow at the exact line, which is how the boundary bug in
-[Longest Consecutive Sequence](/dsa/patterns/hash-based-structures/longest-consecutive-sequence)
-was found on this site.
+overflow at the exact line where it happens.
+
+## Related C++ tools
+
+- [Numeric Utilities](/cpp/numeric) covers `accumulate`, `numeric_limits`, and `pow`.
+- [Bit Operations](/cpp/bit-operations) covers safe shifts for wide masks.

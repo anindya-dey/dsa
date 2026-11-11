@@ -1,141 +1,174 @@
 ---
 title: "std::vector"
-summary: "A growable array: contiguous storage, size versus capacity, and safe access to its elements."
+summary: "The growable array: creating, looping, copying, grids, size versus capacity, and insert and erase."
 ---
 
 `std::vector` is an array that can grow as you add elements, with O(1)
-access by index. It is a useful starting choice for an ordinary sequence.
+access by index. It is the default choice for an ordinary sequence.
+It lives in the `<vector>` header. The element type goes in angle brackets:
+`std::vector<int>` holds `int` values, and every element has that one type.
 
-## Contiguous storage and data()
-
-Except for `vector<bool>`, a vector stores its elements in **contiguous
-memory**, with each element immediately following the previous one.
-Contiguous means adjacent, while continuous usually means uninterrupted.
-This guarantee concerns program addresses, not the physical arrangement of RAM.
-
-When the element type `T` is not `bool`, `v.data()` returns a `T*` pointer to the storage, or `const T*`
-for a const vector, which prevents changes through the pointer. At a valid
-index `i`, `v.data() + i` points to `v[i]`. Adding 1 advances one element,
-or `sizeof(T)` bytes, rather than one byte regardless of type.
+## Creating and filling a vector
 
 ```cpp
 #include <cassert>
+#include <string>
 #include <vector>
 
 int main() {
-    std::vector<int> v = {10, 20, 30};
-    int* p = v.data();
+    std::vector<int> none;            // No elements yet.
+    std::vector<int> zeros(3);        // {0, 0, 0}
+    std::vector<int> sevens(3, 7);    // {7, 7, 7}
+    std::vector<int> listed = {3, 7}; // {3, 7}
 
-    assert(p == &v[0]);
-    assert(p + 2 == &v[2]);
-    assert(*(p + 2) == 30);
+    std::vector<std::string> words;
+    words.push_back("tea");           // Appends a finished string.
+    words.emplace_back(3, 'z');       // Builds "zzz" at the end.
+
+    assert(none.empty() && none.size() == 0);
+    assert(zeros.size() == 3 && zeros[2] == 0);
+    assert((sevens == std::vector<int>{7, 7, 7}));
+    assert(listed.size() == 2);
+    assert(words.front() == "tea" && words.back() == "zzz");
 }
 ```
 
-The assertions check the pointer arithmetic. An empty vector has no element
-to dereference, even if `data()` is non-null. Saved element pointers become
-invalid after reallocation or destruction.
+Parentheses pass a count, optionally followed by a fill value. Braces list
+the elements themselves. So `sevens(3, 7)` holds three sevens, while
+`{3, 7}` holds two elements. A count alone fills the vector with zeros for
+numbers, or with empty values for types such as `std::string`.
+
+`push_back(x)` appends `x`. `emplace_back(args...)` passes its arguments
+to the element's constructor and builds the element at the end. For simple
+values such as `int`, both do the same job. `size()` counts the elements,
+`empty()` tests whether there are none, and `==` compares two vectors
+element by element.
+
+## Reading elements and looping
+
+`v[i]` and `v.at(i)` both read index `i` in O(1). `at` throws
+`std::out_of_range` for a bad index; `[]` does not check, and a bad index
+is undefined behavior: it may crash or seem to work. `front()`, `back()`,
+and `pop_back()` need a nonempty vector.
+
+```cpp
+std::vector<std::string> names = {"ada", "alan"};
+for (const std::string& name : names) {  // Reads without copying.
+    assert(!name.empty());
+}
+for (std::string& name : names) {        // Changes each element.
+    name[0] = 'A';
+}
+assert(names[1] == "Alan");
+```
+
+Writing `for (std::string name : names)` would copy each string, and
+changes would affect only the copy. For small types such as `int`,
+`for (int x : v)` is fine.
+
+When you need the position, loop with an index of type `std::size_t`, the
+unsigned type that `size()` returns. Unsigned values cannot go below zero:
+on an empty vector, `v.size() - 1` wraps around to a huge number. A bound
+such as `i < v.size() - 1` then reads far out of range. Write
+`i + 1 < v.size()` instead.
+
+## Copies and function parameters
+
+`std::vector<int> b = a;` copies every element, so later changes to `b` do
+not affect `a`. Passing a vector **by value** makes the same O(n) copy.
+Pass `const std::vector<int>&` when a function only reads, and
+`std::vector<int>&` when it should change the caller's vector:
+
+```cpp
+int sum(const std::vector<int>& v) {  // Reads the caller's vector.
+    int total = 0;
+    for (int x : v) total += x;
+    return total;
+}
+
+void doubleAll(std::vector<int>& v) { // Changes the caller's vector.
+    for (int& x : v) x *= 2;
+}
+```
+
+Returning a vector by value is fine: the result is moved or built in
+place, not copied element by element.
+
+## Grids: vectors of vectors
+
+```cpp
+int rows = 2, cols = 3;
+std::vector<std::vector<int>> grid(rows, std::vector<int>(cols, 0));
+grid[1][2] = 5;  // Row 1, column 2.
+assert(grid.size() == 2 && grid[1].size() == 3 && grid[1][2] == 5);
+```
+
+`grid.size()` is the number of rows and `grid[r].size()` is the length of
+row `r`. Each row is a separate vector, so rows may have different lengths.
 
 ## Size, capacity, and growth
 
-`size()` counts existing elements. `capacity()` counts how many fit in the
-current allocation. Exceeding capacity requires **reallocation**: obtaining
-a larger buffer and moving or copying the existing elements into it.
+`size()` counts existing elements. `capacity()` counts how many fit before
+the vector must **reallocate**: get a larger buffer and move the elements
+into it.
 
 ```cpp
 std::vector<int> scores = {10, 20, 30};
-scores.reserve(5);  // Size is still 3; capacity is at least 5.
-assert(scores.size() == 3 && scores.capacity() >= 5);
-scores.push_back(40);
-scores.resize(5);   // Adds one int initialized to 0.
-assert((scores == std::vector<int>{10, 20, 30, 40, 0}));
+scores.reserve(100);  // Size is still 3; capacity is at least 100.
+scores.resize(5);     // Adds two zeros: {10, 20, 30, 0, 0}.
+assert(scores.size() == 5 && scores.capacity() >= 100);
 ```
 
-`reserve` prepares storage without changing size; `resize` changes the
-number of elements. Reserve once when you know the expected final size.
-That call may reallocate, but subsequent appends do not while size remains
-within capacity. `clear()` removes all elements but keeps capacity;
-`shrink_to_fit()` requests less storage, but the library may ignore the request.
+`reserve` prepares space without adding elements; `resize` changes the
+number of elements. Reserve when you know the final size. `clear()`
+removes all elements but keeps the capacity.
 
-Appending with `push_back` is
-[amortized O(1)](/dsa/patterns/asymptotic-analysis#amortized-paying-for-the-expensive-rare-case).
-One append may relocate every existing element, but n ordinary appends
-from empty take O(n) total element moves or copies. Typical libraries grow
-capacity geometrically, although the exact growth factor is not specified.
+`push_back` is
+[amortized O(1)](/dsa/patterns/asymptotic-analysis#amortized-paying-for-the-expensive-rare-case):
+one append may move every element, but each reallocation multiplies the
+capacity rather than adding a fixed amount, so n appends cost O(n) in total.
 
-## Accessing and removing elements safely
+## Contiguous versus continuous
 
-Both `v[i]` and `v.at(i)` provide O(1) access. The difference is checking:
-`at` throws `std::out_of_range` for an invalid index, while an out-of-range
-`[]` access is undefined behavior in C++20. The language does not define
-the outcome: it may crash or appear to work. `front()`, `back()`, and
-`pop_back()` require a nonempty vector.
+The two words are easy to mix up. **Contiguous** means adjacent: each
+piece sits directly next to the previous one. **Continuous** means
+uninterrupted, like a continuous stream of data. Descriptions of
+containers use contiguous.
 
-An **iterator** represents a position used to traverse a container;
-`end()` represents the position just past its last element. A pointer or
-reference can also identify an element, but these saved handles do not
-survive every modification:
+A vector stores its elements in **contiguous memory**: each element
+immediately follows the previous one, with no gaps. `v.data()` returns a
+pointer to the first element, and `v.data() + i` points to `v[i]`. This
+layout is why indexing is O(1) and why scanning a vector is fast.
 
-- Reallocation invalidates all element pointers, references, and iterators.
-- Without reallocation, insertion or erasure invalidates handles at or
-  after the changed position. Earlier elements remain valid.
-- Every `push_back` invalidates the old `end()`, even without reallocation.
+`std::vector<bool>` is the exception. It usually packs values into bits,
+has no `data()`, and `v[i]` returns a proxy object rather than a `bool&`.
+If that matters, use `std::vector<char>` or `std::vector<int>` for flags.
 
-Do not append inside a range-based loop over the same vector: the loop
-holds iterators that appending invalidates. To process only the original
-elements, save their count and use indices, copying each value before an
-append that might reallocate.
+## Inserting and erasing
 
-Middle insertion and erasure take O(n), where n is the number of elements,
-because existing values may need to shift.
-For bulk filtering, C++20's `std::erase_if` removes elements satisfying a
-condition in one linear pass, rather than repeatedly shifting the remaining
-elements after individual erasures.
-
-## Why `vector<bool>` is different
-
-`std::vector<bool>` commonly packs values into individual bits. It does not
-guarantee an array of addressable `bool` objects, so there is no portable
-`bool*` interface through `data()`, and the ordinary pointer-arithmetic
-rule does not apply.
-
-Mutable `bits[i]` returns a **proxy**, a small handle that reads or writes
-a bit, not a `bool&`. `auto` preserves that proxy; `bool` copies its value:
+An **iterator** is a position in a container. `begin()` is the first
+element, `end()` is just past the last, and `v.begin() + i` is index `i`.
+`insert` and `erase` take such a position:
 
 ```cpp
-std::vector<bool> bits = {true, false};
-auto bit = bits[0];  // Proxy referring to the first bit.
-bit = false;        // Changes bits[0].
-bool value = bits[0];
-bits[0] = true;     // value remains false: it is an independent copy.
-assert(bits[0] && !value);
+std::vector<int> v = {10, 20, 30};
+v.insert(v.begin() + 1, 15);  // {10, 15, 20, 30}
+v.erase(v.begin());           // {15, 20, 30}
+v.pop_back();                 // {15, 20}; returns nothing.
+assert((v == std::vector<int>{15, 20}));
 ```
 
-Use `std::vector<char>` for contiguous byte-sized flags. `std::deque<bool>`
-gives real bool references but is not contiguous.
-[`std::bitset`](/dsa/patterns/bit-manipulation) offers fixed-size bits;
-`vector<bool>` remains an option for a dynamic size.
+Inserting or erasing in the middle is O(n) because later elements shift.
+To remove every element matching a condition, C++20's
+`std::erase_if(v, pred)` does it in one O(n) pass.
 
-## Choosing vector in practice
-
-Sequential reads can reuse nearby elements fetched together in a **cache
-line**, a block of memory held in the CPU cache. Hardware prefetching may
-also fetch upcoming data early. It is commonly enabled on modern CPUs,
-not a vector setting or a C++ guarantee. Random access can lose this benefit.
-
-Contiguous storage does not guarantee maximum **memory bandwidth**, the
-amount transferred per second; calculations may limit your loop instead.
-Linked-list nodes may already be cached, so each step need not cause a
-**cache miss**, where needed data is absent. Actual speed depends on the
-workload, not just the container's layout.
-
-Choose by required operations first: a deque supports efficient front
-insertion, while a hash table supports key-based lookup. If several choices
-fit, benchmark realistic sizes, element types, and access patterns. Compare time, memory
-use, and latency spikes in optimized builds, keeping results observable
-so the compiler cannot eliminate the work.
+Saved iterators, pointers, and references can become invalid when the
+vector changes. Reallocation invalidates all of them; insert and erase
+invalidate those at or after the changed position. In particular, never
+`push_back` into a vector while a range-based `for` loop walks it.
 
 ## Related C++ tools
 
-- [std::deque](/cpp/deque) supports efficient growth at either end.
-- [std::string](/cpp/string) provides owned storage specifically for text.
+- [Iterator Invalidation](/cpp/invalidation) lists what each change invalidates.
+- [Sorting & nth_element](/cpp/algorithms) covers `std::sort` on a vector's range.
+- [std::deque](/cpp/deque) supports efficient growth at both ends.

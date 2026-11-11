@@ -1,124 +1,106 @@
 ---
 title: "std::map / std::set"
-summary: "Sorted keys: lookup, range queries, comparator rules, and stable iterators."
+summary: "Sorted keys: lookup, smallest and largest, lower_bound ranges, multiset duplicates, and custom order."
 ---
 
-Keeping keys in order is useful when you want a sorted inventory, the
-smallest key, or all entries between two keys. `std::map` maintains that
-order while associating one value with each unique key. `std::set`
-maintains ordered keys without associated values.
+`std::map` stores one value for each unique key and keeps the keys
+sorted. `std::set` keeps sorted unique keys with no values. Use them when
+you need order: the smallest key, the largest, or every key in a range.
+Lookup, insertion, and erasure take O(log n).
 
-## Sorted keys and ordinary lookup
-
-With the default comparator, integers appear in ascending order and strings
-in lexicographic order. The latter compares character codes rather than
-applying a language-specific dictionary order. Entries stay ordered as
-you insert and erase them; you do not need to sort the container yourself.
-
-`find(key)` returns an **iterator**, a traversal position referring to an
-entry, or `end()` if the key is missing. In a map, `it->first` is the key
-and `it->second` is the mapped value; in a set, `*it` is the key itself.
-Check for `end()` before reading either. `contains` (C++20) checks membership
-without returning an iterator. Neither inserts a key.
-
-For a map, `at(key)` returns the mapped value or throws `std::out_of_range`.
-`operator[]` creates a missing entry, initializing an `int` value to zero.
-Use it when insertion is intended, not for a read that must leave the map
-unchanged. `insert` and `emplace` do not replace an existing value;
-`insert_or_assign` (C++17) does.
-
-## Finding a range of keys
-
-For the default ascending order, `lower_bound(key)` finds the first key
-greater than or equal to the argument. `upper_bound(key)` finds the first
-strictly greater key. Both return `end()` if there is no such entry.
-
-To select a **half-open range**, include its lower endpoint and exclude
-its upper endpoint. That requires `lower_bound` at both ends:
+## Sorted lookup
 
 ```cpp
 #include <cassert>
-#include <functional>
 #include <map>
 #include <set>
 #include <string>
 #include <vector>
 
 int main() {
-    std::map<std::string, int> stock = {
-        {"pear", 4}, {"apple", 1}, {"melon", 3}, {"mango", 2}
-    };
-    assert(stock.begin()->first == "apple");
-    assert(stock.rbegin()->first == "pear");
-    assert(stock.at("mango") == 2);
+    std::map<std::string, int> stock = {{"pear", 4}, {"apple", 1}, {"melon", 3}};
+    stock["kiwi"] = 2;  // Inserts, or overwrites an existing value.
 
-    auto first = stock.lower_bound("mango");
-    auto last = stock.lower_bound("pear");
-    std::vector<std::string> selected;
-    for (auto it = first; it != last; ++it) {
-        selected.push_back(it->first);
-    }
-    assert((selected == std::vector<std::string>{"mango", "melon"}));
+    assert(stock.begin()->first == "apple");  // Smallest key.
+    assert(stock.rbegin()->first == "pear");  // Largest key.
+    assert(stock.at("melon") == 3);
+    assert(stock.contains("kiwi") && !stock.contains("fig"));
+
+    std::vector<std::string> inOrder;
+    for (const auto& [name, count] : stock) inOrder.push_back(name);
+    assert((inOrder == std::vector<std::string>{"apple", "kiwi", "melon", "pear"}));
+
+    std::set<int> s = {5, 1, 3};
+    assert(*s.begin() == 1 && *s.rbegin() == 5);
 }
 ```
 
-The loop visits mango and melon, but not pear. Using `upper_bound("pear")`
-would include pear. Compute the endpoints once, and ensure that the lower
-endpoint does not come after the upper one under the container's ordering.
-Searching the endpoints costs O(log n); visiting r results adds O(r).
+The reading rules match `unordered_map`: `[]` creates a missing key,
+`contains` and `count` only check, `find` returns an iterator or `end()`,
+and `at` throws for a missing key. In a map, `it->first` is the key and
+`it->second` the value; in a set, `*it` is the key.
 
-For the default order, `begin()` refers to the smallest key and `rbegin()`
-to the largest. Do not dereference either on an empty container.
-`equal_range(key)` returns the lower and upper bounds together; in a map
-or set, that range contains at most one equivalent key.
+Iterating visits keys in ascending order. `begin()` is the smallest and
+`rbegin()` the largest; dereference them only when the container is
+nonempty. Strings sort by
+character code, so `"Zoo"` comes before `"apple"`.
 
-## Sets and custom ordering
+## Finding neighbors and ranges
 
-A set supports lookup, insertion, erasure, and the same boundary operations,
-but has no mapped value, so it has no `[]` or `at` interface. You can change
-the ordering of either container by providing a **comparator**, a function
-object that answers whether one key should come before another:
+`lower_bound(x)` returns the first key `>= x`. `upper_bound(x)` returns the
+first key `> x`. Either returns `end()` if no such key exists.
 
 ```cpp
-std::set<int, std::greater<int>> scores = {10, 30, 20};
-assert(*scores.begin() == 30);
-assert(*scores.rbegin() == 10);
+std::set<int> times = {10, 20, 30, 40};
+assert(*times.lower_bound(20) == 20);  // First >= 20.
+assert(*times.upper_bound(20) == 30);  // First > 20.
+assert(times.lower_bound(50) == times.end());
+
+auto it = times.lower_bound(25);       // 30.
+assert(*std::prev(it) == 20);          // Largest key < 25.
 ```
 
-This comparator puts larger values first. Custom ordering must be consistent;
-the C++ requirement is called a **strict weak ordering**. In particular,
-a key must not compare before itself, so `<=` is not a valid comparator.
-Two keys count as equivalent when neither compares before the other, even
-if their `operator==` says otherwise. Iteration and bounds follow that
-comparator, so ascending-order interpretations do not apply to every map.
+To find the largest key below `x`, step back from `lower_bound(x)` with
+`std::prev`, after checking that the result is not `begin()`. To visit
+every key in `[a, b)`, loop from `lower_bound(a)` to `lower_bound(b)`.
+Each search is O(log n). Always use these member functions: the free
+`std::lower_bound` on a set walks the tree one step at a time, which is O(n).
 
-Keys cannot be changed through the container's iterators because that could
-break the ordering. A map's mapped values can still be changed.
+## Duplicates: multiset and multimap
 
-## Cost, stability, and when to use them
+A set keeps one copy of each key. `std::multiset` keeps duplicates, which
+helps when you need a sorted window of values that may repeat:
 
-These containers are usually implemented as balanced trees, but that
-specific representation is not required. With n stored keys, lookup, ordinary
-insertion, and erase-by-key have O(log n) complexity. Full traversal is O(n), while erasing
-one entry through an iterator is amortized O(1). These bounds assume
-constant-cost comparisons; long keys can add comparison work.
+```cpp
+std::multiset<int> window = {3, 1, 3};
+window.erase(window.find(3));  // Removes ONE 3.
+assert(window.count(3) == 1);
+window.erase(3);               // Removes EVERY 3.
+assert(window.count(3) == 0 && window.size() == 1);
+```
 
-Iterators let you walk forward or backward, but not jump directly to the
-ith element. Reaching it from `begin()` takes O(i) steps, unlike indexing
-a vector.
+`erase(key)` removes all copies, so erase through `find` when you mean one.
+`std::multimap` does the same for key-value pairs, allowing one key to
+appear with several values.
 
-Insertion preserves existing iterators, pointers, and references. Erasure
-invalidates only handles to the removed entries; `it = stock.erase(it)`
-returns the next iterator for continuing a loop. Unordered containers also
-preserve element pointers and references during rehashing, but invalidate
-iterators. Iterator stability is the distinction, not reference stability.
+## Custom order
 
-Choose map or set when sorted traversal, key ranges, or guaranteed logarithmic
-lookup matter. If you only need membership or key-based lookup, an unordered
-container may be a better fit with its average O(1) operations.
+Pass a comparator to change the order. `std::greater<int>` from
+`<functional>` sorts in descending order:
+
+```cpp
+std::set<int, std::greater<int>> desc = {10, 30, 20};
+assert(*desc.begin() == 30);
+```
+
+Two keys count as the same key when neither comes before the other under
+the comparator. A comparator must use a strict `<`-style test, never `<=`.
+
+Choose `map` or `set` when order matters. If you only need lookup, an
+unordered container is usually faster, at O(1) on average.
 
 ## Related C++ tools
 
-- [std::unordered_map / unordered_set](/cpp/unordered-map) prioritizes lookup over order.
-- [Custom Comparators](/cpp/comparators) explains the ordering contract in more detail.
-- [lower_bound & upper_bound](/cpp/binary-search-algos) covers searching sorted sequences.
+- [std::unordered_map / unordered_set](/cpp/unordered-map) offers faster lookup without order.
+- [Custom Comparators](/cpp/comparators) explains the ordering rules in detail.
+- [lower_bound & upper_bound](/cpp/binary-search-algos) does the same searches on a sorted vector.

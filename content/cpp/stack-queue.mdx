@@ -1,70 +1,90 @@
 ---
 title: "std::stack / std::queue"
-summary: "Adapters over a container: LIFO and FIFO with a chosen underlying store."
+summary: "LIFO and FIFO: push, peek, pop that returns nothing, BFS with a queue, and the underlying container."
 ---
 
-`std::stack` and `std::queue` are not containers: they are
-**adapters**: a narrow interface (push/pop/peek) wrapped around a
-*real* container you choose (the template's second parameter),
-defaulting to [deque](/cpp/deque) for both. The design lesson
-worth having: the adapter *removes* access (a stack cannot be
-iterated, a queue cannot be indexed: deliberately), because the
-restricted interface **is the discipline**: the
-[stacks-and-queues pattern](/dsa/patterns/stacks-and-queues) exists
-because "most recent unresolved first" and "oldest first" are
-semantic commitments, and the type enforces them.
+A **stack** is last in, first out (LIFO): you take back the most recent
+item first, like a pile of plates. A **queue** is first in, first out
+(FIFO): items leave in the order they arrived, like a line at a shop.
+`std::stack` lives in `<stack>` and `std::queue` in `<queue>`.
 
-## The API surface
+## The operations
 
 ```cpp
-std::stack<int> st;                  // over deque by default
-st.push(x);
-st.pop();                            // removes top, RETURNS NOTHING
-st.top();                            // peek
-st.empty(); st.size();
+#include <cassert>
+#include <queue>
+#include <stack>
 
-std::queue<int> q;                    // over deque by default
-q.push(x); q.push(x);
-q.pop();                             // removes front, RETURNS NOTHING
-q.front(); q.back();
-q.empty(); q.size();
+int main() {
+    std::stack<int> st;
+    st.push(1);
+    st.push(2);
+    assert(st.top() == 2);  // Most recent.
+    st.pop();               // Removes 2; returns nothing.
+    assert(st.top() == 1 && st.size() == 1);
 
-// The underlying-container choice:
-std::stack<int, std::vector<int>> fastStack;   // contiguous: fastest
-std::queue<int, std::list<int>> listQueue;     // stable references
+    std::queue<int> q;
+    q.push(1);
+    q.push(2);
+    assert(q.front() == 1 && q.back() == 2);  // Oldest is at the front.
+    q.pop();                                  // Removes 1; returns nothing.
+    assert(q.front() == 2);
+    assert(!q.empty());
+}
 ```
 
-The trap that everyone hits once: **`pop()` returns void** (both
-adapters), because returning-by-value-and-removing cannot be
-exception-safe (the classic
-[GotW](https://herbsutter.com/2008/01/01/gotw-82-a-few-of-my-favorite-cs-traits/)-era
-argument). The idiom is *peek then pop*:
+Every operation shown is O(1). Two rules catch people out:
+
+- **`pop()` returns nothing.** Read `top()` or `front()` first, then pop.
+- **The container must not be empty** when you call `top`, `front`,
+  `back`, or `pop`. Doing so is undefined behavior, so check `empty()`
+  first, as in `while (!st.empty() && st.top() < x) st.pop();`.
+
+You cannot loop over a stack or queue, or read an element by index. Only
+the top, or the front and back, are visible. If you need more, use a
+vector or deque directly.
+
+## A queue for breadth-first search
+
+Breadth-first search (BFS) visits a graph level by level, and a queue
+keeps the nodes in the order they were found:
 
 ```cpp
-auto value = q.front();              // copy/move out FIRST
-q.pop();                             // then remove
+std::vector<std::vector<int>> adj = {{1, 2}, {3}, {3}, {}};
+std::vector<int> dist(adj.size(), -1);
+std::queue<int> frontier;
+dist[0] = 0;
+frontier.push(0);
+while (!frontier.empty()) {
+    int u = frontier.front();
+    frontier.pop();
+    for (int v : adj[u]) {
+        if (dist[v] == -1) {
+            dist[v] = dist[u] + 1;
+            frontier.push(v);
+        }
+    }
+}
+assert(dist[3] == 2);
 ```
 
-## Which underlying container, and why it matters
+Mark a node as seen when you push it, not when you pop it, so it is never
+queued twice.
 
-| Adapter over | Fast at | Notes |
-| --- | --- | --- |
-| `deque` (default) | both ends, element-references stable | the safe default, [block storage](/cpp/deque) |
-| `vector` | contiguous, fastest iteration, `reserve` | stack only (needs only back), not queue (front is O(n)) |
-| `list` | O(1) front/back, stable everything | the pool-node world, worst cache behavior |
+## The underlying container
 
-A stack over `vector` is the common speed choice (it needs only
-one end: [the vector entry](/cpp/vector) with its contiguous
-walk), and `emplace` (construct in place) for both adapters avoids
-the copy at push.
+`stack` and `queue` are **adapters**: they wrap another container and
+expose only the stack or queue operations. Both use `std::deque` by
+default. You can choose another, such as `std::stack<int,
+std::vector<int>>`, which stores the stack in a vector. A queue needs
+removal at the front, so it cannot use a vector.
 
-## Where this site uses them
+Many solutions skip `std::stack` and use a `std::vector` with
+`push_back`, `back`, and `pop_back`. That works the same and also lets you
+loop over the contents.
 
-The whole [stacks-and-queues pattern](/dsa/patterns/stacks-and-queues)
-is the semantics entry ([matching](/dsa/patterns/stacks-and-queues/valid-parentheses),
-[undo-redo](/system-design/lld/text-editor-undo-redo),
-[BFS frontiers](/dsa/patterns/graph-traversals/rotting-oranges));
-this entry is the type's mechanics. The two adapters are the
-smallest real example of "a container *plus a policy*", the same
-design idea as the [state-machine](/system-design/lld/vending-machine)
-interfaces, at type scale: the narrow interface is the product.
+## Related C++ tools
+
+- [std::deque](/cpp/deque) is the default container underneath both.
+- [std::priority_queue](/cpp/priority-queue) pops the highest-priority item instead of the oldest.
+- [std::vector](/cpp/vector) can serve as a stack with `push_back` and `pop_back`.
