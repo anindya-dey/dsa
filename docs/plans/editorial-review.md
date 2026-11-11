@@ -561,6 +561,9 @@ Verification:
   stack-queue 300, deque 297, optional 263. Vector exceeds the band
   because it is the basic container every other entry builds on.
 
+Review commit: `c586116` (`docs(review): batches C2-C4 - rewrite C++
+Toolkit as DSA refresher`). Phase 1 (C++ Toolkit) is complete.
+
 ## Follow-ups
 
 Findings too large for a single batch go here, with the batch where they
