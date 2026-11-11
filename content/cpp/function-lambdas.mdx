@@ -1,108 +1,112 @@
 ---
 title: "std::function & Lambdas"
-summary: "Closures, captures, and the comparator pattern used across this site."
+summary: "Lambdas, captures, passing them to algorithms, and recursive helpers with std::function."
 ---
 
-Lambdas are this site's most-used C++ feature after the containers
-themselves: every custom comparator, every hash, every
-[greedy sort key](/dsa/patterns/greedy-algorithms/partition-labels),
-every strategy parameter is a lambda. This entry covers the
-mechanics (capture, the type rules) and the
-[comparator pattern](#the-comparator-pattern) that everything else
-depends on.
+A **lambda** is a small unnamed function you write right where you need
+it. Most DSA code uses lambdas as sort comparators, as conditions for
+algorithms such as `std::count_if`, and as recursive helpers like a
+depth-first search.
 
-## The syntax, fully unpacked
+## Writing a lambda
 
 ```cpp
-[captures] (params) -> returnType { body }
-//        ^ optional         ^ almost always omitted (deduced)
+#include <algorithm>
+#include <cassert>
+#include <vector>
 
-auto add = [](int a, int b) { return a + b; };
+int main() {
+    auto add = [](int a, int b) { return a + b; };
+    assert(add(2, 3) == 5);
 
-int threshold = 10;
-auto over = [threshold](int x) { return x > threshold; };   // BY VALUE: copied in
-auto bump = [&threshold](int x) { return x > threshold++; };// BY REF: sees updates
-auto copyAll = [=](int x) { ... };                          // capture all used, by value
-auto refAll = [&](int x) { ... };                           // capture all used, by reference
-auto moveIn = [v = std::move(bigVector)](int x) { ... };     // init-capture: MOVE in (C++14)
+    std::vector<int> v = {5, 1, 8, 3};
+    int limit = 4;
+    auto big = std::count_if(v.begin(), v.end(),
+                             [limit](int x) { return x > limit; });
+    assert(big == 2);
+
+    std::sort(v.begin(), v.end(), [](int a, int b) { return a > b; });
+    assert((v == std::vector<int>{8, 5, 3, 1}));
+}
 ```
 
-The capture rules are the trap surface:
+The parts are `[captures](parameters) { body }`. The return type is
+usually deduced from the `return` statement. Store a lambda in an `auto`
+variable, or pass it straight to a function.
 
-- **`[=]` / `[&]` capture everything *used***, the convenient
-  default that hides what a closure depends on (and `[&]`'s
-  dangling risk: see below).
-- **`[&]` closure outliving the captured variable** is the classic
-  bug: a lambda capturing locals by reference, stored past the
-  enclosing scope's return (a
-  [callback](/system-design/lld/pubsub-broker-lld) stored in a
-  subscription, a [comparator](#the-comparator-pattern) holding
-  state), reading freed memory. The rule: **by-reference captures
-  must not outlive the captured thing**; by-value captures are safe
-  but copy.
-- **`mutable`** lets a by-value capture *modify its copy* (rarely
-  needed, occasionally exactly right).
+## Captures
 
-## std::function: the type-erased callable
+The square brackets list the outside variables the lambda may use:
 
-A lambda's *type is unique and unnamed* (you cannot write it), so
-passing one around needs either `auto` (templates: the common
-case) or `std::function<R(Args...)>`, the **type-erased**
-callable: any callable with a matching signature, stored in one
-type, callable through it.
+- `[limit]` copies `limit` into the lambda when it is created. Later
+  changes to `limit` do not affect the copy.
+- `[&total]` refers to the original `total`, so the lambda can read its
+  current value and change it.
+- `[=]` copies every outside variable the body uses; `[&]` refers to all
+  of them. `[&]` is the common choice inside a single function.
+- `[]` captures nothing.
 
 ```cpp
-std::function<bool(int)> predicate = over;         // store a lambda
-predicate = [](int x) { return x < 0; };           // reassign: a DIFFERENT lambda
-bool ok = predicate(42);                          // call through the type
-
-void each(std::function<void(int)> handler);       // the [broker](/system-design/lld/pubsub-broker-lld) signature
+int total = 0;
+std::vector<int> nums = {1, 2, 3};
+std::for_each(nums.begin(), nums.end(), [&total](int x) { total += x; });
+assert(total == 6);
 ```
 
-The trade: `std::function` costs (indirection, a possible heap
-allocation for large captures, no inlining) where `auto`/template
-parameters cost nothing, so the rule is **templates for
-performance paths, `std::function` where storage or a fixed
-signature is required** (a [member](/system-design/lld/task-scheduler-lld)
-holding a handler, a container of callbacks: the places the type
-*must* be nameable).
+A lambda that captures by reference must not be used after those
+variables are gone, for example after the function that created them
+returns. Inside one solution function this rarely matters.
 
-## The comparator pattern
+## Recursive helpers with std::function
 
-The single most-used form on this site, a lambda as a sort or
-heap comparator, capturing whatever state it needs:
+`auto dfs = [&](int u) { ... dfs(next); }` does not compile: an `auto`
+variable cannot appear in its own initializer, because its type is not
+known yet. Declaring it as a `std::function` from `<functional>` gives it
+a type up front:
 
 ```cpp
-// Sort by (second, then first): DESCENDING second, ties ascending first.
-std::sort(items.begin(), items.end(),
-          [](const Item& a, const Item& b) {
-              if (a.second != b.second) return a.second > b.second;   // desc
-              return a.first < b.first;                              // tiebreak asc
-          });
+std::vector<std::vector<int>> adj = {{1, 2}, {3}, {}, {}};
+std::vector<bool> seen(adj.size(), false);
+int visited = 0;
 
-// A heap of (priority, payload), MIN-heap by priority:
-auto cmp = [](const std::pair<int,std::string>& a,
-              const std::pair<int,std::string>& b) {
-    return a.first > b.first;         // ">" : MIN-heap ([the trick](/cpp/priority-queue))
+std::function<void(int)> dfs = [&](int u) {
+    seen[u] = true;
+    ++visited;
+    for (int next : adj[u]) {
+        if (!seen[next]) dfs(next);
+    }
 };
-std::priority_queue<std::pair<int,std::string>,
-                    std::vector<std::pair<int,std::string>>,
-                    decltype(cmp)> queue(cmp);    // decltype: the unnamed type
-                                            // ^ pass the lambda IN: it has state
+dfs(0);
+assert(visited == 4);
 ```
 
-Two details make this pattern correct every time:
+`std::function<void(int)>` means "a callable that takes an `int` and
+returns nothing". It can hold any lambda or function with that shape. It
+adds a little call overhead compared with `auto`, which is rarely
+noticeable. A plain member function in the solution class also works.
 
-- **The comparator is a *strict weak ordering*** ("less than", not
-  "less or equal"): return `true` iff `a` goes *before* `b`, and
-  equal elements return `false` *both ways*: returning `true`
-  for equal elements (the `<=` mistake) is
-  **undefined behavior** in `std::sort` (the comparator
-  contradicting itself mid-sort: the classic crash inside
-  `std::__sort`).
-- **`decltype(cmp)` + passing `cmp` in**: the heap *stores* the
-  comparator (it must be
-  [default-constructible-or-passed](https://en.cppreference.com/w/cpp/container/priority_queue/priority_queue)),
-  which is why the [Dijkstra](/dsa/patterns/graph-specializations/network-delay-time)
-  and [merge-k](/dsa/patterns/heaps-and-priority-queues/merge-k-sorted-lists)
-  solutions on this site construct with the lambda as an argument.
+## Lambdas as comparators
+
+A sort comparator returns `true` when `a` should come before `b`. A heap,
+set, or map also needs the comparator's type as a template argument.
+`decltype(cmp)` names that type, and passing `cmp` to the constructor
+hands over the lambda itself:
+
+```cpp
+auto cmp = [](const std::pair<int, int>& a, const std::pair<int, int>& b) {
+    return a.second > b.second;  // Smaller second on top.
+};
+std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>,
+                    decltype(cmp)> heap(cmp);
+heap.push({1, 9});
+heap.push({2, 4});
+assert(heap.top().first == 2);
+```
+
+Comparators must use a strict test such as `<` or `>`, never `<=` or `>=`.
+
+## Related C++ tools
+
+- [Custom Comparators](/cpp/comparators) explains the rules every comparator must follow.
+- [Sorting & nth_element](/cpp/algorithms) takes lambdas as comparators.
+- [std::priority_queue](/cpp/priority-queue) explains which element ends up on top.

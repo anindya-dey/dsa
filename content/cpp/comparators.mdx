@@ -3,90 +3,99 @@ title: "Custom Comparators"
 summary: "Strict weak ordering: the contract every sort, set, map, and heap comparator must keep."
 ---
 
-Every ordered tool in the standard library takes a comparator: `sort`,
-`stable_sort`, `nth_element`, `set`, `map`, `priority_queue`,
-`lower_bound`. They all assume the same contract, called a *strict weak
-ordering*. Keep it and they work. Break it and the behavior is undefined.
-That can mean wrong answers, an infinite loop, or a crash that only shows
-up on some inputs.
+Every ordered tool in the standard library can take a comparator: `sort`,
+`stable_sort`, `nth_element`, `lower_bound`, `set`, `map`, and
+`priority_queue`. They all assume the same contract, called a **strict
+weak ordering**. Keep it and they work. Break it and the behavior is
+undefined: wrong answers, an endless loop, or a crash on some inputs.
 
 ## The contract
 
 A comparator `comp(a, b)` answers one question: must `a` come strictly
-before `b`? For that answer to be usable, it must be:
+before `b`? For the answer to be usable:
 
-- **Irreflexive.** `comp(a, a)` is false. Nothing comes before itself.
-- **Transitive.** If `comp(a, b)` and `comp(b, c)`, then `comp(a, c)`.
-- **Consistent about ties.** If neither `a` nor `b` comes first, they are
-  equivalent, and equivalence is also transitive.
+- **Nothing comes before itself.** `comp(a, a)` is false.
+- **Order carries through.** If `comp(a, b)` and `comp(b, c)`, then
+  `comp(a, c)`.
+- **Ties are consistent.** If neither `a` nor `b` comes first, they are
+  equivalent, and equivalence also carries through.
 
-The everyday violation is writing `<=` instead of `<`. Then `comp(a, a)`
-is true, irreflexivity fails, and `std::sort` is allowed to read past the
-end of your array.
-
-```cpp
-std::sort(v.begin(), v.end(),
-          [](int a, int b) { return a <= b; });   // WRONG: undefined behavior
-std::sort(v.begin(), v.end(),
-          [](int a, int b) { return a < b; });    // right
-```
+The everyday violation is `<=` instead of `<`. Then `comp(a, a)` is true,
+the first rule fails, and `std::sort` may even read outside the range.
+`>` is fine: it is still strict, and it sorts in descending order.
 
 ## Common shapes
 
-Sort by one field, descending:
-
 ```cpp
-std::sort(people.begin(), people.end(),
-          [](const Person& a, const Person& b) {
-              return a.age > b.age;               // > is fine: still strict
-          });
-```
+#include <algorithm>
+#include <cassert>
+#include <set>
+#include <string>
+#include <tuple>
+#include <vector>
 
-Sort by several fields. Compare tuples, which compare field by field for
-you:
-
-```cpp
-std::sort(rows.begin(), rows.end(), [](const Row& a, const Row& b) {
-    return std::tie(a.score, a.name) > std::tie(b.score, b.name);
-});
-```
-
-`std::tie` builds a tuple of references, and tuples compare
-lexicographically. That is far less error-prone than a chain of `if`s.
-
-Order a container by a key:
-
-```cpp
-auto byEnd = [](const Interval& a, const Interval& b) {
-    return a.end < b.end;
+struct Person {
+    std::string name;
+    int age;
 };
-std::set<Interval, decltype(byEnd)> active(byEnd);
+
+int main() {
+    std::vector<Person> people = {{"cy", 30}, {"al", 25}, {"bo", 30}};
+
+    // Age descending, then name ascending.
+    std::sort(people.begin(), people.end(), [](const Person& a, const Person& b) {
+        if (a.age != b.age) return a.age > b.age;
+        return a.name < b.name;
+    });
+    assert(people[0].name == "bo" && people[1].name == "cy");
+
+    // The same order with std::tie: swap a and b for the descending field.
+    std::sort(people.begin(), people.end(), [](const Person& a, const Person& b) {
+        return std::tie(b.age, a.name) < std::tie(a.age, b.name);
+    });
+    assert(people[0].name == "bo" && people[2].name == "al");
+}
 ```
 
-In a `set` or `map`, two elements that are *equivalent* under the
-comparator count as the same key. If you order intervals only by `end`,
-two different intervals with the same end collapse into one entry. Add a
-tie-breaker when distinct elements can compare equal.
+For several fields, compare the first field and fall through to the next
+one only on a tie. `std::tie` builds tuples of references, which compare
+field by field, so it does the fall-through for you. Swapping `a` and `b`
+for one field, as above, reverses that field's direction.
 
-## The heap inversion
-
-`std::priority_queue` puts the *largest* element on top, as judged by its
-comparator. So `std::less` gives a max-heap, and `std::greater` gives a
-min-heap. Read the comparator as "which element sinks", not "which
-rises".
+## Comparators in sets and maps
 
 ```cpp
-std::priority_queue<int, std::vector<int>, std::greater<int>> minHeap;
+auto byAge = [](const Person& a, const Person& b) { return a.age < b.age; };
+std::set<Person, decltype(byAge)> byAgeSet(byAge);
+byAgeSet.insert({"al", 25});
+byAgeSet.insert({"bo", 25});   // Same age: treated as the same key.
+assert(byAgeSet.size() == 1);
 ```
+
+In a `set` or `map`, two elements are the same key when neither comes
+before the other. Ordering people only by age makes two people of the
+same age collide, and the second insert is ignored. Add a tie-breaker,
+such as the name, when distinct elements can compare equal.
+
+## The heap direction
+
+`std::priority_queue` puts on top the element that would come **last** if
+you sorted with its comparator. Sorting with `std::less` puts the largest
+last, so it gives a max-heap; `std::greater` gives a min-heap. Read the
+comparator as "which element sinks".
 
 ## Checking a comparator you invented
 
 When the order is clever, as in
 [Largest Number](/dsa/patterns/sorting-and-selection/largest-number)'s
-`a + b > b + a`, ask the two questions before trusting it. Is it false
-for equal inputs? Is it transitive? If you cannot argue transitivity, the
-sort may still pass your tests and fail on others.
+`a + b > b + a`, ask two questions before trusting it. Is it false when
+both inputs are equal? Does the order carry through three elements? If you
+cannot argue both, the sort may pass your tests and fail on others.
+Compiling with `-D_GLIBCXX_DEBUG` on GCC turns many violations into
+immediate errors while you test.
 
-Debug builds help here. Compiling with `-D_GLIBCXX_DEBUG` on GCC, or with
-libc++ hardening enabled, turns many comparator violations into immediate
-assertion failures instead of silent corruption.
+## Related C++ tools
+
+- [Sorting & nth_element](/cpp/algorithms) is where most comparators are used.
+- [std::priority_queue](/cpp/priority-queue) shows comparators in heaps.
+- [std::function & Lambdas](/cpp/function-lambdas) explains the lambda syntax.

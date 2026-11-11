@@ -1,17 +1,14 @@
 ---
 title: "std::unordered_map / unordered_set"
-summary: "Hash-based lookup: unique keys, safe reads, sets, and the effects of rehashing."
+summary: "Hash-based lookup: counting, safe reads, iteration, sets, average O(1) cost, and keys without a hash."
 ---
 
-A key-based container is useful when you want to count words or look up an
-object by its ID. `std::unordered_map`
-stores one value for each unique key. `std::unordered_set` stores unique
-keys without associated values, so it answers membership questions instead.
+`std::unordered_map` stores one value for each unique key, such as a count
+for each word. `std::unordered_set` stores unique keys with no values, so
+it answers "have I seen this?" Both use hashing, which makes lookup,
+insertion, and erasure O(1) on average.
 
-## Counting and looking up values
-
-A frequency table is a useful example because a missing count should start
-at zero. Here the keys are words and the values are their counts:
+## Counting and looking up
 
 ```cpp
 #include <cassert>
@@ -21,110 +18,79 @@ at zero. Here the keys are words and the values are their counts:
 
 int main() {
     std::unordered_map<std::string, int> counts;
-    for (const auto& word : {"cat", "dog", "cat"}) {
-        ++counts[word];
+    for (const std::string& word : {"cat", "dog", "cat"}) {
+        ++counts[word];  // A missing key starts at 0.
     }
 
-    assert(counts.at("cat") == 2);
-    assert(counts.at("dog") == 1);
     assert(counts.size() == 2);
+    assert(counts.at("cat") == 2);
+    assert(counts.contains("dog") && !counts.contains("owl"));
 
     auto it = counts.find("cat");
     assert(it != counts.end() && it->second == 2);
-    assert(!counts.contains("owl"));
+
+    int total = 0;
+    for (const auto& [word, count] : counts) total += count;
+    assert(total == 3);
 }
 ```
 
-`find` returns an **iterator**, a position referring to an entry, or
-`end()` if the key is absent. For a map entry, `it->first` is the key and
-`it->second` is its value. Never dereference the result before checking
-that it is not `end()`. `contains` (C++20) is simpler when you only need
-to know whether a key exists. Neither operation inserts a missing key.
+There are several ways to read a key, and they behave differently:
 
-`at` retrieves a value but throws `std::out_of_range` if the key is missing.
-The subscript operator, `[]`, behaves differently: it creates a missing
-entry and initializes its value. For an `int`, that initial value is zero:
+- `m[key]` returns the value, **creating** the key first if it is missing.
+  For an `int` value the new entry starts at 0, which makes counting easy.
+  It also means a "read" of a missing key silently adds it.
+- `m.contains(key)` (C++20) answers yes or no without changing the map.
+  `m.count(key)` gives the same answer as 0 or 1.
+- `m.find(key)` returns an **iterator**, a position in the container, or
+  `end()` if the key is absent. `it->first` is the key and `it->second`
+  is the value. Check against `end()` before using it.
+- `m.at(key)` returns the value, or throws `std::out_of_range` if missing.
 
-```cpp
-std::unordered_map<std::string, int> counts = {{"cat", 2}};
-int missing = counts["owl"];
-assert(missing == 0);
-assert(counts.size() == 2);  // The lookup added "owl".
-```
+`m.erase(key)` removes a key. A range-based `for` with
+`[word, count]` names each entry's key and value directly.
 
-That behavior makes counting convenient, but it can accidentally change
-a map during a supposed read. Use `[]` when creation is intended.
-`insert` and `emplace` leave an existing value unchanged;
-`insert_or_assign` (C++17) replaces it or inserts a new entry.
-
-## Sets store membership, not counts
-
-Repeated insertion into an `unordered_set` still leaves one copy of a key:
+## Sets store membership
 
 ```cpp
-std::unordered_set<std::string> seen;
-seen.insert("cat");
-seen.insert("cat");
-assert(seen.size() == 1);
-assert(seen.contains("cat"));
-assert(!seen.contains("dog"));
+std::unordered_set<int> seen;
+seen.insert(4);
+seen.insert(4);  // Already present: no change.
+assert(seen.size() == 1 && seen.contains(4));
 ```
 
-A set has no mapped value, so it has no map-style `[]`, `at`, or
-`insert_or_assign`. Both containers support `erase(key)`. Their `count(key)`
-is either zero or one; the separate multimap and multiset types allow
-multiple equivalent keys and can return larger counts.
+`insert` returns a pair whose `second` is `true` if the key was new. That
+lets you test and insert in one call: `if (!seen.insert(x).second)` means
+`x` was a duplicate.
 
-## Why lookup is usually fast
+## Cost and order
 
-A **hash function** computes a number from a key. The container uses it
-to choose a **bucket**, a group of possible matches, then checks equality
-to find the actual key. Several keys can share a bucket. If too many do,
-finding an entry requires more comparisons.
+A **hash function** turns a key into a number, which picks a **bucket**
+where the key is stored. Different keys can land in the same bucket. On
+average each bucket holds few keys, so operations are O(1). In the worst
+case, when many keys collide, they become O(n). Hashing a long string key
+also takes time proportional to its length.
 
-Lookup, single-element insertion, and erasure are O(1) on average, but
-O(n) in the worst case, where n is the number of entries. These bounds
-treat hashing and equality checks as constant-cost operations; long string
-keys add character-processing work. Traversing all entries takes O(n).
+Iteration order is unspecified and can change as the map grows. If you
+need sorted keys, use `std::map` or sort the keys afterwards. If you know
+roughly how many keys you will add, `m.reserve(n)` prepares enough
+buckets up front and avoids repeated regrowth.
 
-"Unordered" means that iteration order is unspecified, not that it is
-guaranteed to be random. Do not rely on sorted order or insertion order.
-Rehashing can change the order you observe.
+## Keys without a hash
 
-## Growth and saved iterators
+Numbers, `char`, and `std::string` work as keys out of the box.
+`std::pair` and `std::tuple` do **not**, so
+`std::unordered_map<std::pair<int, int>, int>` fails to compile. Common
+fixes in DSA problems:
 
-**Rehashing** rebuilds the bucket organization. It invalidates all saved
-iterators, but preserves pointers and references to existing elements.
-An insertion may trigger it, so re-find an entry if you need an iterator
-after growth. Erasure invalidates only handles to the erased entries.
-When erasing through an iterator, `it = counts.erase(it)` gives you the
-next position to continue from.
-
-The **load factor** is the number of entries divided by the number of
-buckets. Its default maximum is 1.0. Insertion increases the bucket count
-as needed to respect that maximum. If you expect 1,000 entries,
-`counts.reserve(1000)` prepares enough buckets for that total at the current
-maximum load factor; it does not create entries.
-
-If you choose a different positive `max_load_factor`, set it before calling
-`reserve`. Changing the maximum alone does not force immediate rehashing.
-Reserving and rehashing are not O(1): their average cost is O(n), with
-O(n²) worst-case cost.
-
-## Custom keys and container choice
-
-Built-in number types and `std::string` have standard hash support. For a custom key,
-you may need to provide a hash function and an equality comparison. They
-must agree: keys considered equal must produce the same hash, and their
-hash and equality behavior must not change while stored.
-
-Choose an unordered container when fast key-based lookup is your main
-requirement. Choose an ordered container when you need sorted traversal,
-key ranges, or guaranteed logarithmic lookup. The
-[hash-based structures guide](/dsa/patterns/hash-based-structures) explains
-the underlying algorithms in more detail.
+- Encode the pair into one number, such as `1LL * row * cols + col` for a
+  grid cell, or into a string.
+- Use `std::map` or `std::set`, which need ordering, not hashing, and
+  already accept pairs.
+- Write a custom hash function. Keys that compare equal must hash equally.
 
 ## Related C++ tools
 
-- [std::map / std::set](/cpp/map) maintains keys in a defined order.
-- [std::vector](/cpp/vector) is useful when access is primarily by position.
+- [std::map / std::set](/cpp/map) keeps keys in sorted order.
+- [std::pair / std::tuple / std::array](/cpp/pair-tuple) explains pair keys and `std::array` counters.
+- [Iterator Invalidation](/cpp/invalidation) explains what growth does to saved iterators.

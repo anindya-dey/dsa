@@ -1,87 +1,94 @@
 ---
 title: "Sorting & nth_element"
-summary: "sort, stable_sort, nth_element, partial_sort: what each guarantees."
+summary: "sort, stable_sort, nth_element, partial_sort, and the everyday helpers: reverse, unique, min_element."
 ---
 
-The sorting family from `<algorithm>`: four functions, each with a
-different *guarantee*, and the choice between them is the choice
-between those guarantees. The
-[pattern entry](/dsa/patterns/sorting-and-selection) covers the
-algorithms; this entry covers the calls.
+The sorting tools live in `<algorithm>`. Each takes a range as two
+iterators, usually `v.begin()` and `v.end()`, and works on any
+random-access sequence: vectors, strings, deques, and `std::array`.
 
-## The family, by guarantee
+## Sorting
 
 ```cpp
-std::sort(v.begin(), v.end());                    // O(n log n), UNSTABLE, fastest
-std::sort(v.begin(), v.end(), cmp);               // with a [comparator](/cpp/function-lambdas)
-std::stable_sort(v.begin(), v.end());             // O(n log n)-ish, STABLE, allocates
-std::nth_element(v.begin(), v.begin() + k, v.end());   // O(n) average: partition around k
-std::partial_sort(v.begin(), v.begin() + k, v.end());   // top-k, SORTED: O(n log k)
-std::is_sorted(v.begin(), v.end());
+#include <algorithm>
+#include <cassert>
+#include <functional>
+#include <vector>
+
+int main() {
+    std::vector<int> v = {5, 2, 9, 1};
+    std::sort(v.begin(), v.end());
+    assert((v == std::vector<int>{1, 2, 5, 9}));
+
+    std::sort(v.begin(), v.end(), std::greater<int>());
+    assert((v == std::vector<int>{9, 5, 2, 1}));
+
+    std::vector<std::vector<int>> intervals = {{3, 4}, {1, 5}, {2, 2}};
+    std::sort(intervals.begin(), intervals.end(),
+              [](const std::vector<int>& a, const std::vector<int>& b) {
+                  return a[1] < b[1];  // By end point.
+              });
+    assert(intervals[0][1] == 2 && intervals[2][1] == 5);
+}
 ```
 
-**`std::sort`**: the default (introsort in practice:
-[quicksort](/dsa/patterns/sorting-and-selection) that falls back to
-heap sort at bad depths). **Unstable**: equal elements may
-reorder, which is the one guarantee people forget when their sort
-"sometimes" keeps ties and sometimes doesn't (the fix is
-`stable_sort`, or the tiebreak-in-the-comparator idiom, which is
-what every solution on this site does instead: it is cheaper than
-stability).
+`std::sort` takes O(n log n) comparisons. Without a comparator it sorts
+ascending using `<`. With `std::greater<int>()` it sorts descending. A
+lambda comparator returns `true` when `a` should come before `b`, and must
+use a strict test such as `<`, never `<=`.
 
-**`std::stable_sort`**: equal elements keep their relative order
-(the guarantee), which matters when you sort by one key *after*
-arranging by another (the sort-by-X-then-stably-by-Y idiom: the
-second sort preserves the first's work on ties), or when the
-elements carry identity you care about. Costs: extra memory, and
-slower than `sort` in practice.
+`std::sort` is **not stable**: elements that compare equal may end up in
+any order. If ties must keep their original order, use
+`std::stable_sort`, which is also O(n log n) when extra memory is
+available. Often a tie-breaker in the comparator is simpler.
 
-**`std::nth_element`**: puts the element that *belongs* at
-position k there, with everything before it
- less-or-equal and everything after greater-or-equal, **the
-[k-th element](/dsa/patterns/sorting-and-selection)
-answer** (quickselect in library form: O(n) average, no full
-sort), and everything else is *unordered* (the sides are
-partitions, not sorted). The idiom: k-th smallest is
-`*nth_element + v.begin() + k`, then `v.begin() + k` dereferenced,
-after the call.
-
-**`std::partial_sort`**: the top-k, *in order* (the first k
-positions are the k smallest, sorted): the "top 10 leaderboard"
-call, O(n log k), the
-[bounded-heap](/dsa/patterns/heaps-and-priority-queues/kth-largest-element-in-a-stream)
-alternative when the answer must be *sorted*, not just selected.
-
-## The comparator discipline
-
-Every sort takes the comparator, and the
-[strict-weak-ordering](/cpp/function-lambdas) rules apply: "strictly
-before", equal both ways `false`, no `<=` mistakes. The compound
-key (sort by X, then Y) is the idiom:
+## Selecting without a full sort
 
 ```cpp
-std::sort(items.begin(), items.end(),
-          [](const Item& a, const Item& b) {
-              if (a.x != b.x) return a.x < b.x;    // primary: ascending
-              return a.y > b.y;                  // tiebreak: DESCENDING y
-          });
-// Equivalently: sort a vector of (x, -y) pairs: [the pair trick](/cpp/pair-tuple)
+std::vector<int> v = {7, 3, 9, 1, 5};
+std::nth_element(v.begin(), v.begin() + 2, v.end());
+assert(v[2] == 5);  // The element a full sort would put at index 2.
+
+std::vector<int> w = {7, 3, 9, 1, 5};
+std::partial_sort(w.begin(), w.begin() + 2, w.end());
+assert(w[0] == 1 && w[1] == 3);  // The 2 smallest, in order.
 ```
 
-## The sorting-adjacent calls worth knowing
+`std::nth_element(begin, begin + k, end)` puts the element that belongs at
+index k there, with nothing larger before it and nothing smaller after.
+The two sides are otherwise unsorted. It runs in O(n) on average, which
+makes it the quick way to find the kth smallest value or a median.
+
+`std::partial_sort(begin, begin + k, end)` sorts only the first k
+positions, giving the k smallest values in order in O(n log k).
+
+## Everyday helpers
 
 ```cpp
-std::reverse(v.begin(), v.end());
-std::reverse_copy(src.begin(), src.end(), dst.begin());
-std::unique(v.begin(), v.end());                  // AFTER sort: dedupe (erase to resize)
-v.erase(std::unique(v.begin(), v.end()), v.end());
-std::rotate(v.begin(), v.begin() + k, v.end());   // the [rotation](/dsa/patterns/linear-structures/rotate-array) primitive
-std::min_element / max_element(v.begin(), v.end());  // O(n), NO sort needed
-std::minmax_element(...);                        // both, one pass
+std::vector<int> v = {3, 1, 3, 2, 1};
+assert(*std::min_element(v.begin(), v.end()) == 1);
+assert(*std::max_element(v.begin(), v.end()) == 3);
+assert(std::max_element(v.begin(), v.end()) - v.begin() == 0);  // Index.
+
+std::sort(v.begin(), v.end());                       // {1, 1, 2, 3, 3}
+v.erase(std::unique(v.begin(), v.end()), v.end());   // {1, 2, 3}
+std::reverse(v.begin(), v.end());                    // {3, 2, 1}
+assert((v == std::vector<int>{3, 2, 1}));
 ```
 
-The "no sort needed" rule is worth stating: **min/max/second-min
-do not need sorting**, `min_element` is O(n), and sorting to get
-a minimum is the classic waste. The
-[heap entry](/dsa/patterns/heaps-and-priority-queues) is the same
-rule for the *repeated* extreme question.
+`min_element` and `max_element` return an iterator to the first smallest
+or largest element in O(n). Dereference it for the value, or subtract
+`v.begin()` for the index. You never need to sort just to find a minimum.
+Both need a nonempty range before you dereference.
+
+`std::unique` removes only **adjacent** duplicates, so sort first. It does
+not shrink the vector; it returns where the kept elements end, and `erase`
+removes the leftovers. `std::reverse` reverses in place, and
+`std::rotate(v.begin(), v.begin() + k, v.end())` moves the first k
+elements to the end.
+
+## Related C++ tools
+
+- [Custom Comparators](/cpp/comparators) explains the rules for comparator functions.
+- [lower_bound & upper_bound](/cpp/binary-search-algos) searches a range once it is sorted.
+- [std::priority_queue](/cpp/priority-queue) keeps the top k as values arrive.

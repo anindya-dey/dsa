@@ -13,17 +13,26 @@ other objects.
 
 `std::unique_ptr<T>` owns its object alone. It cannot be copied, only
 moved, so ownership has exactly one home at a time. When the
-`unique_ptr` is destroyed, it deletes the object. It costs nothing over a
-raw pointer.
+`unique_ptr` is destroyed, it deletes the object. It is usually the same
+size and speed as a raw pointer.
 
 ```cpp
+#include <cassert>
 #include <memory>
+#include <string>
+#include <utility>
 
-auto engine = std::make_unique<Engine>(config);   // allocate and own
-engine->start();
+struct Engine {
+    std::string name;
+};
 
-std::unique_ptr<Engine> other = std::move(engine); // ownership moves
-// engine is now empty; other owns the Engine
+int main() {
+    auto engine = std::make_unique<Engine>();  // Allocate and own.
+    engine->name = "v8";
+
+    std::unique_ptr<Engine> other = std::move(engine);  // Ownership moves.
+    assert(engine == nullptr && other->name == "v8");
+}                                                       // other deletes it.
 ```
 
 This is the default choice. A parking lot owns its levels, a tree node
@@ -48,12 +57,13 @@ zero. Use it only when ownership is genuinely shared, such as a cached
 object that several sessions hold onto.
 
 ```cpp
-auto config = std::make_shared<Config>();
-auto copy = config;                  // count is now 2
+auto config = std::make_shared<std::string>("dark mode");
+auto copy = config;                  // Both own it; the count is now 2.
+assert(config.use_count() == 2);
 ```
 
-It has real costs. The count is updated atomically, which is slower, and
-it hides the question of who is responsible for the object. Reaching for
+It has real costs. The count is updated safely across threads, which is
+slower, and it hides the question of who is responsible for the object. Reaching for
 `shared_ptr` by default usually means the design has not decided who owns
 what.
 
@@ -72,8 +82,13 @@ struct Child {
     std::weak_ptr<Parent> parent;     // back-reference: does not own
 };
 
-if (auto p = child->parent.lock()) {  // shared_ptr, or empty if gone
-    p->children.size();
+auto parent = std::make_shared<Parent>();
+auto child = std::make_shared<Child>();
+parent->children.push_back(child);
+child->parent = parent;
+
+if (auto p = child->parent.lock()) {  // A shared_ptr, or empty if gone.
+    assert(p->children.size() == 1);
 }
 ```
 
@@ -94,3 +109,8 @@ with `T*` or `T&`.
 | Several co-owners | `std::shared_ptr` (via `std::make_shared`) |
 | A back-reference that must not keep the object alive | `std::weak_ptr` |
 | Temporary access to someone else's object | `T*` or `T&` |
+
+## Related C++ tools
+
+- [std::optional](/cpp/optional) represents a missing value without a pointer.
+- [std::vector](/cpp/vector) can hold `unique_ptr` elements that it owns.

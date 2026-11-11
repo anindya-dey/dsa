@@ -1,128 +1,102 @@
 ---
 title: "std::string"
-summary: "Owned text: character access, copying versus viewing, and safe parsing and pointer use."
+summary: "Owned text: indexing, substrings, searching, character tricks, building strings, and parsing numbers."
 ---
 
-An ordinary C-style string is read until a zero character marks its end.
-`std::string` owns its characters and records their length separately, so
-it can grow, copy its text, and report its size without scanning for that
-marker. Use it when your program needs to keep and modify text.
+`std::string` owns a sequence of characters and grows as you add to it,
+much like a `std::vector<char>`. It lives in the `<string>` header.
+Each character is a `char`, and `size()` counts them in O(1). For
+non-ASCII text such as UTF-8, `size()` counts bytes, not visible letters.
 
-## Characters, length, and access
-
-The characters occupy contiguous storage. A **NUL terminator**, the zero
-character written as `'\0'`, follows the stored text. It is not included
-in `size()`. C APIs expecting NUL-terminated text can read the characters
-through the pointer returned by `c_str()`.
-`size()` and `length()` return the same count in O(1). For UTF-8 text, this
-is a byte count, not necessarily the number of characters you see on screen.
-Strings can also contain embedded zero characters: `size()` counts them,
-but an API expecting NUL-terminated text stops at the first zero.
+## The everyday operations
 
 ```cpp
 #include <cassert>
 #include <string>
-#include <string_view>
 
 int main() {
-    std::string message = "hello";
-    message += "!";
+    std::string s = "hello";
+    s += " world";              // Append text.
+    s.push_back('!');           // Append one character.
 
-    assert(message.size() == 6);
-    assert(message.at(0) == 'h');
-    assert(message.substr(1, 3) == "ell");
-    assert(message.find("ll") == 2);
-    assert(message[message.size()] == '\0');
+    assert(s.size() == 12);
+    assert(s[0] == 'h' && s.back() == '!');
+    assert(s.substr(6, 5) == "world");
+    assert(s.find("lo") == 3);
+    assert(s.find("xyz") == std::string::npos);
+    assert(std::string("apple") < std::string("banana"));
 }
 ```
 
-`substr(1, 3)` copies three characters starting at index 1. `find` returns
-the first matching position, or `std::string::npos`, a special value meaning
+`substr(pos, len)` copies up to `len` characters starting at `pos`, so it
+costs O(len). Leave out `len` to take everything to the end. `find` returns the
+first matching index, or `std::string::npos`, a special value meaning
 "not found". Check for `npos` before using the result as an index.
 
-`message[i]` is unchecked, while `message.at(i)` throws `std::out_of_range`
-when `i` is not an element index. You may read `message[message.size()]`
-to inspect the terminator, but `at(size())` throws. Access beyond the
-terminator, or changing it to a nonzero character, is undefined behavior
-in C++20.
+Like vector, `s[i]` is unchecked and `s.at(i)` throws `std::out_of_range`
+for a bad index. `==` compares the text. `<` compares
+**lexicographically**: the first differing character decides, and a
+prefix comes before a longer string.
 
-Equality compares the stored text. Ordering is **lexicographic**: compare
-the first differing characters, with a shorter matching prefix coming
-first. This follows character-code order, not language-aware dictionary order.
+## Characters are small numbers
 
-## Copies, views, and function arguments
-
-Calling `substr` on a named string makes a separate owned copy. A `std::string_view`
-(C++17) instead refers to existing characters without owning them. That
-saves copying, but also means it observes changes to those characters:
+A `char` holds a character code, so you can do arithmetic on it. For
+lowercase letters, `c - 'a'` gives 0 for `'a'` up to 25 for `'z'`, which
+is how letter-count arrays are indexed. For digits, `c - '0'` gives the
+digit's value, and `'0' + d` turns a digit back into a character.
 
 ```cpp
-std::string original = "hello";
-std::string copy = original.substr(1, 3);
-std::string_view view = std::string_view{original}.substr(1, 3);
-
-original[1] = 'a';
-assert(copy == "ell");
-assert(view == "all");
+std::string word = "Cab9";
+int counts[26] = {};
+for (char c : word) {
+    if (std::isalpha(c)) ++counts[std::tolower(c) - 'a'];
+}
+assert(counts[0] == 1 && counts[1] == 1 && counts[2] == 1);
+assert(word[3] - '0' == 9);
 ```
 
-Keep the source alive while using a view, and do not use the view after an
-operation invalidates its storage. A view also need not end at a NUL
-terminator, so its `data()` is not automatically a C-style string.
+The `<cctype>` functions `std::isalpha`, `std::isdigit`, `std::isalnum`,
+`std::isspace`, `std::tolower`, and `std::toupper` classify and convert
+single characters. They are safe for plain ASCII text such as LeetCode
+input; for other bytes, cast the `char` to `unsigned char` first.
 
-For a function that only reads an existing string, `const std::string&`
-avoids copying it. A by-value `std::string` parameter owns its own text;
-passing an existing string normally copies it, while a temporary or an
-explicitly moved argument can avoid a copy. Choose according to whether
-the function needs to borrow the text or own it.
+## Building strings efficiently
 
-Common libraries use **small-string optimization**: short text fits inside
-the string object without a separate allocation. The size threshold is
-implementation-dependent. A short substring still copies characters even
-when that copy needs no heap allocation; an ordinary string move may
-transfer a large allocation, but moving a short string usually copies its
-inline characters.
+`s += x` and `s.push_back(c)` append in amortized O(1) per character.
+`s = s + c` builds a whole new string each time, so doing it in a loop
+costs O(n²). Prefer appending. The algorithms from `<algorithm>` work on
+strings too: `std::reverse(s.begin(), s.end())` reverses in place, and
+`std::sort(s.begin(), s.end())` sorts the characters, a common way to
+compare anagrams. `std::string(3, 'x')` creates `"xxx"`.
 
-## Building text and keeping pointers valid
+Pass a string you only read as `const std::string&` to avoid a copy.
+A `std::string_view` (C++17, `<string_view>`) also reads text without
+copying, but it does not own the characters: the original string must
+outlive it.
 
-`a + b` creates a result string; `a += b` appends to `a`. Repeatedly
-rebuilding a growing result with `+` can take O(n²) copying. Prefer
-appending, and use `reserve` when you know the expected final size.
-Insertion and erasure can shift the remaining characters; replacing text
-also copies the replacement, so these operations can be linear in the
-amount of text affected.
-
-`c_str()` returns a pointer into the string's NUL-terminated storage.
-It is not a separate copy. Destruction makes that pointer unusable, and
-operations such as appending or assignment may invalidate it. Obtain a
-fresh pointer after such changes. Writing an existing character through
-`s[i]` changes the text without invalidating the pointer.
-
-Never save a pointer from a temporary such as `(a + b).c_str()`: the
-temporary normally dies at the statement's semicolon. String invalidation
-rules are not identical to vector's, so do not assume that avoiding
-reallocation preserves every saved handle.
-
-## Parsing and formatting text
-
-`std::stoi` converts an integer prefix. It throws `std::invalid_argument`
-if no number can be read, and `std::out_of_range` if the result cannot fit
-in an `int`. It accepts leading whitespace and an optional sign. Trailing
-text does not automatically cause an exception:
+## Numbers and words
 
 ```cpp
-std::string input = "42x";
-std::size_t used = 0;
-int value = std::stoi(input, &used);
-assert(value == 42 && used == 2);
+assert(std::to_string(42) == "42");
+assert(std::stoi("-17") == -17);
+assert(std::stoll("10000000000") == 10000000000LL);
+
+std::istringstream in("the quick fox");
+std::vector<std::string> parts;
+std::string part;
+while (in >> part) parts.push_back(part);  // Splits on whitespace.
+assert(parts.size() == 3 && parts[2] == "fox");
 ```
 
-For a whole-string integer, also require `used == input.size()`.
-`std::to_string` formats a number. `std::getline` reads up to a chosen
-delimiter without storing that delimiter, while `std::format` (C++20)
-builds formatted text.
+`std::to_string` formats a number; `std::stoi` and `std::stoll` parse an
+`int` or `long long`. They stop at the first character that is not part of
+the number, so `std::stoi("42x")` returns 42. They throw if no number can
+be read or if it does not fit. Reading words from a `std::istringstream` (in `<sstream>`) with
+`>>` splits text on whitespace. To split on another character, use
+`std::getline(in, part, ',')`.
 
 ## Related C++ tools
 
-- [std::vector](/cpp/vector) explains contiguous storage and capacity.
-- [std::map / std::set](/cpp/map) explains ordering when strings are keys.
+- [std::vector](/cpp/vector) explains growth and indexing, which strings share.
+- [std::unordered_map / unordered_set](/cpp/unordered-map) counts characters or words.
+- [Sorting & nth_element](/cpp/algorithms) sorts and reverses ranges, including strings.

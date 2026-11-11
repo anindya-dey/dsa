@@ -1,38 +1,48 @@
 ---
 title: "Bit Operations"
-summary: "The operators, the classic tricks, std::bitset, and C++20's <bit> functions."
+summary: "The operators, the classic tricks, subsets as masks, std::bitset, and C++20's <bit> functions."
 ---
 
-Bits let you store a set of small integers in one number and test,
-add, or remove members in a single instruction. This entry collects the
-operators, the handful of tricks that keep reappearing, and the standard
-library functions that replace hand-written loops.
+An integer is a row of bits, so one number can store a set of small
+integers: bit `i` is 1 when item `i` is in the set. Testing, adding, and
+removing a member are then single operations. This entry collects the
+operators, the tricks that keep reappearing, and the library functions
+that replace hand-written loops.
 
 ## The operators
 
+In the examples, 6 is `110` in binary and 3 is `011`.
+
+| Operator | Meaning | Example |
+| --- | --- | --- |
+| `a & b` | AND: bits set in both | `6 & 3` is `2` (`010`) |
+| `a \| b` | OR: bits set in either | `6 \| 3` is `7` (`111`) |
+| `a ^ b` | XOR: bits set in exactly one | `6 ^ 3` is `5` (`101`) |
+| `~a` | NOT: flip every bit | `~6` is `-7` for `int` |
+| `a << k` | shift left: multiply by 2^k, if it fits | `6 << 1` is `12` |
+| `a >> k` | shift right: divide by 2^k, rounding down | `6 >> 1` is `3` |
+
+Precedence trips people up: `x & 1 == 0` means `x & (1 == 0)`. Always
+add parentheses: `(x & 1) == 0`.
+
+## The tricks worth remembering
+
 ```cpp
-a & b    // AND: bits set in both
-a | b    // OR: bits set in either
-a ^ b    // XOR: bits set in exactly one
-~a       // NOT: flip every bit
-a << k   // shift left: multiply by 2^k
-a >> k   // shift right: divide by 2^k (for non-negative a)
-```
+#include <cassert>
 
-Precedence trips people up. `x & 1 == 0` parses as `x & (1 == 0)`.
-Always parenthesize: `(x & 1) == 0`.
+int main() {
+    int x = 12;                          // 1100
+    assert(((x >> 2) & 1) == 1);         // Is bit 2 set?
+    assert((x | (1 << 0)) == 13);        // Set bit 0.
+    assert((x & ~(1 << 3)) == 4);        // Clear bit 3.
+    assert((x ^ (1 << 2)) == 8);         // Toggle bit 2.
+    assert((x & (x - 1)) == 8);          // Clear the lowest set bit.
+    assert((x & -x) == 4);               // Keep only the lowest set bit.
 
-## The tricks worth memorizing
-
-```cpp
-(x >> i) & 1         // is bit i set?
-x | (1 << i)         // set bit i
-x & ~(1 << i)        // clear bit i
-x ^ (1 << i)         // toggle bit i
-x & (x - 1)          // clear the lowest set bit
-x & -x               // isolate the lowest set bit
-x > 0 && (x & (x - 1)) == 0   // is x a power of two?
-(a ^ a) == 0         // XOR cancels pairs
+    int p = 64;
+    assert(p > 0 && (p & (p - 1)) == 0); // Power of two.
+    assert((7 ^ 7) == 0 && (7 ^ 0) == 7); // XOR cancels pairs.
+}
 ```
 
 `x & (x - 1)` drives
@@ -43,51 +53,48 @@ x > 0 && (x & (x - 1)) == 0   // is x a power of two?
 
 ## Shifting safely
 
-`1 << 31` overflows a signed `int`, and shifting by 32 or more is
-undefined for a 32-bit type. When you need wide masks, shift a wider
-value: `1LL << 40`, or use an unsigned type.
+Shifting an `int` by 32 or more, or by a negative amount, is undefined.
+`1 << 31` is allowed in C++20 but gives a negative number, `INT_MIN`.
+For bit 31 and above, shift a wider value: `1LL << 40`, or use an
+unsigned type such as `1ULL << 63`.
 
 ## Subsets as masks
 
 With n up to about 20, each subset of n items is one integer from 0 to
-2^n - 1. Bit `i` says whether item `i` is in.
+2^n - 1, where bit `i` says whether item `i` is included:
 
 ```cpp
+int n = 3, subsetsWithItem0 = 0;
 for (int mask = 0; mask < (1 << n); ++mask) {
-    for (int i = 0; i < n; ++i) {
-        if (mask & (1 << i)) {
-            // item i is in this subset
-        }
-    }
+    if (mask & 1) ++subsetsWithItem0;  // Item 0 is in this subset.
 }
+assert(subsetsWithItem0 == 4);
 ```
 
 This is how
 [Subsets via Bitmask](/dsa/patterns/bit-manipulation/subsets-via-bitmask)
-works, and it is the state representation behind bitmask dynamic
-programming.
+works, and it is the state behind bitmask dynamic programming.
 
 ## The library versions
 
-C++20's `<bit>` header replaces the compiler-specific `__builtin_*`
-functions. They take unsigned types.
+C++20's `<bit>` header has standard versions of the compiler-specific
+`__builtin_popcount` family. They take unsigned values.
 
 ```cpp
-#include <bit>
+assert(std::popcount(13u) == 3);       // Number of set bits.
+assert(std::countr_zero(8u) == 3);     // Trailing zeros.
+assert(std::has_single_bit(64u));      // Power of two.
+assert(std::bit_width(5u) == 3);       // Bits needed: floor(log2(x)) + 1.
 
-std::popcount(13u);       // 3: number of set bits
-std::countr_zero(8u);     // 3: trailing zeros
-std::countl_zero(1u);     // 31 for a 32-bit unsigned
-std::has_single_bit(64u); // true: power of two
-std::bit_width(5u);       // 3: bits needed, floor(log2(x)) + 1
-```
-
-`std::bitset<N>` is a fixed-size bit array with readable operations. It
-is useful when N is known at compile time and larger than 64.
-
-```cpp
-std::bitset<1000> seen;
+std::bitset<1000> seen;                // From <bitset>: 1,000 flags.
 seen.set(42);
-seen.test(42);            // true
-seen.count();             // number of set bits
+assert(seen.test(42) && seen.count() == 1);
 ```
+
+`std::bitset<N>` is a fixed-size row of bits with readable operations.
+Use it when N is known at compile time and too large for one integer.
+
+## Related C++ tools
+
+- [Integer Overflow & Limits](/cpp/integer-overflow) explains why wide masks need `long long`.
+- [Numeric Utilities](/cpp/numeric) covers other small integer helpers.

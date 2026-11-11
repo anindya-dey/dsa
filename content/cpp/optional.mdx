@@ -1,91 +1,68 @@
 ---
 title: "std::optional"
-summary: "Maybe-value: returning not-found without sentinels."
+summary: "A value that may be missing: returning not-found without magic values like -1."
 ---
 
-`std::optional<T>` is a value-or-nothing: **a `T` that may not be
-there**, expressed as a type instead of a sentinel (`-1`, an empty
-string, a null pointer, the "magic value" convention that every
-API document has to explain and every caller forgets to check). The
-type makes absence *explicit and checkable*: the
-[find-vs-operator-brackets](/cpp/unordered-map) discipline, promoted
-to a first-class value.
+A function that searches for something needs a way to say "not found".
+A common habit is a special value such as `-1`, but that only works when
+`-1` can never be a real answer. `std::optional<T>` from `<optional>`
+(C++17) holds either a `T` or nothing, so absence is part of the type.
 
-## The API surface
+## Returning a value or nothing
 
 ```cpp
-std::optional<int> maybe;
-maybe.has_value();                   // false
-maybe ? ... : ...;                   // same check, bool conversion
-maybe.value();                       // THROWS if empty
-maybe.value_or(0);                   // the default idiom
-maybe = 42;                          // construct in place
-maybe.reset();                       // empty again
-maybe.emplace(args);                // construct from args, in place
+#include <cassert>
+#include <optional>
+#include <vector>
 
-if (auto found = map.find(k); found != map.end()) {
-    // the OTHER idiom for absence: iterator comparison
-}
-std::optional<Value> lookup(const Key& k) {
-    auto it = map.find(k);
-    if (it == map.end()) return std::nullopt;      // explicit "not found"
-    return it->second;
+std::optional<int> firstNegative(const std::vector<int>& v) {
+    for (int x : v) {
+        if (x < 0) return x;
+    }
+    return std::nullopt;  // Nothing found.
 }
 
-// Call side: absence is FORCED to be handled:
-if (auto v = lookup(k)) {
-    use(*v);                         // *v: the value (checked: we're in the if)
-} else {
-    // the not-found path, unavoidable
+int main() {
+    std::optional<int> found = firstNegative({4, -2, -7});
+    assert(found.has_value() && *found == -2);
+
+    std::optional<int> none = firstNegative({1, 2});
+    assert(!none);
+    assert(none.value_or(0) == 0);
 }
 ```
 
-## Why it exists: the sentinel catalog
+Return a `T` to fill the optional, or `std::nullopt` to leave it empty.
+The caller has a few ways to read it:
 
-The problems it removes, each a real bug class:
+- `if (opt)` or `opt.has_value()` tests whether a value is there.
+- `*opt` reads the value. Only do this after checking: reading an empty
+  optional with `*` is undefined behavior.
+- `opt.value()` reads the value, or throws `std::bad_optional_access` if
+  it is empty.
+- `opt.value_or(fallback)` returns the value, or `fallback` if empty.
 
-- **Sentinel values** (`-1` for index, `""` for string, `0` for
-  count-when-zero-is-valid): every sentinel is a *convention* the
-  caller must know, and `0`-as-absent is unfixable for APIs where
-  `0` is a real answer ([the two-sum](/dsa/patterns/hash-based-structures/two-sum)
-  family's "not found" is the classic).
-- **Null pointers** for maybe-values: valid for pointers, useless
-  for values (`int*` to return a maybe-int, with the ownership
-  question attached).
-- **Out-parameters + bool return** (`bool found` plus a reference
-  out-param): workable, uncomposable, and the pre-C++17 standard
-  answer.
+A common call-site shape tests and reads in one place:
 
-The `optional` return is all three fixed by one type: the
-signature *says* "may be absent", the caller *must* check, and the
-value's lifetime is handled.
+```cpp
+if (auto neg = firstNegative({3, -1})) {
+    assert(*neg == -1);
+}
+```
 
-## The mechanics worth knowing
+## When to use it
 
-- **The `T` lives inside the optional** (a union with a
-  no-value tag: no heap, no pointer), so `optional` is
-  `sizeof(T)`-plus-a-byte-or-so, on the stack or inside a
-  container, and an `optional` in a
-  [vector](/cpp/vector) is contiguous, real, and cheap.
-- **Engaged optionals' lifetime**: `*maybe` is the value;
-  `maybe.value()` throws `std::bad_optional_access` when empty
-  (the *checked* access, like [vector::at](/cpp/vector));
-  `value_or(default)` is the "give me something either way"
-  idiom.
-- **`std::nullopt`** is the explicit-empty literal
-  (`return std::nullopt;`), and comparisons work as you hope
-  (`nullopt < engaged < value`, all optionals last, the
-  [ordering](https://en.cppreference.com/w/cpp/utility/optional/operator_cmp)
-  that makes optionals sortable keys).
+Use `optional` when "no answer" is a normal outcome, such as a lookup that
+may miss or a search with no match. Use an exception for real errors, such
+as a broken input file.
 
-## Where this site uses it
+The value is stored inside the optional itself, with no separate
+allocation, so it is cheap to return. For a pointer such as `TreeNode*`,
+`nullptr` already means "nothing", so you do not need an optional. Many
+LeetCode signatures still require `-1` or an empty vector; follow the
+signature there, and use `optional` in your own helper functions.
 
-The [trie](/dsa/patterns/trie-prefix-tree)'s `find`-returning-
-nullable is the design's [find-or-absent](/dsa/patterns/design-data-structures/time-based-key-value-store)
-moment; the
-[in-memory file system](/system-design/lld/in-memory-file-system)'s
-`resolve(path)` returning a maybe-node is the "not found is an
-answer, not an error" discipline. Every "what do we return when
-it is not there" conversation on this site has the same three
-answers, sentinel (no), exception (for real errors),
-`optional` (for absence), and the modern C++ answer is the third.
+## Related C++ tools
+
+- [std::unordered_map / unordered_set](/cpp/unordered-map) shows `find`, another way to report a missing key.
+- [Smart Pointers](/cpp/smart-pointers) covers pointers, where `nullptr` marks absence.
