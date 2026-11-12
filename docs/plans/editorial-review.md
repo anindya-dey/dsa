@@ -98,7 +98,8 @@ move between patterns), do not do it inside the batch. Add it to
   what is undefined). Snippets that show output must produce it.
   Statement-level fragments are fine, but must be valid C++ once their
   placeholder variables are declared.
-- *DSA patterns:* the "how to spot it" clues match the cheat sheet; the
+- *DSA patterns:* the "how to spot it" clues match the cheat sheet (except
+  Asymptotic Analysis, which has no row and no spot-it section); the
   pattern's problems are the right ones for it.
 - *DSA problems:* problem statement and constraints match the linked
   LeetCode problem; brute force has code and an honest reason it is slow;
@@ -118,6 +119,125 @@ test cases. Test them when their batch comes up, and remove each from this
 list once tested.
 
 `climbing-stairs`, `clone-graph`, `combination-sum`, `container-with-most-water`, `contains-duplicate`, `copy-list-with-random-pointer`, `critical-connections-in-a-network`, `daily-temperatures`, `design-add-and-search-words`, `design-hashmap`, `design-linked-list`, `diameter-of-binary-tree`, `different-ways-to-add-parentheses`, `fibonacci-number`, `find-pivot-index`, `group-anagrams`, `house-robber`, `insert-delete-getrandom-o1`, `invert-binary-tree`, `jump-game`, `k-th-symbol-in-grammar`, `longest-common-subsequence`, `longest-repeating-character-replacement`, `longest-substring-without-repeating-characters`, `lowest-common-ancestor-of-a-binary-tree`, `max-sum-subarray-of-size-k`, `merge-intervals`, `merge-k-sorted-lists`, `merge-sorted-array`, `merge-two-sorted-lists`, `min-cost-to-connect-all-points`, `minimum-time-visiting-all-points`, `number-of-1-bits`, `number-of-connected-components`, `number-of-recent-calls`, `pacific-atlantic-water-flow`, `partition-labels`, `permutations`, `range-sum-query`, `redundant-connection`, `reservoir-sampling`, `reverse-linked-list`, `reverse-string`, `rotate-array`, `rotate-image`, `search-a-2d-matrix-ii`, `set-matrix-zeroes`, `single-number`, `sort-colors`, `spiral-matrix`, `subsets`, `subsets-via-bitmask`, `two-sum`, `valid-palindrome`, `valid-parentheses`, `word-ladder`, `word-search-ii`, `zero-one-knapsack`
+
+## Cheat sheet scope decision (2026-11-11)
+
+Raised before starting D1: should Asymptotic Analysis be a cheat-sheet row?
+It was row 1, with the clue "input size tells you the budget". That clue
+does not name a pattern a problem needs; it states the constraint budget
+every row below assumes. Decision: keep the heuristic and the article, but
+move the row to an intro note above the matrix ("Before you diagnose"),
+linking the pattern page. Immediately after the move, the matrix carried
+29 clue rows for 28 distinct pattern pages (Graph Specializations had two
+rows). The cheat sheet states the budget before the table rather than as
+a table entry.
+
+Consequence for the DSA checklist item "the 'how to spot it' clues match
+the cheat sheet": Asymptotic Analysis is exempt from that check because it
+teaches analysis rather than choosing a solution technique. Graph
+Specializations and Advanced Graphs also have no "How to spot it" heading;
+their "Choosing the tool" sections supply the clues instead. Recorded in
+`app/dsa/cheat-sheet/page.tsx` and the README cheat-sheet sentence.
+
+### Thorough cheat-sheet review (2026-11-12)
+
+Scope: every existing clue, label, link target, and layout, plus the
+constraint-budget note. Read each linked overview's introduction,
+recognition/choice guidance, and limitations; checked its practice list.
+Read the graph, window, binary-search, trie, range-query, and number-theory
+explanations where a mapping needed more detail. This is not completion
+of any DSA article-review batch or runtime testing of its solutions.
+
+Findings recorded before editing. Row numbers below refer to the 29-row
+matrix after removing Asymptotic Analysis:
+
+| Original row | Finding / disposition |
+| --- | --- |
+| 1 Linear structures | Rotation is not a unique diagnosis. Focus on building a sequence and choosing storage for indexing or end operations. |
+| 2 Hash map/set | Sound; specify exact membership, frequencies, and grouping by a shared key, rather than arbitrary pair matching. |
+| 3 Recursion | Sound as an implementation technique; repeated states belong to DP. Use smaller self-similar problems/nested structure, not just an answer for n. |
+| 4 Quickselect/custom sort | Separate rank selection from ordering the entire input. Both link to Sorting & Selection. |
+| 5 Bits | Sound for XOR cancellation and small-subset masks; remove the absolute n <= 20 cutoff. Enumeration costs depend on the work per subset. |
+| 6 Two pointers | Sortedness/pairs alone are insufficient. State the ability to eliminate candidates; retain end comparisons and linked-list fast/slow pointers. |
+| 7 Sliding window | Contiguity and longest/shortest are not sufficient. Separate fixed-size bookkeeping from variable windows with safe forward-only boundaries. Sum thresholds with negatives can break the latter. |
+| 8 Monotonic structures | Stack clues are sound; deque/window extrema were missing. Split stack and deque use cases. |
+| 9 Binary search | An arbitrary yes/no condition is insufficient. Separate sorted/rotated lookup from a monotone answer threshold; fix the answer-space-only label on array lookup. |
+| 10 Divide and conquer | Sound; do not require exact halves. Smaller subproblems and a useful combine step are the key. |
+| 11 Prefix sums | Separate static range sums/subarray counts from batched range additions. Name Difference Arrays for the latter; retain negative-value subarray sums as an alternative to naive windows. |
+| 12 Intervals | Sound; retain overlap/merge/concurrency clues. |
+| 13 Matrix/grid | Sound but incomplete; include the row-and-column-sorted staircase search covered by the article. A grid is not by itself a transformation diagnosis. |
+| 14 Stacks/queues | Sound; preserve last-in/first-in ordering rather than arbitrary recency queries. |
+| 15 Linked lists | Sound; do not imply every linked-list task needs O(1) space. Preserve structural operations on links. |
+| 16 Trees/BSTs | Specify binary-tree input; an arbitrary hierarchy may actually be a graph. Retain subtree/path/ancestor and BST ordering clues. |
+| 17 Heap | A running maximum needs one variable, not a heap. Replace with repeated extreme removal under insertions, streamed top-k, k-way merge, and two-heap median. |
+| 18 Trie | "Searching many words at once" is too broad (multi-pattern text search is different). Specify shared prefixes, dictionary wildcard search, and board-search prefix pruning. |
+| 19 BFS/DFS | Distinguish BFS shortest paths in equal-cost graphs from DFS/BFS reachability/flood fill. DFS alone does not guarantee shortest paths. |
+| 20 Topological sort | Specify directed prerequisites and cycle impossibility. Kahn's is not the only valid algorithm; DFS also applies with cycle checks. |
+| 21 DSU | Plain DSU does not support arbitrary dynamic connectivity/deletions. Specify undirected connectivity under edge additions. |
+| 22 Advanced graphs | Split hop limits, MST, SCCs, and bridges/articulation points; add small-graph all-pairs distances. MST minimizes total connection cost, not source distances; k intermediate stops allow k+1 edges. |
+| 23 Backtracking | Sound; name subsets/permutations/valid boards and the choose/check/undo shape. |
+| 24 DP | Count/min/max language alone is insufficient. Require reusable smaller states reached by different decision paths. |
+| 25 Greedy | Sound proof-first clue. Keep that requirement; use earliest-finish scheduling/farthest reach as examples, not universal rules. |
+| 26 Strings | Sound; specify substring matching/palindromes/periods rather than arbitrary string problems. |
+| 27 Range queries | Fenwick is not the default for arbitrary min/range updates. Distinguish sum/count from general aggregates and add static min/max/GCD sparse tables. |
+| 28 Number theory | A modulus controls numeric size, not the algorithm. Remove it as a stand-alone clue; use primes, divisibility, GCD/LCM, modular powers, and combinatorial formulas. |
+| 29 Design structures | Sound; focus on the interface and operation bounds, not merely the words "design a class". |
+
+Cross-cutting findings:
+
+- Missing weighted shortest-path clues: non-negative weights/no hop limit
+  (Dijkstra), negative edges or reachable negative-cycle detection
+  (Bellman-Ford). Both are taught by Graph Specializations.
+- The constraint note claims any exponential work fits n <= 20 and uses
+  hard time cutoffs. 2^20 is 1,048,576 subsets; 20! is
+  2,432,902,008,176,640,000 permutations. Give rough 2^n/quadratic/n log n
+  examples with time, memory, operation-cost, and total-input caveats.
+- The table should offer candidate techniques, not certainty or exclusive
+  assignments. Some topics need several rows; some problems combine tools.
+- Previous notes miscounted the original rows and claimed only one
+  overview lacked a "How to spot it" heading. Corrected above.
+
+Related-article caveats to revisit in their existing review batches, not
+silently copy into this table: Sliding Window omits the safe-boundary
+requirement and incorrectly rejects sorted-window maintenance (D7);
+Graph Traversals applies the unweighted caveat to traversal rather than
+only shortest paths (D20); Advanced Graphs conflates stops with edges and
+overstates the impossibility of a state-expanded Dijkstra (D22);
+Number Theory treats a modulus as a diagnosis and says exact counts rule
+out formulas (D30). These observations do not mark those articles reviewed.
+
+Revisions applied in `app/dsa/cheat-sheet/page.tsx`. The matrix now has
+42 focused clues covering the same 28 solution topics; Asymptotic Analysis
+remains in the introductory note. The extra rows separate techniques that
+have different prerequisites rather than introducing new roadmap topics.
+Metadata, caption, and column heading now describe candidates rather than
+guaranteed diagnoses. The shorter page subtitle is preserved.
+
+Verification (2026-11-12):
+
+- An AST-based check evaluated the actual matrix and rendered its JSX:
+  42 nonempty, unique clues; valid, labeled links; coverage of every
+  solution-topic slug; no Asymptotic Analysis table row. All destinations
+  have content. This was a one-off check, not a new permanent CI gate.
+- All 29 distinct destination routes (28 table topics plus analysis)
+  returned HTTP 200 with their expected article title on the local server.
+- Production HTML assertions compared every desktop row and mobile item
+  with the source: all 42 clues, labels, destinations, and mobile numbers
+  01-42 matched. The final constraint note and candidate heading rendered.
+- Counterexample checks confirmed the 2^20/20! arithmetic; a naive
+  shrink-on-sum window returns length 3 instead of 1 on `[1, -1, 3]`
+  with target 3; arbitrary yes/no predicates can alternate rather than
+  have one threshold; prefix differences still handle negative values;
+  and a triangle with edge weights 2, 2, 3 has MST weight 4 but a direct
+  source-to-target shortest path of weight 3. These checks test the
+  review's reasoning, not the site's DSA solution implementations.
+- Desktop and phone browser checks covered the header, initial rows,
+  graph distinctions, long labels, and the final numbered items. Text and
+  links wrap within the layouts; the desktop subtitle still fits one line.
+- `pnpm validate` passed after the final prose changes: lint, typecheck,
+  content checks (3,934 internal links), compilation of 125 DSA problem
+  pages, and production generation of 395 pages. `git diff --check`
+  passed. No DSA runtime-test entry or batch status was changed.
 
 ## Batches
 
