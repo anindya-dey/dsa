@@ -9,7 +9,7 @@ import { patternHasContent } from "@/lib/content/dsa";
 export const metadata: Metadata = {
   title: "Cheat Sheet",
   description:
-    "A diagnostic matrix mapping problem clues to the algorithmic pattern they most likely require.",
+    "Match problem clues to candidate DSA techniques, with the assumptions that make each one useful.",
 };
 
 interface PatternLink {
@@ -28,84 +28,81 @@ function V({ children }: { children: ReactNode }) {
 
 const DIAGNOSTIC_MATRIX: MatrixEntry[] = [
   {
-    clue: (
-      <>
-        Input size tells you the budget: <V>n</V> &le; 20 allows
-        exponential, 10<sup>3</sup> allows O(<V>n</V>&sup2;), 10<sup>5</sup>{" "}
-        needs O(<V>n</V> log <V>n</V>) or better
-      </>
-    ),
-    patterns: [{ label: "Asymptotic Analysis", slug: "asymptotic-analysis" }],
-  },
-  {
-    clue: "Index access, rotating or shifting elements, adds and removes at both ends",
+    clue: "Build or change a sequence: choose storage for indexed access, insertions, or operations at both ends",
     patterns: [{ label: "Linear Structures", slug: "linear-structures" }],
   },
   {
-    clue: "Frequency tracking, pair matching, “have I seen this before?”",
+    clue: "Exact membership, duplicate detection, frequencies, or grouping items by a shared key",
     patterns: [{ label: "Hash Map / Set", slug: "hash-based-structures" }],
   },
   {
-    clue: "The answer for n is built from the answer for a smaller n, or a self-similar shape",
+    clue: "Solve a smaller version of the same problem, or follow a nested, self-similar structure",
     patterns: [{ label: "Recursion", slug: "recursion-and-math" }],
   },
   {
     clue: (
       <>
-        &ldquo;<V>k</V>-th smallest / closest&rdquo;, or an order defined by a
-        custom rule
+        Find the <V>k</V>-th smallest/largest element or the <V>k</V> closest
+        items without needing the whole input sorted
       </>
     ),
     patterns: [
-      { label: "Quickselect / Custom Sort", slug: "sorting-and-selection" },
+      { label: "Selection / Quickselect", slug: "sorting-and-selection" },
     ],
   },
   {
-    clue: (
-      <>
-        Every element appears twice except one, flags packed into an integer,
-        or all subsets of <V>n</V> &le; 20 items
-      </>
-    ),
+    clue: "Order all items by a custom rule, or sort first so equal or related items become neighbors",
+    patterns: [{ label: "Sorting", slug: "sorting-and-selection" }],
+  },
+  {
+    clue: "Cancel paired integers with XOR, pack independent flags into bits, or enumerate subsets of a small set with bitmasks",
     patterns: [{ label: "Bit Manipulation", slug: "bit-manipulation" }],
   },
   {
-    clue: "Sorted array, pairs or triplets, converging from both ends, or a fast/slow pair for cycles",
+    clue: "Find pairs/triplets in sorted data where moving a pointer rules out candidates, compare sequence ends, or use fast/slow pointers for linked-list cycles",
     patterns: [{ label: "Two Pointers", slug: "two-pointers" }],
   },
   {
-    clue: (
-      <>
-        Subarray/substring contiguity + &ldquo;longest / shortest / at most{" "}
-        <V>k</V>&rdquo;
-      </>
-    ),
-    patterns: [{ label: "Sliding Window", slug: "sliding-window" }],
+    clue: "Fixed-size contiguous windows whose sum or counts can be updated as elements enter and leave",
+    patterns: [{ label: "Fixed Sliding Window", slug: "sliding-window" }],
   },
   {
-    clue: "Next greater element, span of stock prices, histogram areas, trapped water",
-    patterns: [{ label: "Monotonic Stack / Deque", slug: "monotonic-structures" }],
+    clue: "Longest substring with at most k distinct characters, or shortest cover of required characters; boundary moves must not skip valid candidates",
+    patterns: [{ label: "Variable Sliding Window", slug: "sliding-window" }],
+  },
+  {
+    clue: "Next/previous greater or smaller element, stock spans, histogram areas, or trapped-water boundaries",
+    patterns: [{ label: "Monotonic Stack", slug: "monotonic-structures" }],
+  },
+  {
+    clue: "Minimum or maximum in each moving window, where old elements expire from one end",
+    patterns: [{ label: "Monotonic Deque", slug: "monotonic-structures" }],
+  },
+  {
+    clue: "Find a value or first/last occurrence in sorted data, or search a rotated sorted array",
+    patterns: [{ label: "Binary Search", slug: "binary-search-variants" }],
   },
   {
     clue: (
       <>
-        Sorted or rotated input, or &ldquo;find the minimum/maximum value{" "}
-        <V>X</V> such that a condition holds&rdquo;
+        Smallest/largest answer where a yes/no check changes only once as
+        candidate values increase: for example, &ldquo;is speed <V>x</V>{" "}
+        enough?&rdquo;
       </>
     ),
     patterns: [
-      { label: "Binary Search on Answer Space", slug: "binary-search-variants" },
+      { label: "Binary Search on Answers", slug: "binary-search-variants" },
     ],
   },
   {
-    clue: "Split in half, solve both halves, combine; counting pairs that cross the split",
+    clue: "Split into smaller independent subproblems and combine their answers; count inversions while merging sorted halves",
     patterns: [{ label: "Divide & Conquer", slug: "divide-and-conquer" }],
   },
   {
     clue: (
       <>
-        Sum of a subarray, &ldquo;subarray sums to <V>k</V>&rdquo;, or many
-        range additions applied at once
+        Repeated range sums on an unchanged array, or count subarrays summing
+        to <V>k</V> (including negative values)
       </>
     ),
     patterns: [
@@ -113,93 +110,131 @@ const DIAGNOSTIC_MATRIX: MatrixEntry[] = [
     ],
   },
   {
+    clue: "Batch many range additions, then reconstruct the final array; queries do not interleave with updates",
+    patterns: [
+      { label: "Difference Arrays", slug: "prefix-sums-and-difference-arrays" },
+    ],
+  },
+  {
     clue: "Overlapping ranges, meetings and rooms, merging or inserting time spans",
     patterns: [{ label: "Intervals / Sweep Line", slug: "intervals-and-sweep-line" }],
   },
   {
-    clue: "Rotate, spiral, or transform a 2D matrix in place",
+    clue: "Rotate a matrix, visit cells in spiral order, mark rows/columns, or search a matrix sorted by both rows and columns",
     patterns: [{ label: "Matrix & Grid", slug: "matrix-and-grid-algorithms" }],
   },
   {
-    clue: "Matching brackets, nested structure to decode, most-recent-first or first-in-first-out order",
+    clue: "Matching brackets, nested decoding, undoing the latest action, or processing items strictly in arrival order",
     patterns: [{ label: "Stacks & Queues", slug: "stacks-and-queues" }],
   },
   {
-    clue: "Reverse, reorder, or splice a linked list in place with O(1) extra space",
+    clue: "Reverse, merge, reorder, or splice linked-list nodes by changing their links",
     patterns: [
-      { label: "Linked List Surgery", slug: "linked-list-manipulation" },
+      { label: "Linked List Manipulation", slug: "linked-list-manipulation" },
     ],
   },
   {
-    clue: "Hierarchies; depth, path, or subtree answers; sorted order from a BST",
+    clue: "Binary-tree depths, paths, ancestors, or subtree answers; ordered traversal or lookup in a binary search tree",
     patterns: [{ label: "Binary Trees & BSTs", slug: "binary-trees-and-bsts" }],
   },
   {
     clue: (
       <>
-        &ldquo;Top <V>K</V>&rdquo;, merge <V>k</V> sorted inputs, a running
-        median or maximum over a stream
+        Top <V>k</V> items from a stream, merge <V>k</V> sorted inputs, maintain
+        a median with two heaps, or repeatedly remove an extreme as items arrive
       </>
     ),
-    patterns: [{ label: "Min/Max Heap", slug: "heaps-and-priority-queues" }],
+    patterns: [{ label: "Heaps / Priority Queues", slug: "heaps-and-priority-queues" }],
   },
   {
-    clue: "Prefix queries, autocomplete, searching many words at once",
+    clue: "Shared word prefixes, autocomplete, wildcard dictionary lookup, or pruning partial words during a board search",
     patterns: [{ label: "Trie", slug: "trie-prefix-tree" }],
   },
   {
-    clue: "Shortest path in an unweighted graph, flood fill, or minimum steps/transformations",
+    clue: "Fewest edges, moves, or transformations in a graph or state space where every edge has the same cost",
+    patterns: [{ label: "Breadth-First Search (BFS)", slug: "graph-traversals" }],
+  },
+  {
+    clue: "Reachability, connected regions, flood fill, or cycle detection in a graph or grid",
     patterns: [{ label: "BFS / DFS", slug: "graph-traversals" }],
   },
   {
-    clue: "Dependencies, build order, prerequisites",
+    clue: "Directed prerequisites: find a valid order, or detect that a dependency cycle makes it impossible",
     patterns: [
-      { label: "Topological Sort (Kahn’s)", slug: "graph-specializations" },
+      { label: "Topological Sort", slug: "graph-specializations" },
     ],
   },
   {
-    clue: "Grouping dynamic elements, checking for a cycle in an undirected graph",
+    clue: "Undirected edges added over time: merge components, test connectivity, or detect a redundant edge",
     patterns: [{ label: "Union-Find (DSU)", slug: "graph-specializations" }],
   },
   {
-    clue: "Weighted shortest paths with extra limits, cheapest way to connect everything, critical links",
-    patterns: [{ label: "Advanced Graphs", slug: "advanced-graphs" }],
+    clue: "Cheapest paths with non-negative edge weights and no hop limit",
+    patterns: [{ label: "Dijkstra", slug: "graph-specializations" }],
   },
   {
-    clue: "All possible arrangements, board exploration with constraints",
+    clue: "Shortest paths with negative edge weights, or detection of a reachable negative cycle",
+    patterns: [{ label: "Bellman-Ford", slug: "graph-specializations" }],
+  },
+  {
+    clue: (
+      <>
+        Cheapest route with a hop/stop limit: keep track of edges used;{" "}
+        <V>k</V> intermediate stops allow <V>k</V> + 1 edges
+      </>
+    ),
+    patterns: [{ label: "Hop-Limited Shortest Paths", slug: "advanced-graphs" }],
+  },
+  {
+    clue: "Connect all nodes of an undirected network at minimum total edge cost, not minimum distance from a source",
+    patterns: [{ label: "Minimum Spanning Tree", slug: "advanced-graphs" }],
+  },
+  {
+    clue: "Groups of directed-graph nodes that can all reach one another, or collapsing these groups into an acyclic graph",
+    patterns: [{ label: "Strongly Connected Components", slug: "advanced-graphs" }],
+  },
+  {
+    clue: "Undirected edges or nodes whose removal increases the number of connected components",
+    patterns: [{ label: "Bridges / Articulation Points", slug: "advanced-graphs" }],
+  },
+  {
+    clue: "Shortest distances between every pair of nodes in a graph small enough for cubic work",
+    patterns: [{ label: "Floyd-Warshall", slug: "advanced-graphs" }],
+  },
+  {
+    clue: "Enumerate subsets, permutations, or valid boards by choosing, checking constraints, and undoing choices",
     patterns: [{ label: "Backtracking", slug: "backtracking-and-pruning" }],
   },
   {
-    clue: "Optimal sub-choices, overlapping subproblems, “number of ways”, min/max costs",
+    clue: "Counting or optimization over choices where different decision paths reach the same smaller state",
     patterns: [{ label: "Dynamic Programming", slug: "dynamic-programming" }],
   },
   {
-    clue: "A local choice you can prove is always safe: earliest end, farthest reach, running minimum",
+    clue: "A local choice you can prove never prevents an optimal answer, such as earliest-finish scheduling or farthest reachable position",
     patterns: [{ label: "Greedy", slug: "greedy-algorithms" }],
   },
   {
-    clue: "Find a pattern in text, palindromes, repeated or periodic substrings",
+    clue: "Find occurrences of a pattern in text, palindromic substrings, or repeated/periodic substrings",
     patterns: [{ label: "String Algorithms", slug: "string-algorithms" }],
   },
   {
-    clue: "Many range queries (sum, min) mixed with point or range updates",
+    clue: "Updates mixed with range queries: sums/counts suggest Fenwick; more general aggregates or lazy range updates suggest a segment tree",
     patterns: [
       { label: "Segment Tree / Fenwick", slug: "range-query-structures" },
     ],
   },
   {
-    clue: (
-      <>
-        &ldquo;Return the answer modulo 10<sup>9</sup> + 7&rdquo;, primes,
-        counting arrangements
-      </>
-    ),
+    clue: "Repeated range minimum, maximum, or GCD queries on data that never changes",
+    patterns: [{ label: "Sparse Table", slug: "range-query-structures" }],
+  },
+  {
+    clue: "Primes, divisibility, greatest common divisors, huge modular powers, or counts expressible with combinations/permutations",
     patterns: [
-      { label: "Number Theory", slug: "number-theory-and-combinatorics" },
+      { label: "Number Theory & Combinatorics", slug: "number-theory-and-combinatorics" },
     ],
   },
   {
-    clue: "“Design a class” with O(1) or O(log n) guarantees per operation",
+    clue: "Build a structure supporting several named operations under stated per-operation time bounds",
     patterns: [
       { label: "Design Data Structures", slug: "design-data-structures" },
     ],
@@ -235,8 +270,33 @@ export default function CheatSheetPage() {
       <PageHeader
         back={{ href: "/dsa", label: "DSA roadmap" }}
         title="Cheat Sheet"
-        description="A diagnostic matrix: translate a problem statement’s clues into the pattern it most likely needs."
+        description="Match clues in a problem statement to likely solution patterns."
       />
+
+      <div className="mb-8 rounded-2xl border border-line bg-accent-wash/40 px-4 py-4 sm:px-5">
+        <p className="font-mono text-[11px] uppercase tracking-widest text-accent-deep">
+          Before you diagnose
+        </p>
+        <p className="mt-2 text-[0.95rem] leading-relaxed text-ink-soft">
+          Start with the constraints. Rough budgets are
+          2<sup><V>n</V></sup> subsets near <V>n</V> = 20 (not <V>n</V>!
+          permutations), O(<V>n</V>&sup2;) near 10<sup>3</sup>, and
+          O(<V>n</V> log <V>n</V>) or better near 10<sup>5</sup>. Check time,
+          memory, work per operation, and total input across test cases. See{" "}
+          <Link
+            href="/dsa/patterns/asymptotic-analysis"
+            className="font-medium text-accent-deep underline-offset-4 hover:underline"
+          >
+            asymptotic analysis
+          </Link>{" "}
+          for the notation and its limits.
+        </p>
+        <p className="mt-2 text-[0.95rem] leading-relaxed text-ink-soft">
+          Clues suggest candidates, not guarantees; patterns can combine. A
+          modulus such as 10<sup>9</sup> + 7 limits the answer’s size, not the
+          algorithm.
+        </p>
+      </div>
 
       <ol className="-mx-3 sm:hidden">
         {DIAGNOSTIC_MATRIX.map((entry, index) => (
@@ -260,7 +320,7 @@ export default function CheatSheetPage() {
       <div className="hidden overflow-hidden rounded-2xl border border-line sm:block">
         <table className="w-full text-left text-sm lg:text-base">
           <caption className="sr-only">
-            Problem clues and the pattern each one most likely calls for
+            Problem clues and candidate techniques to consider
           </caption>
           <thead>
             <tr className="bg-accent-wash/60">
@@ -274,7 +334,7 @@ export default function CheatSheetPage() {
                 scope="col"
                 className="px-5 py-3.5 font-mono text-xs font-medium uppercase tracking-widest text-accent-deep"
               >
-                High-probability pattern
+                Patterns to consider
               </th>
             </tr>
           </thead>

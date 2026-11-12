@@ -91,8 +91,8 @@ docs/                   Requirements and planning docs
    number theory, design-from-scratch data structures.
 
 The [cheat sheet](https://dsa.anindyadey.com/dsa/cheat-sheet) maps problem
-clues to all 29 patterns. Problems link to LeetCode where an equivalent
-exists.
+clues to the patterns, with a constraint-budget note up front. Problems
+link to LeetCode where an equivalent exists.
 
 ### System Design: three tracks (100 topics)
 
