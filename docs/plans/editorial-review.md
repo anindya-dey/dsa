@@ -114,11 +114,11 @@ move between patterns), do not do it inside the batch. Add it to
 
 ## DSA solutions not yet runtime-tested
 
-These 58 problems compile (`pnpm check:cpp`) but have not been run against
+These 55 problems compile (`pnpm check:cpp`) but have not been run against
 test cases. Test them when their batch comes up, and remove each from this
 list once tested.
 
-`climbing-stairs`, `clone-graph`, `combination-sum`, `container-with-most-water`, `contains-duplicate`, `copy-list-with-random-pointer`, `critical-connections-in-a-network`, `daily-temperatures`, `design-add-and-search-words`, `design-hashmap`, `design-linked-list`, `diameter-of-binary-tree`, `different-ways-to-add-parentheses`, `fibonacci-number`, `find-pivot-index`, `group-anagrams`, `house-robber`, `insert-delete-getrandom-o1`, `invert-binary-tree`, `jump-game`, `k-th-symbol-in-grammar`, `longest-common-subsequence`, `longest-repeating-character-replacement`, `longest-substring-without-repeating-characters`, `lowest-common-ancestor-of-a-binary-tree`, `max-sum-subarray-of-size-k`, `merge-intervals`, `merge-k-sorted-lists`, `merge-sorted-array`, `merge-two-sorted-lists`, `min-cost-to-connect-all-points`, `minimum-time-visiting-all-points`, `number-of-1-bits`, `number-of-connected-components`, `number-of-recent-calls`, `pacific-atlantic-water-flow`, `partition-labels`, `permutations`, `range-sum-query`, `redundant-connection`, `reservoir-sampling`, `reverse-linked-list`, `reverse-string`, `rotate-array`, `rotate-image`, `search-a-2d-matrix-ii`, `set-matrix-zeroes`, `single-number`, `sort-colors`, `spiral-matrix`, `subsets`, `subsets-via-bitmask`, `two-sum`, `valid-palindrome`, `valid-parentheses`, `word-ladder`, `word-search-ii`, `zero-one-knapsack`
+`climbing-stairs`, `clone-graph`, `combination-sum`, `container-with-most-water`, `copy-list-with-random-pointer`, `critical-connections-in-a-network`, `daily-temperatures`, `design-add-and-search-words`, `design-hashmap`, `design-linked-list`, `diameter-of-binary-tree`, `different-ways-to-add-parentheses`, `fibonacci-number`, `find-pivot-index`, `group-anagrams`, `house-robber`, `insert-delete-getrandom-o1`, `invert-binary-tree`, `jump-game`, `k-th-symbol-in-grammar`, `longest-common-subsequence`, `longest-repeating-character-replacement`, `longest-substring-without-repeating-characters`, `lowest-common-ancestor-of-a-binary-tree`, `max-sum-subarray-of-size-k`, `merge-intervals`, `merge-k-sorted-lists`, `merge-sorted-array`, `merge-two-sorted-lists`, `min-cost-to-connect-all-points`, `number-of-1-bits`, `number-of-connected-components`, `number-of-recent-calls`, `pacific-atlantic-water-flow`, `partition-labels`, `permutations`, `range-sum-query`, `redundant-connection`, `reservoir-sampling`, `reverse-linked-list`, `rotate-array`, `rotate-image`, `search-a-2d-matrix-ii`, `set-matrix-zeroes`, `single-number`, `sort-colors`, `spiral-matrix`, `subsets`, `subsets-via-bitmask`, `two-sum`, `valid-palindrome`, `valid-parentheses`, `word-ladder`, `word-search-ii`, `zero-one-knapsack`
 
 ## Cheat sheet scope decision (2026-11-11)
 
@@ -337,6 +337,147 @@ Verification (2026-11-12):
 | A20 | `content/ai-ml/systems/ctr-ad-ranking/index.mdx`<br>`content/ai-ml/systems/content-moderation/index.mdx`<br>`content/ai-ml/systems/llm-gateway-system/index.mdx`<br>`content/ai-ml/systems/anomaly-detection-system/index.mdx`<br>`content/ai-ml/systems/ml-training-platform/index.mdx` | todo |
 | A21 | `content/ai-ml/systems/feature-store-lld/index.mdx`<br>`content/ai-ml/systems/model-registry-lld/index.mdx`<br>`content/ai-ml/systems/tokenizer-lld/index.mdx`<br>`content/ai-ml/systems/embedding-cache-lld/index.mdx`<br>`content/ai-ml/systems/vector-index-lld/index.mdx` | todo |
 | A22 | `content/ai-ml/systems/feature-transform-pipeline/index.mdx` | todo |
+
+## Batch D1 review notes (2026-11-12)
+
+Reader direction: keep all five articles easy, precise, correct, and
+human-readable. Explain terms through small examples before introducing
+notation; retain useful caveats without turning the articles into
+implementation surveys.
+
+Findings recorded before editing (line numbers refer to the original files):
+
+- `content/dsa/patterns/asymptotic-analysis/index.mdx:6-61,63-84,134-171`:
+  the opening assumes the notation it should teach, uses "price" and
+  "currency" metaphors repeatedly, and overstates claims about how people
+  use Big-O. The comparison-sorting lower bound is not a guarantee that
+  every sort or every input costs n log n. The n <= 20 crossover claim is
+  unsupported. Space needs a distinction between input/output and working
+  memory; recursion costs depend on state per active call. Add a worked
+  scan-versus-pairs example, define O/log/Ω/Θ plainly, distinguish bounds
+  from best/worst/average cases, and explain counting rules without saying
+  every nested loop multiplies. Preserve the existing amortization heading
+  and its vector link target, 16-append example, and expected-cost distinction.
+- `content/dsa/patterns/asymptotic-analysis/problems/contains-duplicate.mdx:27-32,50-74,90-134`:
+  commentary about how to present the article gets in the learner's way.
+  At n = 100,000 there are 4,999,950,000 unordered pairs, not 10^10;
+  n log2 n is about 1.66 million, not 10^6 * 17. The sorting function
+  takes a copy and must not be reported as O(1) space or as mutating the
+  caller. Average hash complexity is conditional on key distribution,
+  not a randomized guarantee of this code. The two complexity tables
+  disagree, and the bounded-heap/probabilistic-duplicate detour is not a
+  justified exact solution. Keep all three algorithms, explain a set's
+  insertion result and adjacent duplicates, and use one consistent table.
+- `content/dsa/patterns/asymptotic-analysis/problems/minimum-time-visiting-all-points.mdx:12-22,30-36,48-69,98-128`:
+  coordinate limits are +/-1000, not +/-100; every point has two coordinates.
+  Passing through a later point does not count as visiting it in order.
+  The simulation is an algorithm, although it is slower for large gaps;
+  its identical if/else branches are unnecessary. Name the number of
+  simulated steps and count the outer loop too (O(n + steps)). Explain the
+  larger-axis lower bound with the existing 5-by-2 example, remove the
+  unrelated tour/exponential claims, and add toolkit links for actual
+  library/numeric features. Use wide subtraction and totals so arithmetic
+  boundary tests do not overflow; distinguish legal coordinate extremes
+  from extended INT_MIN/INT_MAX checks.
+- `content/dsa/patterns/asymptotic-analysis/problems/reverse-string.mdx:12-18,41-45,66-94`:
+  LeetCode's length limit is 100,000, not 1,000, and O(1) extra memory is a
+  requirement, not merely a desirable option. Label the copying version as
+  a baseline that fails that requirement. "Every element exactly once"
+  overlooks the odd-length center and vector growth; `left <= right` is
+  not incorrect, just an unnecessary self-swap. Replace "entry drug" and
+  abstract axis commentary with a two-swap walkthrough. State floor(n/2)
+  swaps and explain why already-swapped outer positions stay correct.
+- `content/dsa/patterns/linear-structures/index.mdx:6-25,37-70,73-91,104-128`:
+  contiguous arrays and linked nodes are not the only layouts (deque is
+  segmented). Cache behavior is not perfect or guaranteed, allocations
+  need not be per-node, vector growth need not double, and reserve does
+  not eliminate shifts or all invalidation. A singly linked edit may need
+  the predecessor. Lists can be sorted, including std::list::sort; only
+  std::sort requires random-access iterators. Stacks/queues are access
+  rules, not a complete list of storage choices. The deduplication comment
+  uses an inclusive range incorrectly, and rotation/backward merging are
+  not the same forward-compaction loop. Define sequence/storage choices,
+  work through inserting 15 into [10,20,30], add deque to the operation
+  table, explain logical length versus vector size in the sorted-dedup
+  example, and remove misleading universal statements.
+- `lib/catalog/dsa.ts:16-24`: shorten and synchronize the two overview
+  summaries with their frontmatter; the visible page headers use the
+  catalog rather than the MDX summary.
+
+Problem statements and constraints checked against the linked LeetCode
+pages on 2026-11-12. Library claims checked against the C++ requirements
+for vector/deque modifiers, vector capacity, unordered containers, sort,
+and list operations; implementation-specific cache/growth promises are
+not inferred from sanitizer results.
+
+Final prose reread: define zero-based indexing, cache, `std::size_t`, and
+random-access positions where they first matter; explain the deduplication
+guard before accessing the previous output. Define collisions instead of
+assuming hashing vocabulary, and shorten the hash-set heading so it reads
+cleanly in the article column. The point article's scalar min/max/abs link
+belongs to Numeric Utilities, not the range-algorithm entry. Specify a
+32-bit int when discussing the coordinate bounds. No algorithms need to
+change for these final clarifications.
+
+Revisions applied and all five articles reread in context. The two
+overviews now introduce the concepts through concrete examples; the three
+problem pages retain baseline and optimal code, worked explanations, and
+one consistent complexity table each. Titles, routes, and practice links
+are unchanged. The point problem's badge now says "Diagonal Movement";
+Chebyshev distance is named only after deriving the formula.
+
+Verification (2026-11-12; completion recorded 2026-11-13):
+
+- All 8 C++ blocks compiled verbatim with their own shown headers using
+  Apple Clang 21, C++20, `-Wall -Wextra -Werror`, and
+  `-fsanitize=address,undefined -fno-sanitize-recover=all`. A harness
+  extracted the actual article blocks rather than reimplementing them;
+  1,672,131 assertions passed.
+- Duplicate detection: 137,265 arrays, including exhaustive arrays of
+  lengths 0-6 over seven values (negative values, zero, duplicates,
+  `INT_MIN`, and `INT_MAX`), published examples, and 100,000-element
+  inputs. All three approaches checked for correct results and preserving
+  the caller's input. The large all-distinct case ran sorting and hashing
+  only; brute force would require roughly five billion comparisons.
+- Sorted compaction: 137,259 arrays checked for the exact distinct prefix,
+  returned logical length, unchanged vector size, and the result after
+  resizing. Reapplying compaction to the resized output was also checked.
+- Reversal: 29,528 character arrays, including exhaustive lengths 0-9 over
+  three characters, both published examples, printable ASCII, and the
+  100,000-character limit. Both versions matched the reversed sequence;
+  the pointer version preserved size, capacity, and storage address.
+- Point visits: 2,137 routes, with 625 grid pairs verified independently
+  by BFS over the eight allowed moves and 1,500 fixed-seed random routes.
+  Tests covered no legs, repeated points, visiting-order semantics,
+  negative coordinates, +/-1000 limits, and the 100-point/198,000-second
+  maximum. Extended tests outside LeetCode's coordinate range covered
+  full-width integer differences and 64-bit totals; billion-step cases
+  ran the formula only, while small gaps near both integer extremes also
+  ran simulation.
+- Checked the illustrative doubling model for 1-4,096 appends, including
+  15 relocations/31 operations for 16 appends and eight relocations on
+  the ninth. Pair counts and the 1,024-candidate halving example matched.
+  These tests do not assume the library's vector growth factor or prove
+  cache-performance claims.
+- All five pages rendered in browser reads. Production HTML assertions
+  checked their titles, all 12 code/text blocks, five tables, synchronized
+  overview summaries, 26 internal links, and the preserved amortization
+  heading/incoming vector link. Mobile prose was also inspected. Clicking
+  the vector article's amortized O(1) link navigated to the retained
+  heading and scrolled it into view.
+- `pnpm validate` passed after the final article changes: lint, typecheck,
+  content checks (3,924 internal links), compilation of all 125 DSA problem
+  pages, and production generation of 395 pages. `git diff --check` passed.
+- Prose word counts: Asymptotic Analysis 1,011; Linear Structures 991;
+  Contains Duplicate 449; Minimum Time Visiting All Points 419; Reverse
+  String 341. All meet the editorial plan's bands. The overviews keep the
+  worked examples and necessary caveats rather than compressing sentences
+  to the older 450-650 target.
+
+The three problem slugs have been removed from the not-runtime-tested
+list above, leaving 55. Temporary harness files and generated screenshots
+are not part of the content commit. No D2 article has been reviewed or
+changed by this batch.
 
 ## Batch C1 review notes
 

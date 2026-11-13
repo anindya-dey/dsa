@@ -1,7 +1,7 @@
 ---
 title: "Minimum Time Visiting All Points"
 difficulty: "Easy"
-variant: "Chebyshev Distance"
+variant: "Diagonal Movement"
 practiceLinks:
   - label: "LeetCode"
     href: "https://leetcode.com/problems/minimum-time-visiting-all-points/"
@@ -9,51 +9,51 @@ practiceLinks:
 
 ## Problem
 
-A plane has n points given as integer coordinates `points[i] = [xi, yi]`,
-listed in visiting order. Starting at `points[0]`, you move to each
-subsequent point, in one-second steps where each step moves 1 along either
-axis or 1 along both diagonally (a king's move, in one second). Return
-the minimum time to visit all points in order.
+You are given points with integer coordinates, `points[i] = [x, y]`.
+Visit them in the listed order, starting at the first point.
+
+In one second, you can move one unit horizontally, one unit vertically,
+or one unit along **both** axes diagonally. Return the minimum total time.
+Passing through a later point does not count as visiting it before its turn.
 
 **Constraints**
 
-- `1 <= n <= 100`
-- `-100 <= xi, yi <= 100`
+- `1 <= points.length <= 100`
+- Each point has exactly two coordinates.
+- `-1000 <= x, y <= 1000`
 
 **Example**
 
 ```text
-Input:  points = [[3,2],[-2,4]]
+Input:  points = [[3, 2], [-2, 4]]
 Output: 5
 ```
 
-From (3,2) to (-2,4): 5 diagonal-plus-straight seconds.
+You need to travel 5 units horizontally and 2 vertically. Two diagonal
+moves reach `(1, 4)`, then three horizontal moves reach `(-2, 4)`.
+That takes five seconds.
 
-## Brute force
+## Brute force: simulate each second
 
-The honest brute force is not an algorithm but a *simulation*: from each
-point, greedily take king moves toward the next (one diagonal when both
-axes differ, otherwise one straight), counting steps until arrival.
+Move one unit toward the target on each axis that has not reached it.
+When both coordinates differ, this makes a diagonal move. When only one
+differs, it makes a straight move.
 
 ```cpp
-int minTimeToVisitAllPointsBrute(
+#include <cstddef>
+#include <vector>
+
+long long minTimeToVisitAllPointsBrute(
         const std::vector<std::vector<int>>& points) {
-    int total = 0;
-    for (size_t i = 1; i < points.size(); ++i) {
-        int cx = points[i - 1][0];
-        int cy = points[i - 1][1];
-        int tx = points[i][0];
-        int ty = points[i][1];
-        while (cx != tx || cy != ty) {
-            int dx = (tx > cx) - (tx < cx);    // sign of the x gap
-            int dy = (ty > cy) - (ty < cy);
-            if (dx != 0 && dy != 0) {
-                cx += dx;                       // diagonal while both
-                cy += dy;
-            } else {
-                cx += dx;
-                cy += dy;
-            }
+    long long total = 0;
+    for (std::size_t i = 1; i < points.size(); ++i) {
+        int x = points[i - 1][0];
+        int y = points[i - 1][1];
+        int targetX = points[i][0];
+        int targetY = points[i][1];
+        while (x != targetX || y != targetY) {
+            x += (targetX > x) - (targetX < x);
+            y += (targetY > y) - (targetY < y);
             ++total;
         }
     }
@@ -61,72 +61,66 @@ int minTimeToVisitAllPointsBrute(
 }
 ```
 
-Correct, and it reveals its own insight by simulation: while both axes
-differ, the diagonal move closes both gaps at once, so you should
-*always* diagonalize until the smaller gap closes, then walk straight.
-But the simulation is a loop whose trip count is driven by coordinate
-*gaps*, not by n, and the answer to "how many seconds does one segment
-take" is staring at the gaps directly.
+Each comparison produces 0 or 1. Their difference is +1 when the target
+is ahead, -1 when it is behind, and 0 when that coordinate already matches.
+The simulation is correct, but it does one loop iteration per second
+of travel. You can calculate the same answer without taking every step.
 
-## Optimal: the diagonal-first formula
+## Optimal: count the larger gap
 
-Derive the per-segment cost once: with gaps `dx = |x1 - x0|` and
-`dy = |y1 - y0|`, the best strategy uses min(dx, dy) diagonal moves
-(closing both gaps together) and then |dx - dy| straight moves, which
-sums to:
+Let `dx` and `dy` be the absolute horizontal and vertical gaps. Each
+second closes at most one unit of either gap, so you need **at least
+`max(dx, dy)` seconds**.
 
-    cost(dx, dy) = max(dx, dy)
+You can achieve that bound: take `min(dx, dy)` diagonal moves, then finish
+the remaining gap with straight moves. For gaps 5 and 2, that is two
+diagonals plus three straight moves, exactly five seconds.
 
-That is the [Chebyshev
-distance](https://en.wikipedia.org/wiki/Chebyshev_distance), the natural
-distance metric for king moves, and the whole problem is the sum of
-Chebyshev distances between consecutive points.
+Therefore each consecutive pair contributes `max(dx, dy)`. This is also
+called **Chebyshev distance**. Add those contributions because you must
+finish one leg before the next begins.
 
 ```cpp
-int minTimeToVisitAllPoints(
+#include <algorithm>
+#include <cstddef>
+#include <cstdlib>
+#include <vector>
+
+long long minTimeToVisitAllPoints(
         const std::vector<std::vector<int>>& points) {
-    int total = 0;
-    for (size_t i = 1; i < points.size(); ++i) {
-        int dx = std::abs(points[i][0] - points[i - 1][0]);
-        int dy = std::abs(points[i][1] - points[i - 1][1]);
-        total += std::max(dx, dy);          // Chebyshev distance per leg
+    long long total = 0;
+    for (std::size_t i = 1; i < points.size(); ++i) {
+        long long dx = std::abs(
+            static_cast<long long>(points[i][0]) - points[i - 1][0]);
+        long long dy = std::abs(
+            static_cast<long long>(points[i][1]) - points[i - 1][1]);
+        total += std::max(dx, dy);
     }
     return total;
 }
 ```
 
-Why `max` is right, in the derivation's own words: each second, one unit
-of *some* combination of gap closes, so after t seconds at most t total
-progress exists on *each* axis, meaning no axis can close faster than
-one unit per second, and the larger gap *must* take at least max(dx, dy)
-seconds (a lower bound). The diagonal-then-straight strategy achieves
-exactly that many seconds (an upper bound), so max(dx, dy) is the exact
-cost. That bound-then-match argument is the
-[analysis](/dsa/patterns/asymptotic-analysis) habit in miniature:
-prove it cannot be less, exhibit a strategy that attains it, and the two
-clamps together are the answer.
-
-The "visiting order" clause is load-bearing and easy to miss: the
-points are visited *in the given order*, not in an optimal tour (which
-would be traveling-salesman, and
-[exponential](/dsa/patterns/dynamic-programming)). The problem is a sum
-of independent legs, which is why it is linear and closed-form.
+The problem's limits fit in a 32-bit `int`; `long long` also lets these
+functions handle larger gaps. Convert before subtracting so the difference itself
+cannot overflow `int`. With one point, there are no legs and the answer is 0.
 
 ## Complexity
 
-| Approach | Time | Space |
-| --- | --- | --- |
-| Simulate king moves | O(total distance) | O(1) |
-| Chebyshev per leg | O(n) | O(1) |
+Let `n` be the number of points and `S` the total number of simulated steps.
 
-Linear in the number of points, constant space, and a closed-form answer
-per leg. This is the "geometry has closed-form distances" entry point
-that [matrix and grid](/dsa/patterns/matrix-and-grid-algorithms)
-algorithms draw on, and a good first place to see a *metric* (Manhattan
-for axis-only moves, Chebyshev for king moves) chosen by the move set,
-with the formula following from the movement rules rather than being
-memorized.
+| Approach | Time | Extra space |
+| --- | --- | --- |
+| Simulate each second | O(n + S) | O(1) |
+| Formula for each leg | O(n) | O(1) |
+
+The coordinate bound makes simulation manageable here, but the formula
+does constant work per leg regardless of the gap. This is an
+[analysis](/dsa/patterns/asymptotic-analysis) lesson: count what actually
+controls a loop, not just the number of input items.
 
 ## Related C++ tools
 
-- [std::vector](/cpp/vector): the dynamic array underneath almost every solution.
+- [std::vector](/cpp/vector) explains storing rows of coordinates.
+- [Numeric Utilities](/cpp/numeric) covers `std::min`, `std::max`, and `std::abs`.
+- [Integer Overflow & Limits](/cpp/integer-overflow) explains wider
+  arithmetic and converting before an operation.

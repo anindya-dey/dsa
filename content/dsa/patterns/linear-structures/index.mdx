@@ -1,128 +1,151 @@
 ---
 title: "Linear Structures"
-summary: "Two ways to store a sequence, contiguous and linked, and the hidden cost each one charges for every operation you care about."
+summary: "Arrays, linked lists, and deques: choose sequence storage by the operations you need."
 ---
 
-Every sequence you will ever store has to answer one question first: do the
-elements live **next to each other in memory** (contiguous), or does each
-element point to the next (linked)? There is no third option, and the
-choice is not about taste. It is a hidden price list, where each structure
-charges for the operations the other one gives away.
+A **linear structure** stores elements in a sequence: one after another.
+The important choice is how that sequence is stored. The same values
+can be easy to index in an array or easy to rearrange in a linked list.
+Neither choice makes every operation cheap.
 
-A `std::vector` is contiguous. Because the elements touch, index 4 is
-exactly `start + 4 * elementSize`: O(1) access to any position, and the
-memory is one allocation with perfect cache behavior (the CPU prefetches
-the next elements for free). The price: inserting or removing in the
-middle means shifting everything after it, and growing means reallocating
-and copying the whole structure.
+Consider `[10, 20, 30]`. You want the value at index 2, then you want to
+insert 15 between 10 and 20. An array makes the first task direct. A
+linked list can make the second task cheap, provided you already know
+where to insert. Index 2 is the third element because indices start at 0.
 
-A linked list is the mirror image. Each node holds its value and the
-address of the next node (and, in a doubly linked list, the previous),
-so inserting or removing anywhere is a couple of pointer writes: O(1),
-once you are standing at the right node. The price: reaching that node
-is a walk, O(n), because "index 4" does not exist, only "four steps from
-the head"; and every node is a separate allocation that the prefetcher
-cannot anticipate.
+## Arrays: quick access by position
+
+A dynamic array, such as `std::vector<int>`, stores elements next to each
+other in **contiguous memory**. You can calculate where an index belongs
+without walking through earlier elements, so indexed access is O(1).
+A processor's **cache** is small, fast memory. Nearby array elements often
+share cached data, making scans efficient. Actual speed depends on the
+machine and workload.
+
+To insert 15 into `[10, 20, 30]`, you shift 20 and 30 one position to the
+right, then write 15 into the gap. Inserting or erasing near the front
+can move almost every element, so the worst-case cost is O(n).
+
+Appending usually needs just one write. When capacity runs out, the
+vector gets a larger buffer and relocates its elements. One append can
+therefore cost O(n), while ordinary appends are
+[O(1) amortized](/dsa/patterns/asymptotic-analysis#amortized-paying-for-the-expensive-rare-case).
+The capacity does not have to double. `reserve()` can prevent
+reallocation until the reserved capacity is exceeded, but it does not
+remove the shifts needed for middle insertions.
+
+## Linked lists: quick edits at known positions
+
+A linked list stores **nodes**. Each node holds a value and a link to the
+next node. A doubly linked list also keeps a link to the previous node.
+The nodes do not have to sit next to one another in memory.
+
+To insert 15 after the node holding 10, point the new node at 20, then
+point 10 at the new node. You change two links rather than shift 20 and
+30. Linking or unlinking one node is O(1) once you have the necessary
+position information. A singly linked deletion may also need the
+previous node, so finding that node can add a walk.
+
+Finding index 2 means following links from the head. Finding an
+arbitrary index or value takes O(n) in the worst case. Lists also need
+memory for links, and following nodes often makes less use of the cache
+than scanning an array. Those are trade-offs, not guarantees about
+every implementation.
+
+## Deques, stacks, and queues
+
+An array and a linked list are not the only layouts. A `std::deque`
+typically stores elements in separate blocks. It provides O(1) indexed
+access and insertion/removal at either end, but its elements are not
+one contiguous array. Middle edits still take O(n) in the worst case.
+
+A **stack** and a **queue** describe access rules rather than memory
+layouts. A stack removes the most recently added item first. A queue
+removes the oldest item first. You can implement these rules with
+different storage: a vector works well for a stack; a deque, linked
+list with a tail pointer, or circular buffer can support queue operations.
+Simply erasing the front of a vector costs O(n).
 
 ## How to spot it
 
-- The problem is about **building or mutating a sequence**: insert at
-  front, remove by value, splice two lists, rotate an array.
-- "In place with O(1) extra memory" on an array problem: you are being
-  asked for the pointer/index arithmetic rather than a copy.
-- You need a **stack or queue**: both are linear structures with a
-  restricted door, and the array-vs-node choice is the same decision in
-  smaller clothes.
+Use this topic when you need to build or change a sequence. Ask which
+operations the problem repeats: indexed lookup, appending, removing
+from the front, or editing a known position. This is the same storage
+question listed in the [cheat sheet](/dsa/cheat-sheet).
 
-The full toolbox is four structures, and knowing which two questions each
-one answers is the pattern:
+| Storage | Indexed access | Add/remove at an end | Insert/erase in the middle |
+| --- | --- | --- | --- |
+| Dynamic array | O(1) | Back: append O(1) amortized, remove O(1); front: O(n) | O(n) worst case |
+| Linked list | O(n) | O(1) with the required head/tail links | O(1) at a known position with the required links; O(n) to find it |
+| Deque | O(1) | O(1) at either end | O(n) worst case |
 
-| Structure | Fast at | Slow at |
-| --- | --- | --- |
-| dynamic array (`vector`) | index, append at end | insert/remove front or middle |
-| linked list | insert/remove at a known node | index, cache behavior |
-| stack (either) | push/pop at one end | everything else |
-| queue | push back, pop front | index |
+Here `n` is the number of elements, and moving or destroying one element
+is assumed to cost O(1). For a singly linked list, removing the tail
+still needs its predecessor. Knowing the tail alone does not make that
+operation O(1).
 
-An array-backed stack and queue are both just the array with discipline
-about which end you touch (a circular buffer turns the queue's two ends
-into O(1) each). The [stacks and queues](/dsa/patterns/stacks-and-queues)
-page covers the behavior; this page is about what they are *made of*.
+## Worked example: compact a sorted array
 
-## The mechanics worth knowing cold
-
-**Array growth.** A `vector` does not grow by one element each time: it
-doubles (roughly), copying into a fresh allocation. That makes a single
-push O(n) but n pushes O(n) total, the *amortized* O(1) that array
-performance claims depend on. Two consequences worth internalizing: any
-pointer or iterator into the array can be invalidated by a growth, and
-`reserve()` when you know the final size turns the whole conversation
-moot.
-
-**The two-pointer trick for in-place array work.** Because the array is
-contiguous, "the region I have written" and "the region I am reading" can
-share memory, with two indices marking the boundary. This is how
-deduplication, in-place partitioning (the [Dutch national
-flag](/dsa/patterns/sorting-and-selection/sort-colors)), and
-merging [without extra
-space](/dsa/patterns/sorting-and-selection/merge-sorted-array)
-all work: a write index that only ever advances, and the untouched tail
-beyond it.
+Suppose `nums = [1, 1, 2, 2, 3]`. You want each distinct value once at
+the beginning, without creating another array. Keep two positions:
+`read` examines the input, and `write` marks the next free output slot.
+Sorted input matters: equal values are neighbors.
+`std::size_t` is the C++ type used for container sizes and indices.
 
 ```cpp
-// In-place dedup of a sorted array: the invariant in four lines.
-int removeDuplicates(std::vector<int>& nums) {
-    int write = 0;                        // nums[0..write] is deduplicated
-    for (int read = 0; read < static_cast<int>(nums.size()); ++read) {
+#include <cstddef>
+#include <vector>
+
+std::size_t removeDuplicates(std::vector<int>& nums) {
+    std::size_t write = 0;
+    for (std::size_t read = 0; read < nums.size(); ++read) {
         if (write == 0 || nums[read] != nums[write - 1]) {
-            nums[write++] = nums[read];  // extend the clean prefix
+            nums[write] = nums[read];
+            ++write;
         }
     }
     return write;
 }
 ```
 
-Read the invariant off the variables: `nums[0..write)` is always the
-deduplicated prefix, `read` scans ahead, and each kept element is written
-at most once. That prefix-plus-scan shape is the same one behind
-[rotate array](/dsa/patterns/linear-structures/rotate-array) and
-every "compact this array" problem, and it is the array-side sibling of
-the [linked list surgery](/dsa/patterns/linked-list-manipulation)
-discipline.
+You keep the first 1, skip the second, keep 2, skip the next 2, then keep
+3. The function returns 3, and the first three positions contain
+`[1, 2, 3]`. It does **not** resize the vector; ignore the remaining
+positions or resize it to the returned length.
 
-**The node surgery rules.** On the linked side, three rules prevent almost
-every bug: save the pointer you are about to overwrite, update pointers in
-an order that never leaves the structure half-attached, and draw the
-before/after diagrams before writing code. Those are the rules
-[linked list manipulation](/dsa/patterns/linked-list-manipulation) exists
-to drill, and the [design a linked
-list](/dsa/patterns/linear-structures/design-linked-list) problem
-is where you implement them from raw nodes.
+The `write == 0` check handles the first value without accessing
+`nums[write - 1]`. After that, compare with the last value you kept.
 
-## When each side wins
+The output never overtakes the unread input, so writing a kept value
+cannot destroy a value you still need. The scan takes O(n) time and
+O(1) extra space. This read/write technique fits compaction; rotation
+and backward merging use different pointer movements.
 
-Use the array when you index, iterate, or sort: contiguous memory makes
-all three fast, and sorting in particular is hopeless on a linked list
-(cache misses everywhere, no random access for the algorithms). Use the
-linked list when the structure mutates at *known positions* constantly:
-you hold a node, inserts and deletes around it are O(1) forever, and the
-trade pays. And when a problem says "implement a queue with O(1)
-operations", remember that both answers work, which is the whole point:
-the structures are two price lists, and reading the problem as "which
-prices can I afford" is the skill.
+## Choose by the work you need
+
+Use a vector when indexed access and sequential scans dominate. Consider
+a linked list when edits at already-known nodes dominate. Use a deque
+when you need both ends and indexing.
+
+Linked lists can be sorted: `std::list::sort` is one example.
+`std::sort` specifically needs random-access iterators: positions that can
+jump directly by an offset. It works on vectors and deques, not linked
+lists. Also remember that changing a container can invalidate saved
+positions; reallocation and shifts are
+different ways this can happen.
 
 ## Related C++ tools
 
-- [std::vector](/cpp/vector): the dynamic array, its growth and invalidation rules.
-- [std::deque](/cpp/deque): double-ended queue, block storage.
+- [std::vector](/cpp/vector) covers capacity, indexing, and insert/erase.
+- [std::deque](/cpp/deque) covers operations at both ends.
+- [Iterator Invalidation](/cpp/invalidation) explains when saved
+  positions stop being valid.
 
 ## Related patterns
 
-- [Linked List Manipulation](/dsa/patterns/linked-list-manipulation) is
-  the pointer-surgery discipline this page introduces.
-- [Stacks & Queues](/dsa/patterns/stacks-and-queues) are the restricted
-  doors built on these structures.
-- [Hash-Based Structures](/dsa/patterns/hash-based-structures) adds the
-  "find it instantly" capability neither linear structure has.
-- [Sorting & Selection](/dsa/patterns/sorting-and-selection) is why
-  arrays usually win: sorting needs random access.
+- [Linked List Manipulation](/dsa/patterns/linked-list-manipulation)
+  works through rearranging links safely.
+- [Stacks & Queues](/dsa/patterns/stacks-and-queues) uses the access rules
+  to solve nesting and processing-order problems.
+- [Sorting & Selection](/dsa/patterns/sorting-and-selection) covers
+  ordering elements before searching or scanning them.

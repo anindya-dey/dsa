@@ -1,99 +1,106 @@
 ---
 title: "Asymptotic Analysis"
-summary: "Big-O, Big-Ω, and Big-Θ: how to price an algorithm by its growth curve, what the analysis honestly promises, and the traps it sets."
+summary: "How time and extra memory grow with input size, including Big-O and amortized cost."
 ---
 
-When we say an algorithm is O(n log n), we are making a specific and
-narrow promise: **as the input grows, the running time grows no faster
-than a constant times n log n.** Not "it takes n log n steps", not "it
-is fast", just: past some input size, the curve of time-versus-input is
-bounded above by c * n log n. That curve language (asymptotic: "near the
-limit") is the whole subject, and almost every misuse of Big-O comes from
-forgetting which of those three claims was actually made.
+Reading an array once and comparing every pair of its elements can both
+work on a small input. The difference becomes clear when the array grows.
+For 100 elements, a full scan visits 100 positions. Comparing every
+pair of different positions takes 4,950 comparisons. At 1,000 elements,
+those counts become 1,000 and 499,500.
 
-The reason the site leads with this pattern is that every other page
-prices its algorithms with it. "The brute force is O(n²) and the
-two-pointer solution is O(n)" is the shape of every problem page, so
-this page defines the notation those sentences use.
+**Asymptotic analysis** describes how an algorithm's work or memory use
+grows as its input gets larger. It helps you compare approaches without
+depending on one computer's speed. You usually describe that growth with
+**Big-O notation**, such as O(n) or O(n²).
 
-## The three notations, and what each promises
+## Start by naming the input size
 
-Big-O (**upper bound**): f(n) = O(g(n)) means f grows no faster than g.
-It is a ceiling: "no worse than". A single loop over n elements is O(n),
-but it is *also* O(n²) and O(2^n), both true and both useless, because
-Big-O alone never promises tightness.
+In an array problem, `n` usually means the number of elements. In a graph
+problem, you may need two variables: `V` for vertices and `E` for edges.
+Say what your variables mean before stating a complexity.
 
-Big-Ω (**lower bound**): f grows *at least* as fast as g. Ω(n log n)
-for comparison sorting is the famous use: no comparison sort can beat it,
-a floor, not an algorithm.
+For the array above, a full scan does `n` visits. Comparing every pair of
+different positions does `n * (n - 1) / 2` comparisons. The first grows
+linearly; the second grows quadratically. Increasing `n` tenfold means ten times as
+many scan visits, but roughly a hundred times as many pair comparisons.
 
-Big-Θ (**tight bound**): f = Θ(g) when f = O(g) and f = Ω(g) both hold:
-the growth rate *is* g, up to constants. "The algorithm is Θ(n log n)"
-is the honest, full promise, and when people say "this is O(n log n)"
-they almost always mean Θ(n log n), the useful claim.
+We count basic operations, such as comparing two integers, as constant
+work. If one operation compares long strings or copies a large object,
+include that cost too.
 
-The habit worth building: when you state a complexity, ask which claim
-you are making. Sorting is Θ(n log n) *by comparisons*, and the Ω
-argument (the decision-tree lower bound: n! orderings must be
-distinguished, and a binary tree of height h distinguishes 2^h) is the
-canonical use of the lower-bound notation.
+## What O, Ω, and Θ mean
 
-## The rules of the arithmetic
+**Big-O is an upper bound on growth.** O(n) means the work is eventually
+bounded by a constant times `n`. It does not mean exactly `n` operations
+or a particular number of milliseconds.
 
-Complexities compose, and the composition rules are simple enough to
-apply mechanically once, then trust forever:
+Suppose a function always performs `2n + 3` basic operations. You describe
+it as O(n): the constant multiplier and the extra three operations do not
+change its linear growth. O(n²) would also be a valid upper bound, but
+O(n) tells you more because it is tighter.
 
-- **Sequential blocks add**: a loop of n, then a loop of m, is O(n + m).
-- **Nested loops multiply**: a loop of n containing a loop of n is
-  O(n²), *provided* the inner work does not depend on the outer in a
-  way that changes its count (see amortized below).
-- **Drop constants and lower-order terms**: O(3n² + 100n + 7) is O(n²),
-  because past any size you like, the n² term dwarfs the rest. This is
-  where the "drop the constant" habit is correct: in the *curve*, the
-  coefficient is invisible.
-- **Different variables stay different**: a loop over a string of
-  length m inside a loop over n words is O(n * m), not O(n²), and
-  collapsing distinct variables into one n is a classic mis-analysis.
+**Big-Ω is a lower bound.** Ω(n) means the work grows at least as fast as
+a constant times `n`, once `n` is large enough.
 
-The last rule has a practical corollary for interviews: state your
-variables ("n is the array length, k is the number of queries") before
-stating complexity, because most complexity *disagreements* are actually
-variable-definition disagreements.
+**Big-Θ is a tight bound.** Θ(n) means both the upper and lower bounds are
+linear. The `2n + 3` example is Θ(n).
 
-## What Big-O leaves out, on purpose
+Bounds are not the same as best and worst cases. Searching an unsorted
+array may find the value immediately, taking O(1) time in the best case.
+If it is absent, you check all `n` elements, taking Θ(n) time in the
+worst case. State which case you are describing. An average-case claim
+also needs assumptions about which inputs are likely.
 
-The notation is about growth, not speed, and three real things sit
-outside it:
+## Common growth rates
 
-- **Constants.** An O(n) algorithm doing 100 heavy operations per
-  element can lose to an O(n log n) one doing 3. This is why real
-  libraries use insertion sort (O(n²)) for tiny arrays, and why
-  "asymptotically better but practically slower" is a real category,
-  not a mistake.
-- **The crossover point.** Curves cross: past some n₀ the better
-  asymptotics win, and below it the constants win. For `n <= 20` or so,
-  constants usually dominate everything.
-- **The memory hierarchy.** Operation counts do not capture cache
-  behavior. A linked list and an array can both be O(n) to traverse;
-  sequential array access often has better cache locality and more
-  predictable addresses for hardware prefetching. That does not guarantee
-  maximum memory bandwidth, or a cache miss at every linked-list step.
+| Growth | What it looks like |
+| --- | --- |
+| O(1) | Access one array position |
+| O(log n) | Repeatedly halve a search space |
+| O(n) | Scan the input once |
+| O(n log n) | Efficient comparison sorting, such as merge sort |
+| O(n²) | Compare every pair |
+| O(2^n) | Visit one bitmask for every subset of n items |
 
-Big-O is a model of cost, chosen because it is simple enough to reason
-about, and knowing it is a model (with known blind spots) is what
-separates "knows the notation" from "knows the analysis".
+Here, `log n` usually means `log2 n`. Halving 1,024 candidates takes ten
+steps, because `2^10 = 1,024`. Changing the logarithm's base changes a
+constant factor, not the complexity class.
+
+These are starting points, not speed guarantees. An O(n) algorithm can
+be slower than an O(n log n) one on small inputs because its operations
+cost more. Memory layout also affects real speed: nearby array elements
+often make better use of fast processor memory than scattered linked nodes.
+Neither fact changes the growth class. Use the
+[cheat sheet](/dsa/cheat-sheet) to estimate a budget from the constraints,
+then check time, memory, and total input across test cases.
+
+## Counting loops without guessing
+
+Sequential blocks add their work. A scan of `n` elements followed by a
+scan of `m` elements costs O(n + m). If both scans have length `n`, that
+is O(2n), which simplifies to O(n).
+
+For nested loops, count how often the inner work actually runs. An inner
+loop of `m` steps repeated for each of `n` items costs O(nm). Comparing
+each element only with later elements gives
+`(n - 1) + (n - 2) + ... + 1`, still Θ(n²). A loop whose counter halves
+each time has O(log n) iterations, not O(n).
+
+Do not multiply just because two loops are nested. If an inner pointer
+only moves forward and advances at most `n` times across the whole
+algorithm, its total work can be O(n). Check that bound rather than
+assuming every outer iteration starts a fresh scan.
 
 ## Amortized: paying for the expensive rare case
 
-**Amortized analysis** bounds the total work of a sequence, then divides
-that bound by the number of operations. An occasional expensive
-operation is paid for by many cheap ones. It does not say that every
-operation takes the same time, and it does not depend on random inputs.
+**Amortized analysis** spreads the total cost of a sequence across its
+operations. It does not promise that every operation costs the same,
+and it does not depend on random inputs.
 
-Consider appending 16 elements to an initially empty dynamic array.
-For illustration, let its capacities grow as 1, 2, 4, 8, then 16.
-When an append exceeds capacity, you allocate a larger buffer and
-relocate the existing elements:
+Consider appending 16 elements to an empty dynamic array. For this
+example, let capacities grow as 1, 2, 4, 8, then 16. When the buffer is
+full, move the existing elements into a larger one:
 
 ```text
 Existing elements relocated: 1 + 2 + 4 + 8 = 15
@@ -101,71 +108,41 @@ New elements written:                      16
 Total element operations:                  31
 ```
 
-Across 16 appends, that is fewer than two element operations per
-append on average, even though the ninth append relocates eight elements.
-With this doubling model, for n appends the series of relocations is less than 2n;
-adding n new writes gives O(n) total work, or **O(1) amortized per append**.
-Here we count each element move, copy, or write as constant-cost work.
-An expensive element type adds its own cost.
+The ninth append moves eight old elements, but all 16 appends together
+do only 31 element operations. More generally, this doubling model does
+O(n) total work for `n` appends, so each append is **O(1) amortized**.
+We assume each element move or write costs O(1).
 
-This explains `std::vector`'s amortized append guarantee under normal
-growth. The standard does not require doubling; typical implementations
-use geometric growth with different factors. Other fixed geometric factors
-change the constant, not the O(n) total-work bound. The bound assumes ordinary
-appends, not explicitly forcing a reallocation before each append.
-An individual append can still take O(n): the guarantee concerns the
-sequence's total, not each operation's latency.
+This explains `std::vector`'s normal append guarantee. C++ does not
+require capacity to double. One append can still cost O(n), and forcing
+a reallocation before every append defeats the ordinary growth pattern.
 
-The same accounting explains a
+The same total-work argument explains a
 [monotonic stack](/dsa/patterns/monotonic-structures): each element is
-pushed once and popped at most once, so the whole pass is O(n) despite
-its nested loop. For monotone
-[sliding-window pointers](/dsa/patterns/sliding-window/minimum-window-substring),
-each pointer advances at most n times. Check that bounded advancement;
-not every two-pointer algorithm has linear total work.
+pushed once and popped at most once. Randomized
+[quickselect](/dsa/patterns/sorting-and-selection) is different: its O(n)
+expected time averages over random pivot choices, while its worst case
+is O(n²). Expected and amortized bounds answer different questions.
 
-**Expected complexity is different.** Randomized
-[quickselect](/dsa/patterns/sorting-and-selection) has O(n) expected
-time over its random pivot choices, but O(n²) worst-case time.
-That is not the deterministic sequence guarantee behind vector's
-amortized appends. State whether your bound concerns a sequence's total
-work or an expectation over randomness.
+## Count extra memory too
 
-## Space, and the recursion stack
+**Auxiliary space** means working memory beyond the input and required
+output. A few counters use O(1) space. A temporary array of `n` integers
+uses O(n). Copying an input array counts as extra space, even if the copy
+happens when a function is called.
 
-Complexity applies to memory as well as time, and the one systematic
-trap is the call stack: a recursion of depth n uses O(n) space *even
-with no arrays allocated*, because each frame lives until it returns.
-The [recursion](/dsa/patterns/recursion-and-math) page prices this in
-full, but the analysis rule is one sentence: **count the maximum
-concurrent state, not the total state ever created.** An algorithm that
-allocates and frees O(n) things one at a time is O(1) space; a recursion
-holding n frames is O(n).
-
-## The analysis workflow
-
-For any code you are pricing:
-
-1. Name the variables (n, m, k) and what they measure.
-2. Count the *iterations*, not the lines: what controls each loop's
-   count, and does anything inside change it?
-3. Multiply nested, add sequential, drop lower-order terms.
-4. Ask "is the inner loop really doing that count every time?" If the
-   answer is "less as the algorithm progresses", you may have an
-   amortized argument, and the nested-loop multiplication is lying to
-   you.
-5. State time and space, and mention the recursion stack if any.
+Count the memory held at the same time, not every allocation ever made.
+Reusing one temporary integer throughout a scan is O(1) space.
+[Recursion](/dsa/patterns/recursion-and-math) also uses memory: depth `d`
+with constant-size state per active call needs O(d) stack space. Larger
+per-call buffers add to that cost. State explicitly whether your space
+bound includes the output.
 
 ## Related patterns
 
-- [Recursion & Math](/dsa/patterns/recursion-and-math) covers the call
-  trees and recurrences that this page prices.
-- [Sorting & Selection](/dsa/patterns/sorting-and-selection) is the
-  Θ(n log n) family, with the Ω(n log n) lower bound argument.
-- [Hash-Based Structures](/dsa/patterns/hash-based-structures) covers
-  O(1) average lookup, O(n) worst-case lookup, and rehashing. Distinguish
-  assumptions about hash distribution from amortizing resizing work
-  across insertions.
-- Every pattern page on this site applies this one, so the cross-links
-  here are genuinely "all of them": the notation is the currency
-  everywhere else.
+- [Sorting & Selection](/dsa/patterns/sorting-and-selection) compares
+  sorting costs and randomized selection.
+- [Hash-Based Structures](/dsa/patterns/hash-based-structures) explains
+  average lookup costs and their worst-case limits.
+- [Linear Structures](/dsa/patterns/linear-structures) applies these time
+  and space trade-offs to arrays, lists, and deques.
