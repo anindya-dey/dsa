@@ -254,7 +254,7 @@ Verification (2026-11-12):
 
 | Batch | Articles | Status |
 | --- | --- | --- |
-| D1 | `content/dsa/patterns/asymptotic-analysis/index.mdx`<br>`content/dsa/patterns/asymptotic-analysis/problems/contains-duplicate.mdx`<br>`content/dsa/patterns/asymptotic-analysis/problems/minimum-time-visiting-all-points.mdx`<br>`content/dsa/patterns/asymptotic-analysis/problems/reverse-string.mdx`<br>`content/dsa/patterns/linear-structures/index.mdx` | todo |
+| D1 | `content/dsa/patterns/asymptotic-analysis/index.mdx`<br>`content/dsa/patterns/asymptotic-analysis/problems/contains-duplicate.mdx`<br>`content/dsa/patterns/asymptotic-analysis/problems/minimum-time-visiting-all-points.mdx`<br>`content/dsa/patterns/asymptotic-analysis/problems/reverse-string.mdx`<br>`content/dsa/patterns/linear-structures/index.mdx` | done; `d554dab`; example-led complexity and sequence basics, corrected constraints, and sanitizer-tested solutions (2026-11-13) |
 | D2 | `content/dsa/patterns/linear-structures/problems/design-circular-deque.mdx`<br>`content/dsa/patterns/linear-structures/problems/design-linked-list.mdx`<br>`content/dsa/patterns/linear-structures/problems/rotate-array.mdx`<br>`content/dsa/patterns/hash-based-structures/index.mdx`<br>`content/dsa/patterns/hash-based-structures/problems/group-anagrams.mdx` | todo |
 | D3 | `content/dsa/patterns/hash-based-structures/problems/longest-consecutive-sequence.mdx`<br>`content/dsa/patterns/hash-based-structures/problems/two-sum.mdx`<br>`content/dsa/patterns/recursion-and-math/index.mdx`<br>`content/dsa/patterns/recursion-and-math/problems/fibonacci-number.mdx`<br>`content/dsa/patterns/recursion-and-math/problems/k-th-symbol-in-grammar.mdx` | todo |
 | D4 | `content/dsa/patterns/recursion-and-math/problems/pow-x-n-recursive.mdx`<br>`content/dsa/patterns/sorting-and-selection/index.mdx`<br>`content/dsa/patterns/sorting-and-selection/problems/k-closest-points-to-origin.mdx`<br>`content/dsa/patterns/sorting-and-selection/problems/largest-number.mdx`<br>`content/dsa/patterns/sorting-and-selection/problems/merge-sorted-array.mdx` | todo |
@@ -478,6 +478,11 @@ The three problem slugs have been removed from the not-runtime-tested
 list above, leaving 55. Temporary harness files and generated screenshots
 are not part of the content commit. No D2 article has been reviewed or
 changed by this batch.
+
+Review commit: `d554dab` (`docs(review): batch D1 - clarify complexity and
+sequence basics`). Batch D1 is complete. As with C1, this completion
+record is committed separately so it can reference the immutable review
+commit. D2 is the next batch; it has not been started.
 
 ## Batch C1 review notes
 
