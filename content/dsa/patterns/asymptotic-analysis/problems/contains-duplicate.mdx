@@ -9,13 +9,13 @@ practiceLinks:
 
 ## Problem
 
-Given an integer array `nums`, return true if any value appears at least
-twice, false if every element is distinct.
+Given an integer array `nums`, return `true` if any value appears at least
+twice. Return `false` if all values are distinct.
 
 **Constraints**
 
-- `1 <= n <= 10^5`
-- `-(10^9) <= nums[i] <= 10^9`
+- `1 <= nums.length <= 10^5`
+- `-10^9 <= nums[i] <= 10^9`
 
 **Example**
 
@@ -24,16 +24,17 @@ Input:  nums = [1, 2, 3, 1]
 Output: true
 ```
 
-## The three solutions, and the trade they encode
+The value 1 appears at indices 0 and 3. You only need to find one repeated
+value, not list every duplicate.
 
-This problem is famous as the *introduction* to complexity analysis, and
-the right way to present it is not "brute force then the answer" but as
-an explicit trade: three solutions, each buying something the others do
-not, with the constraint set deciding the winner.
+## Brute force: compare every pair
 
-**O(n²), no structure.** Compare every pair.
+For each element, check every later element. Starting `j` at `i + 1`
+avoids comparing an element with itself or checking the same pair twice.
 
 ```cpp
+#include <vector>
+
 bool containsDuplicateBrute(const std::vector<int>& nums) {
     int n = static_cast<int>(nums.size());
     for (int i = 0; i < n; ++i) {
@@ -47,18 +48,26 @@ bool containsDuplicateBrute(const std::vector<int>& nums) {
 }
 ```
 
-Correct, needs nothing, hopeless past a few thousand elements (10^10
-pairs at the limit). Its virtue is the one worth stating out loud: zero
-assumptions, no extra memory, and it *short-circuits* on the first hit,
-which matters when duplicates are early and common.
+This uses O(1) extra space and stops as soon as a pair matches. With no
+duplicates, it makes `n * (n - 1) / 2` comparisons. At 100,000 elements,
+that is 4,999,950,000 comparisons, so the worst-case O(n²) time is too
+expensive for a typical coding-problem time limit.
 
-**O(n log n), sort first.** Sort, then only neighbors can be equal.
+## Alternative: sort a copy
+
+Sorting puts equal values next to each other. You then only need to
+compare neighboring positions. The function takes `nums` by value so
+sorting its copy does not change the caller's array.
 
 ```cpp
+#include <algorithm>
+#include <cstddef>
+#include <vector>
+
 bool containsDuplicateSort(std::vector<int> nums) {
     std::sort(nums.begin(), nums.end());
-    for (size_t i = 1; i < nums.size(); ++i) {
-        if (nums[i] == nums[i - 1]) {     // equal values are adjacent
+    for (std::size_t i = 1; i < nums.size(); ++i) {
+        if (nums[i] == nums[i - 1]) {
             return true;
         }
     }
@@ -66,20 +75,24 @@ bool containsDuplicateSort(std::vector<int> nums) {
 }
 ```
 
-The [sorting habit](/dsa/patterns/sorting-and-selection) in one line of
-insight: duplicates are indistinguishable, so any total order puts them
-next to each other, and a sorted scan answers the question without a
-structure. It mutates (or copies) the input, which the pass-by-value
-above makes explicit, and which is a real cost if the caller needs the
-original order.
+For `[1, 2, 3, 1]`, the sorted copy is `[1, 1, 2, 3]`. The first neighbor
+comparison finds the duplicate. Sorting costs O(n log n), and the copy
+uses O(n) extra space. If changing the input is allowed, taking a
+reference avoids the copy, but sorting may still use stack space.
 
-**O(n) average, hash set.** Track everything seen.
+## Optimal average time: use a hash set
+
+A **hash set** stores each distinct value once. Before moving on, insert
+the current value. If it was already present, you have found a duplicate.
 
 ```cpp
+#include <unordered_set>
+#include <vector>
+
 bool containsDuplicate(const std::vector<int>& nums) {
     std::unordered_set<int> seen;
     for (int value : nums) {
-        if (!seen.insert(value).second) {   // insert reports membership
+        if (!seen.insert(value).second) {
             return true;
         }
     }
@@ -87,53 +100,34 @@ bool containsDuplicate(const std::vector<int>& nums) {
 }
 ```
 
-One pass, early exit, O(n) *extra memory*, and the
-[hash](/dsa/patterns/hash-based-structures) structure's whole reason to
-exist. Note the honest hedge in the complexity: an unordered container
-is O(1) *expected* per operation, O(n) worst case under pathological
-hashing, which is exactly the kind of asterisk
-[asymptotic analysis](/dsa/patterns/asymptotic-analysis) exists to
-notice.
+`insert(value).second` is `true` when a new value was inserted and `false`
+when it already existed. In the example, the set becomes `{1}`, then
+`{1, 2}`, then `{1, 2, 3}`. Inserting the last 1 fails, so you return
+`true`. If every insertion succeeds, all values are distinct.
 
-## Reading the trade
+This avoids rechecking earlier elements. Insertion is O(1) on average
+when hashes distribute values well, giving O(n) average time overall.
+Many values sharing a hash bucket cause **collisions**. These can make one
+insertion O(n), and the entire scan O(n²) in the worst case. The set may
+store all `n` values, so it uses O(n) space.
 
-| Solution | Time | Extra space | Mutates input | Worst case |
-| --- | --- | --- | --- | --- |
-| Pairwise compare | O(n²) | O(1) | no | guaranteed |
-| Sort + neighbor scan | O(n log n) | O(1) or O(n) copy | yes (or copy) | guaranteed |
-| Hash set | O(n) expected | O(n) | no | O(n²) pathological |
+## Complexity and choice
 
-The hash set wins on time and loses on memory; sort wins nothing outright
-but needs no structures and has no pathological case; the pairwise scan
-wins on assumptions and loses on everything else. At n = 10^5 the
-quadratic is ~10^10 operations (dead), the sort is ~10^6 * 17 (fine), and
-the hash is ~10^5 (fastest), which is the actual arithmetic behind
-"pick the hash set".
+Here `n` is the number of elements. Space includes the sorting copy.
 
-The *interesting* interview variant is the constrained one: "what if
-memory is tight?" (sort: O(n log n) with no extra memory, or the
-[bounded-heap](/dsa/patterns/heaps-and-priority-queues/kth-largest-element-in-an-array)
-style streaming trick if duplicates must merely be *probabilistically*
-detected). "What if the data is mostly-duplicated and early?" (the
-short-circuit favors whichever structure exits fastest, and pairwise
-scan's early exit is not obviously worse). The constraint set picks the
-winner, and this problem teaches saying *that* out loud.
-
-## Complexity
-
-| Approach | Time | Space |
+| Approach | Time | Extra space |
 | --- | --- | --- |
-| Pairwise compare | O(n²) | O(1) |
-| Sort + neighbor scan | O(n log n) | O(1) |
-| Hash set | O(n) expected | O(n) |
+| Compare every pair | O(n²) worst case | O(1) |
+| Sort a copy, then scan neighbors | O(n log n) worst case | O(n) for the copy |
+| Hash set | O(n) average; O(n²) worst case | O(n) |
 
-This is the smallest problem that makes the complexity *axes*
-(time, space, assumptions, worst-case) visible as a real trade, which is
-why it opens the [asymptotic analysis](/dsa/patterns/asymptotic-analysis)
-pattern's problem set: the lesson is not "use a hash set", it is "name
-what each solution pays, and choose on purpose".
+The hash set is a good default when memory is available. Sorting gives a
+worst-case O(n log n) time bound without relying on hash distribution.
+This [analysis](/dsa/patterns/asymptotic-analysis) example shows why you
+should state time, extra space, and assumptions together.
 
 ## Related C++ tools
 
-- [std::unordered_map / unordered_set](/cpp/unordered-map): average O(1) lookups, and find versus operator[].
-- [Sorting & nth_element](/cpp/algorithms): sort, nth_element, and what each guarantees.
+- [std::unordered_map / unordered_set](/cpp/unordered-map) covers set
+  membership and the result of `insert`.
+- [Sorting & nth_element](/cpp/algorithms) explains `std::sort`.

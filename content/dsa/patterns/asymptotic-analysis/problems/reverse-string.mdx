@@ -9,49 +9,57 @@ practiceLinks:
 
 ## Problem
 
-Write a function that reverses a string of characters in place: the
-input array `s` is modified so that `s[i]` and `s[n - 1 - i]` swap.
+Reverse the character array `s` **in place**. Modify the given array and
+use only O(1) extra memory; do not create another array for the result.
 
 **Constraints**
 
-- `1 <= s.length <= 1000`
-- `s[i]` is a printable ASCII character.
+- `1 <= s.length <= 10^5`
+- Each element is a printable ASCII character.
 
 **Example**
 
 ```text
-Input:  s = ["h","e","l","l","o"]
-Output: ["o","l","l","e","h"]
+Input:  s = ["h", "e", "l", "l", "o"]
+Output: ["o", "l", "l", "e", "h"]
 ```
 
-## Brute force
+The first and last characters exchange places, as do the second and
+second-to-last. The middle character stays where it is.
 
-Walk a second pointer from the end, building a new array.
+## Brute force: copy backwards
+
+A straightforward baseline reads from the end into a new array, then
+moves that array into `s`:
 
 ```cpp
+#include <utility>
+#include <vector>
+
 void reverseStringBrute(std::vector<char>& s) {
     std::vector<char> reversed;
     for (int i = static_cast<int>(s.size()) - 1; i >= 0; --i) {
-        reversed.push_back(s[i]);         // walk backwards, copy
+        reversed.push_back(s[i]);
     }
     s = std::move(reversed);
 }
 ```
 
-O(n) time, O(n) extra space, and it works. Its "waste" is mild but
-instructive for a first problem in the pattern: the reversal needs to
-touch every element exactly once (which both versions do), and the
-extra array exists only because the walk refuses to *pair* the
-elements that must swap.
+The output is correct, and the total time is O(n). However, the new array
+holds `n` characters, so it needs O(n) extra space. Moving it afterward
+does not remove that peak memory use. This version **does not satisfy
+the O(1)-space requirement**; it is a starting point to improve.
 
-## The pattern: converging pointers
+## Optimal: swap from both ends
 
-The reversal is symmetric: element i trades with element n - 1 - i, so
-two pointers, one from each end, meet in the middle, swapping as they
-go. This is the [converging shape](/dsa/patterns/two-pointers) in its
-minimal form.
+Keep `left` at the first character and `right` at the last. Swap their
+characters, move both positions inward, and repeat. These are
+[converging two pointers](/dsa/patterns/two-pointers).
 
 ```cpp
+#include <utility>
+#include <vector>
+
 void reverseString(std::vector<char>& s) {
     int left = 0;
     int right = static_cast<int>(s.size()) - 1;
@@ -63,36 +71,34 @@ void reverseString(std::vector<char>& s) {
 }
 ```
 
-O(n) time, O(1) space, and n / 2 swaps. The loop condition
-(`left < right`, not `<=`) is worth a sentence: when the pointers meet
-or cross, they are pointing at the same element (odd length) or have
-passed each other, and in both cases the remaining "pairs" are an
-element with itself, so stopping there is both correct and required
-(swapping past the middle would *un*-reverse the string).
+For `hello`, first swap `h` and `o` to get `oellh`. Next swap `e` and the
+second `l` to get `olleh`. Both pointers now reach the middle `l`, so stop.
 
-This problem is the entry drug for the whole site's analysis habit:
-both versions are O(n), and the *space* is where the improvement lives
-(O(1) against O(n)), which makes it the cleanest possible illustration
-of the asymptotic-analysis point that [complexity has two
-axes](/dsa/patterns/asymptotic-analysis), and that "the same time
-complexity" can still hide a real improvement. The in-place swap is
-also the exact move that powers
-[rotate array](/dsa/patterns/linear-structures/rotate-array)
-(a triple reversal) and
-[reverse linked list](/dsa/patterns/linked-list-manipulation/reverse-linked-list)
-(the pointer-surgery version of the same idea).
+After each swap, the two outer positions hold their final characters.
+Later swaps touch only the remaining interior, so they cannot undo that
+work. When the positions meet or cross, every pair has been handled.
+Using `left < right` also avoids an unnecessary self-swap at an odd-length
+array's center.
+
+You can also use `std::reverse(s.begin(), s.end())` from `<algorithm>`.
+Writing the loop yourself makes the pointer movement and space use clear.
 
 ## Complexity
 
-| Approach | Time | Space |
+Here `n` is the number of characters.
+
+| Approach | Time | Extra space |
 | --- | --- | --- |
 | Copy backwards | O(n) | O(n) |
-| Converging pointers, in place | O(n) | O(1) |
+| Swap from both ends | O(n) | O(1) |
 
-Linear time is optimal (every element must move), so the pointer version
-is the honest optimum: same time, minimal space, and the template for
-every symmetric in-place transformation.
+The pointer version makes `floor(n / 2)` swaps and keeps just two indices.
+For arbitrary input, reversal needs linear work in the worst case, so its
+O(n) time is optimal. The improvement over copying is in memory, not the
+time class. This is why [complexity analysis](/dsa/patterns/asymptotic-analysis)
+should include both time and extra space.
 
 ## Related C++ tools
 
-- [std::vector](/cpp/vector): the dynamic array underneath almost every solution.
+- [std::vector](/cpp/vector) covers indexing and reference parameters.
+- [Sorting & nth_element](/cpp/algorithms) includes `std::reverse`.

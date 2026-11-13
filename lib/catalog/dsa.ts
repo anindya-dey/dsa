@@ -14,14 +14,14 @@ export const dsaPatterns: DsaPatternMeta[] = [
     title: "Asymptotic Analysis",
     phase: 1,
     summary:
-      "Big-O, Big-Ω, Big-Θ, space vs. time trade-offs, and amortized complexity.",
+      "How time and extra memory grow with input size, including Big-O and amortized cost.",
   },
   {
     slug: "linear-structures",
     title: "Linear Structures",
     phase: 1,
     summary:
-      "Dynamic arrays, singly/doubly linked lists, and array-backed vs. linked-node stacks and queues.",
+      "Arrays, linked lists, and deques: choose sequence storage by the operations you need.",
   },
   {
     slug: "hash-based-structures",
